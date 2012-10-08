@@ -185,6 +185,7 @@ SUPPORTED = {
     "enc": ["A128CBC", "A256CBC", "A256GCM"],
     "int": ["HS256", "HS384", "HS512"]
 }
+
 # ---------------------------------------------------------------------------
 
 def rsa_encrypt(msg, key, alg="RSA-OAEP", enc="A256GCM",
