@@ -34,5 +34,5 @@ setup(
     install_requires = ["M2Crypto", "pycrypto", "requests"],
 
     zip_safe=False,
-    scripts=["script/jwenc.py", "script/jwsign.py"],
+    scripts=["script/jwenc.py", "script/jwsign.py", "script/jwverify.py"],
 )
