@@ -12,7 +12,7 @@ from itertools import izip
 
 logger = logging.getLogger(__name__)
 
-JWT_TYPS = (u"JWT", u"http://openid.net/specs/jwt/1.0")
+JWT_TYPES = (u"JWT", u"application/jws", u"JWS", u"JWE")
 
 # XXX Should this be a subclass of ValueError?
 class Invalid(Exception):
