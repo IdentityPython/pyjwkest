@@ -15,7 +15,7 @@ from jwkest import b64e
 from jwkest import safe_str_cmp
 from jwkest import BadSignature
 from jwkest import unpack
-from jwkest import JWT_TYPS
+from jwkest import JWT_TYPES
 from jwkest import BadType
 from jwkest import UnknownAlgorithm
 from jwkest import MissingKey
@@ -142,7 +142,7 @@ def verify(token, dkeys):
     header, claim, crypto, header_b64, claim_b64 = unpack(token)
 
     if u'typ' in header:
-        if header[u'typ'] not in JWT_TYPS:
+        if header[u'typ'] not in JWT_TYPES:
             raise BadType(header)
 
     alg = header[u'alg']
