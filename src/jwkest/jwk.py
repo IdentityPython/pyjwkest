@@ -183,3 +183,8 @@ def rsa_loads(key):
     """Read a PEM-encoded RSA key pair from a string."""
     return M2Crypto.RSA.load_key_string(key,
                                         M2Crypto.util.no_passphrase_callback)
+
+def rsa_pub_load(filename):
+    """Read a PEM-encoded public RSA key from a file."""
+    return M2Crypto.RSA.load_pub_key(filename)
+
