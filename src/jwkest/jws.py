@@ -141,6 +141,8 @@ def verify(token, dkeys):
     """
     header, claim, crypto, header_b64, claim_b64 = unpack(token)
 
+    logger.debug("dkeys: %s, header: %s" % (dkeys, header))
+
     if u'typ' in header:
         if header[u'typ'] not in JWT_TYPES:
             raise BadType(header)
