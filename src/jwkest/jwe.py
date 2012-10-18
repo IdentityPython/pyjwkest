@@ -124,9 +124,11 @@ def key_derivation(cmk, label, round=1, length=128, hashsize=256):
     else:
         raise Exception("Unsupported hash length")
 
-    hd = hv.hexdigest()
+    #hd = hv.hexdigest()
+    hd = hv.digest()
 
-    return hd[:(length/4)]
+    #return hd[:(length/4)]
+    return hd[:(length/8)]
 
 def get_cek(cmk, round=1, length=128, hashsize=256):
     return key_derivation(cmk,

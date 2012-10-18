@@ -2,17 +2,17 @@ from oic.utils.keystore import rsa_load
 
 __author__ = 'rohe0002'
 
-from oic import jwt
-from oic.jwt import jws
+import jwkest
+from jwkest import jws
 
 def test_1():
     claimset = {"iss":"joe",
                 "exp":1300819380,
                 "http://example.com/is_root": True}
 
-    _jwt = jwt.pack(claimset)
+    _jwt = jwkest.pack(claimset)
 
-    part = jwt.unpack(_jwt)
+    part = jwkest.unpack(_jwt)
     print part
     assert part[0] == {u'alg': u'none'}
     assert part[1] == \
@@ -57,7 +57,7 @@ def test_left_hash_hs512():
     assert hsh == "_h6feWLt8zbYcOFnaBmekTzMJYEHdVTaXlDgJSWsEeY"
 
 def test_rs256():
-    rsapub = rsa_load("../oc3/certs/mycert.key")
+    rsapub = rsa_load("certs/mycert.key")
 
     payload = "Please take a moment to register today"
     keycol = {"rsa": [rsapub]}

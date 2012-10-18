@@ -1,13 +1,15 @@
 from binascii import hexlify
 import M2Crypto
-from oic.jwt import jwe
-from oic.utils.keyio import x509_rsa_loads
-from oic.jwt.jwk import kspec, base64_to_long, long_to_mpi
+from jwkest import jwe
+from jwkest.jwk import kspec
+from jwkest.jwk import base64_to_long
+from jwkest.jwk import long_to_mpi
+from jwkest.jwk import x509_rsa_loads
 
 __author__ = 'rohe0002'
 
 def test_1():
-    cert = "keys/outbound/cert.pem"
+    cert = "certs/cert.pem"
 
     _ckey = x509_rsa_loads(open(cert).read())
     _jwk = kspec(_ckey, "foo")
