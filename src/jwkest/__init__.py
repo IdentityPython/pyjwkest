@@ -4,6 +4,7 @@
 # Most notably Jeff Lindsay, Ryan Kelly
 
 import base64
+from binascii import unhexlify, hexlify
 import json
 import logging
 import re
@@ -44,14 +45,14 @@ class MissingKey(Exception):
     """ No usable key """
 
 def b64e(b):
-    u"""Base64 encode some bytes.
+    """Base64 encode some bytes.
 
     Uses the url-safe - and _ characters, and doesn't pad with = characters."""
     return base64.urlsafe_b64encode(b).rstrip(b"=")
 
 _b64_re = re.compile(b"^[A-Za-z0-9_-]*$")
 def b64d(b):
-    u"""Decode some base64-encoded bytes.
+    """Decode some base64-encoded bytes.
 
     Raises BadSyntax if the string contains invalid characters or padding."""
 
@@ -123,3 +124,19 @@ def pack(payload):
     token = header_b64 + b"." + payload_b64 + b"."
 
     return token
+
+# ---------------------------------------------------------------------------
+# Helper functions
+def intarr2bin(arr):
+    return unhexlify(''.join(["%02x" % byte for byte in arr]))
+
+def intarr2long(arr):
+    return long(''.join(["%02x" % byte for byte in arr]), 16)
+
+def hd2ia(s):
+    #half = len(s)/2
+    return [int(s[i]+s[i+1], 16) for i in range(0,  len(s), 2)]
+
+def dehexlify(bi):
+    s = hexlify(bi)
+    return [int(s[i]+s[i+1], 16) for i in range(0,len(s),2)]

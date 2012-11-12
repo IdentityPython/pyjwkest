@@ -10,6 +10,8 @@ import M2Crypto
 import hashlib
 import hmac
 import struct
+from jwkest.jwk import load_x509_cert
+from jwkest.jwk import load_jwk
 
 from jwkest import b64e
 from jwkest import safe_str_cmp
@@ -134,7 +136,7 @@ def alg2keytype(alg):
     else:
         return None
 
-def verify(token, dkeys):
+def verify(token, dkeys=None):
     """
     Verifies that a token is correctly signed.
 
@@ -146,6 +148,17 @@ def verify(token, dkeys):
     if u'typ' in header:
         if header[u'typ'] not in JWT_TYPES:
             raise BadType(header)
+
+    if not dkeys:
+        if u'jwk' in header:
+            keys = load_jwk(header["jwk"], {})
+            # list of 2-tuples (typ, key) convert into dict
+            dkeys = dict(keys)
+        elif u'x5u'in header:
+            try:
+                dkeys = {"rsa": [load_x509_cert(header["x5u"], {})]}
+            except Exception:
+                ca_chain = load_x509_cert_chain(header["x5u"])
 
     alg = header[u'alg']
     if alg == "none": # not signed

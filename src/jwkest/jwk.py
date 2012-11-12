@@ -4,11 +4,13 @@ import logging
 import json
 import M2Crypto
 
+from requests import request
+
 from binascii import b2a_hex
 from M2Crypto.__m2crypto import bn_to_mpi
 from M2Crypto.__m2crypto import hex_to_bn
-from jwkest.jwe import intarr2long
-from jwkest.jwe import dehexlify
+from jwkest import intarr2long
+from jwkest import dehexlify
 
 __author__ = 'rohe0002'
 
@@ -58,13 +60,53 @@ def kspec(key, usage):
     return {
         "alg": "RSA",
         "mod": long_to_base64(mpi_to_long(key.n)),
-        "exp": long_to_base64(mpi_to_long(key.e)),
+        "xpo": long_to_base64(mpi_to_long(key.e)),
         "use": usage
     }
 
 # =============================================================================
 
-def loads(txt, spec2key):
+def load_jwk(txt):
+    """
+    Load and create keys from a JWK representation
+
+    Expects something on this form
+    {"keys":
+        [
+            {"alg":"EC",
+             "crv":"P-256",
+             "x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
+             "y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
+             "use":"enc",
+             "kid":"1"},
+
+            {"alg":"RSA",
+             "mod": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFb....."
+             "xpo":"AQAB",
+             "kid":"2011-04-29"}
+        ]
+    }
+
+    :param txt: The JWK string representation
+    :return: list of 2-tuples containing key, type
+    """
+    spec = json.loads(txt)
+    res = []
+    for kspec in spec["keys"]:
+        if kspec["alg"] == "RSA":
+            e = base64_to_long(str(kspec["xpo"]))
+            n = base64_to_long(str(kspec["mod"]))
+
+            k = M2Crypto.RSA.new_pub_key((long_to_mpi(e),
+                                          long_to_mpi(n)))
+
+            res.append(("rsa", k))
+        elif kspec["alg"] == "HMAC":
+            res.append(("hmac", kspec["mod"]))
+
+    return res
+
+def loads(txt):
     """
     Load and create keys from a JWK representation
 
@@ -80,7 +122,7 @@ def loads(txt, spec2key):
 
             {"alg":"RSA",
             "mod": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFb....."
-            "exp":"AQAB",
+            "xpo":"AQAB",
             "kid":"2011-04-29"}
         ]
     }
@@ -93,21 +135,20 @@ def loads(txt, spec2key):
     for kspec in spec["keys"]:
         if kspec["alg"] == "RSA":
             try:
-                k = spec2key[dicthash(kspec)]
+                e = base64_to_long(str(kspec["xpo"]))
             except KeyError:
                 e = base64_to_long(str(kspec["exp"]))
-                n = base64_to_long(str(kspec["mod"]))
+            n = base64_to_long(str(kspec["mod"]))
 
-                k = M2Crypto.RSA.new_pub_key((long_to_mpi(e),
-                                              long_to_mpi(n)))
-                spec2key[dicthash(kspec)] = k
+            k = M2Crypto.RSA.new_pub_key((long_to_mpi(e),
+                                          long_to_mpi(n)))
 
-            #                if "kid" in kspec:
-            #                    tag = "%s:%s" % ("rsa", kspec["kid"])
-            #                else:
-            #                    tag = "rsa"
+            if "kid" in kspec:
+                tag = "%s:%s" % ("rsa", kspec["kid"])
+            else:
+                tag = "rsa"
 
-            res.append(("rsa", k))
+            res.append((tag, k))
         elif kspec["alg"] == "HMAC":
             res.append(("hmac", kspec["mod"]))
 
@@ -131,18 +172,17 @@ def dumps(keys, use=""):
     else:
         return None
 
-def load_jwk(http_request, url, spec2key):
+def load_jwk(url, spec2key):
     """
     Get and transform a JWK into keys
 
-    :param http_request: A HTTP request function
     :param url: Where the JWK can be found
     :param spec2key: A dictionary over keys already seen
     :return: List of 2-tuples (keytype, key)
     """
-    r = http_request(url, allow_redirects=True)
+    r = request("GET", url, allow_redirects=True)
     if r.status_code == 200:
-        return loads(r.text, spec2key)
+        return loads(r.text)
     else:
         raise Exception("HTTP Get error: %s" % r.status_code)
 
@@ -150,17 +190,16 @@ def x509_rsa_loads(string):
     cert = M2Crypto.X509.load_cert_string(string)
     return cert.get_pubkey().get_rsa()
 
-def load_x509_cert(http_request, url, spec2key):
+def load_x509_cert(url, spec2key):
     """
     Get and transform a X509 cert into a key
 
-    :param http_request: A HTTP request function
     :param url: Where the X509 cert can be found
     :param spec2key: A dictionary over keys already seen
     :return: List of 2-tuples (keytype, key)
     """
     try:
-        r = http_request(url, allow_redirects=True)
+        r = request("GET", url, allow_redirects=True)
         if r.status_code == 200:
             cert = str(r.text)
             try:
@@ -174,6 +213,29 @@ def load_x509_cert(http_request, url, spec2key):
     except Exception, err: # not a RSA key
         logger.warning("Can't load key: %s" % err)
         return []
+
+#def load_x509_cert_or_cert_chain(url):
+#    """
+#    Get and transform a X509 cert into a key
+#
+#    :param url: Where the X509 cert or cert chain can be found
+#    :return: List of 2-tuples (keytype, key)
+#    """
+#    try:
+#        r = request("GET", url, allow_redirects=True)
+#        if r.status_code == 200:
+#            cert = str(r.text)
+#            try:
+#                _key = spec2key[cert]
+#            except KeyError:
+#                _key = x509_rsa_loads(cert)
+#                spec2key[cert] = _key
+#            return [("rsa", _key)]
+#        else:
+#            raise Exception("HTTP Get error: %s" % r.status_code)
+#    except Exception, err: # not a RSA key
+#        logger.warning("Can't load key: %s" % err)
+#        return []
 
 def rsa_load(filename):
     """Read a PEM-encoded RSA key pair from a file."""
