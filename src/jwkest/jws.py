@@ -10,7 +10,7 @@ import M2Crypto
 import hashlib
 import hmac
 import struct
-from jwkest.jwk import load_x509_cert
+from jwkest.jwk import load_x509_cert, load_x509_cert_chain
 from jwkest.jwk import load_jwk
 
 from jwkest import b64e

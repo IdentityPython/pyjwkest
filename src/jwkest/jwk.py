@@ -214,6 +214,12 @@ def load_x509_cert(url, spec2key):
         logger.warning("Can't load key: %s" % err)
         return []
 
+def load_x509_cert_chain(url):
+    """
+    Place holder
+    """
+    return []
+
 #def load_x509_cert_or_cert_chain(url):
 #    """
 #    Get and transform a X509 cert into a key
