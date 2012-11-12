@@ -66,7 +66,7 @@ rsa = RSA.gen_key(2048, 65537, gen_callback)
 plain = "Now is the time for all good men to come to the aid of their country."
 
 def test_rsa_encrypt_decrypt_rsa_cbc():
-    jwt = rsa_encrypt(plain, rsa, alg="RSA1_5", enc="A128CBC", int="HS256")
+    jwt = rsa_encrypt(plain, rsa, alg="RSA1_5", enc="A128CBC+HS256")
 
     msg = rsa_decrypt(jwt, rsa, "private")
 
@@ -80,8 +80,8 @@ def test_rsa_encrypt_decrypt_rsa_oaep_gcm():
     assert msg == plain
 
 def test_encrypt_decrypt_rsa_cbc():
-    jwt = encrypt(plain, {"rsa":[rsa]}, alg="RSA1_5", enc="A128CBC",
-                  context="public", int="HS256")
+    jwt = encrypt(plain, {"rsa":[rsa]}, alg="RSA1_5", enc="A128CBC+HS256",
+                  context="public")
     msg = decrypt(jwt, {"rsa":[rsa]}, "private")
 
     assert msg == plain
