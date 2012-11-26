@@ -45,6 +45,8 @@ if __name__ == "__main__":
     parser.add_argument("-e", dest="enc", help="The encryption method")
     parser.add_argument("-m", dest="mode", default="public",
                         help="Whether a public or private key should be used")
+    parser.add_argument("-f", dest="file",
+                        help="File to be encrypted")
     parser.add_argument("message", nargs="?", help="The message to encrypt")
 
 
@@ -53,7 +55,7 @@ if __name__ == "__main__":
     keys = {}
     mode = "public"
     if args.jwk_url:
-        keys = assign(load_jwk(lrequest, args.jwk_url))
+        keys = assign(load_jwk(args.jwk_url, {}))
     elif args.jwk_file:
         keys = assign(loads(open(args.jwk_file).read()))
     elif args.x509_url:
@@ -85,14 +87,11 @@ if __name__ == "__main__":
         print >> sys.stderr, "Algorithms supported: %s" % SUPPORTED["alg"]
         exit()
 
-    if args.int not in SUPPORTED["int"]:
-        print >> sys.stderr, "Integrity method %s not supported" % args.int
-        print >> sys.stderr, "Integrity methods supported: %s" % SUPPORTED["int"]
-        exit()
-
-    if args.message == "-":
+    if args.file:
+        message = open(args.file).read()
+    elif args.message == "-":
         message = sys.stdin.read()
     else:
         message = args.message
 
-    print encrypt(message, keys, args.alg, args.enc, "public")
+    print encrypt(message, keys, args.alg, args.enc, "public", debug=args.debug)

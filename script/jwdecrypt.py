@@ -26,8 +26,8 @@ def lrequest(url, method="GET", **kwargs):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-#    parser.add_argument('-d', dest='debug', action='store_true',
-#                        help="Print debug information")
+    parser.add_argument('-d', dest='debug', action='store_true',
+                        help="Print debug information")
 #    parser.add_argument('-v', dest='verbose', action='store_true',
 #                        help="Print runtime information")
     parser.add_argument('-x', dest="x509_file",
@@ -38,11 +38,12 @@ if __name__ == "__main__":
                         help="File containing a JWK")
     parser.add_argument('-J', dest="jwk_url",
                         help="URL pointing to a file containing a JWK")
-    parser.add_argument('r', dest="rsa_file",
+    parser.add_argument('-r', dest="rsa_file",
                         help="A file containing a RSA key")
     parser.add_argument("-i", dest="int", help="Integrity method")
     parser.add_argument("-m", dest="mode", default="private",
                         help="Whether a public or private key should be used")
+    parser.add_argument("-f", dest="file", help="File with the message")
     parser.add_argument("message", nargs="?", help="The message to encrypt")
 
 
@@ -50,17 +51,17 @@ if __name__ == "__main__":
 
     keys = {}
     if args.jwk_url:
-        keys = assign(load_jwk(lrequest, args.jwk_url, {}))
+        keys = assign(load_jwk(lrequest, args.jwk_url))
         if args.mode == "private":
             print >> sys.stderr, "Missing private key to decrypt with"
             exit()
     elif args.jwk_file:
-        keys = assign(loads(open(args.jwk_file).read(), {}))
+        keys = assign(loads(open(args.jwk_file).read()))
         if args.mode == "private":
             print >> sys.stderr, "Missing private key to decrypt with"
             exit()
     elif args.x509_url:
-        keys = assign(load_x509_cert(lrequest, args.x509_url, {}))
+        keys = assign(load_x509_cert(lrequest, args.x509_url))
         if args.mode == "private":
             print >> sys.stderr, "Missing private key to decrypt with"
             exit()
@@ -75,4 +76,10 @@ if __name__ == "__main__":
         print >> sys.stderr, "Needs encryption key"
         exit()
 
-    print decrypt(args.message, keys, "public")
+    if args.file:
+        msg = open(args.file).read()
+        msg = msg.strip("\n\r")
+    else:
+        msg = args.message
+
+    print decrypt(msg, keys, args.mode, debug=args.debug)
