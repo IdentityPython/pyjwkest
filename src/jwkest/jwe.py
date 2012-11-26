@@ -11,6 +11,7 @@ import logging
 import zlib
 
 from binascii import hexlify
+import sys
 
 from jwkest import b64d
 from jwkest import b64e
@@ -176,7 +177,7 @@ SUPPORTED = {
 
 def rsa_encrypt(msg, key, alg="RSA-OAEP", enc="A256GCM",
                 context="public", kdf="CS256", iv="", cmk="",
-                compress=False):
+                compress=False, debug=False):
 
     # content master key 256 bit
     if not cmk:
@@ -194,6 +195,8 @@ def rsa_encrypt(msg, key, alg="RSA-OAEP", enc="A256GCM",
     else:
         raise NotSupportedAlgorithm(alg)
 
+    if debug:
+        print >> sys.stderr, "enc_key:", hd2ia(hexlify(jwe_enc_key))
 
     if enc == "A256GCM":
         if not iv:
@@ -211,6 +214,9 @@ def rsa_encrypt(msg, key, alg="RSA-OAEP", enc="A256GCM",
             else: # ealg == "A256CBC"
                 iv = os.urandom(32) # 256 bits
         _dc = hd2ia(hexlify(cmk))
+        if debug:
+            print >> sys.stderr, "_dc:", _dc
+
         cek = get_cek(_dc, length=keysize(ealg), hashsize=keysize(kdf))
         cik = get_cik(_dc, length=keysize(int), hashsize=keysize(kdf))
         c = M2Crypto.EVP.Cipher(alg=ENC2ALG[ealg], key=cek, iv=iv, op=ENC)
@@ -227,14 +233,18 @@ def rsa_encrypt(msg, key, alg="RSA-OAEP", enc="A256GCM",
         res = b'.'.join([b64e(header),b64e(jwe_enc_key),b64e(iv),b64e(ctxt)])
         signer = SIGNER_ALGS[int]
         tag = signer.sign(res, cik)
-        #logger.info("t: %s" % hexlify(t))
+        if debug:
+            print >> sys.stderr, "tag: %s" % hexlify(tag)
     else:
         raise NotSupportedAlgorithm(enc)
+
+    if debug:
+        print >> sys.stderr, "b64e.tag:", b64e(tag)
 
     res += b'.' + b64e(tag)
     return res
 
-def rsa_decrypt(token, key, context):
+def rsa_decrypt(token, key, context, debug=False):
     """
     Does decryption according to the JWE proposal
     draft-ietf-jose-json-web-encryption-06
@@ -253,6 +263,10 @@ def rsa_decrypt(token, key, context):
         _decrypt = RSAEncrypter().public_decrypt
 
     jek = b64d(ejek)
+
+    if debug:
+        print >> sys.stderr, "enc_key", hd2ia(hexlify(jek))
+
     if dic["alg"] == "RSA-OAEP":
         cmk = _decrypt(jek, key, 'pkcs1_oaep_padding')
     elif dic["alg"] == "RSA1_5":
@@ -262,30 +276,26 @@ def rsa_decrypt(token, key, context):
 
     enc = dic["enc"]
     assert enc in SUPPORTED["enc"]
-    if '+' in enc:
-        enc, int = enc.split("+")
-    else:
-        int = None
 
     if enc == "A256GCM":
         auth_data = header + b'.' + ejek + b'.' + eiv
         msg = gcm_decrypt(cmk, iv, b64d(ctxt), auth_data, b64d(tag))
-    elif enc=="A128CBC" or enc=="A256CBC":
-        if not int:
-            raise MethodNotSupported("Integrity algorithm missing")
-
-        try:
-            kdf = dic["kdf"]
-        except KeyError:
-            kdf = "CS256"
+    elif enc.startswith("A128CBC+") or enc.startswith("A256CBC+"):
+        enc, int = enc.split("+")
 
         _dc = hd2ia(hexlify(cmk))
-        cek = get_cek(_dc, length=keysize(enc), hashsize=keysize(kdf))
-        cik = get_cik(_dc, length=keysize(int), hashsize=keysize(kdf))
+        if debug:
+            print >> sys.stderr, "_dc:", _dc
+
+        cek = get_cek(_dc, length=keysize(enc), hashsize=keysize(int))
+        cik = get_cik(_dc, length=keysize(int), hashsize=keysize(int))
 
         c = M2Crypto.EVP.Cipher(alg=ENC2ALG[enc], key=cek, iv=iv, op=DEC)
 
         msg = aes_dec(c, b64d(ctxt))
+        if debug:
+            print >> sys.stderr, "tag:", b64d(tag)
+
         verifier = SIGNER_ALGS[int]
         verifier.verify(b'.'.join([header,ejek,eiv,ctxt]), b64d(tag), cik)
     else:
@@ -309,7 +319,7 @@ def encrypt(payload, keys, alg, enc, context, **kwargs):
 
     return token
 
-def decrypt(token, dkeys, context):
+def decrypt(token, dkeys, context, debug=False):
 
     header, ek, eiv, ctxt, tag = token.split(b".")
     dic = json.loads(b64d(str(header)))
@@ -323,7 +333,7 @@ def decrypt(token, dkeys, context):
 
     for key in keys:
         try:
-            msg = decrypter(str(token), key, context)
+            msg = decrypter(str(token), key, context, debug)
             return msg
         except KeyError:
             pass
