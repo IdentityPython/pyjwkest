@@ -294,7 +294,7 @@ def rsa_decrypt(token, key, context, debug=False):
 
         msg = aes_dec(c, b64d(ctxt))
         if debug:
-            print >> sys.stderr, "tag:", b64d(tag)
+            print >> sys.stderr, "tag: '%s'" % tag
 
         verifier = SIGNER_ALGS[int]
         verifier.verify(b'.'.join([header,ejek,eiv,ctxt]), b64d(tag), cik)
