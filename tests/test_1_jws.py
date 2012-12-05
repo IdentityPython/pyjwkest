@@ -1,9 +1,18 @@
+import json
 from oic.utils.keystore import rsa_load
 
 __author__ = 'rohe0002'
 
 import jwkest
 from jwkest import jws
+from jwkest.jwk import loads, x509_rsa_loads
+
+CERT = "certs/cert.pem"
+
+JWK = {"keys":[{'alg': 'RSA',
+                'use': 'foo',
+                'xpo': 'AQAB',
+                'mod': 'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8'}]}
 
 def test_1():
     claimset = {"iss":"joe",
@@ -63,6 +72,30 @@ def test_rs256():
     keycol = {"rsa": [rsapub]}
 
     _jwt = jws.sign(payload, keycol, "RS256")
+
+    info = jws.verify(_jwt, keycol)
+
+    assert info == payload
+
+def test_rs384():
+    rsapub = rsa_load("certs/mycert.key")
+
+    payload = "Please take a moment to register today"
+    keycol = {"rsa": [rsapub]}
+
+    _jwt = jws.sign(payload, keycol, "RS384")
+
+    info = jws.verify(_jwt, keycol)
+
+    assert info == payload
+
+def test_rs512():
+    rsapub = rsa_load("certs/mycert.key")
+
+    payload = "Please take a moment to register today"
+    keycol = {"rsa": [rsapub]}
+
+    _jwt = jws.sign(payload, keycol, "RS512")
 
     info = jws.verify(_jwt, keycol)
 
