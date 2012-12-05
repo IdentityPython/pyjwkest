@@ -203,6 +203,8 @@ def sign(payload, keys, alg=None):
 
     Returns a token string."""
 
+    logger.debug("sign using '%s'" % alg)
+
     if not alg or alg.lower() == "none":
         return pack(payload)
 
@@ -218,6 +220,7 @@ def sign(payload, keys, alg=None):
     else:
         key = keys["ec"][0]
 
+    logger.debug("key: %s" % key)
     header_b64 = b64e(json.dumps(header, separators=(",", ":")))
     payload_b64 = b64e(payload)
 
