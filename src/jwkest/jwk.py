@@ -56,55 +56,48 @@ def mpi_to_long(mpi):
 def dicthash(d):
     return hash(repr(sorted(d.items())))
 
-def kspec(key, usage):
+def kspec_rsa(key):
     return {
         "alg": "RSA",
         "mod": long_to_base64(mpi_to_long(key.n)),
         "xpo": long_to_base64(mpi_to_long(key.e)),
-        "use": usage
     }
+
+def kspec_ec(key):
+    """
+    TODO
+    :param key:
+    :return:
+    """
+    return {
+        "alg": "EC",
+        "crv": None,
+        "x": None,
+        "y": None
+        }
+
+def kspec_hmac(key):
+    """
+    !!! This is not according to any standard !!!
+
+    :param key:
+    :return:
+    """
+    return {
+        "alg": "HMAC",
+        "mod": key
+    }
+
+def kspec(key):
+    if isinstance(key, M2Crypto.RSA.RSA):
+        return kspec_rsa(key)
+    elif isinstance(key, basestring):
+        return kspec_hmac(key)
+    else:
+        raise Exception("Unknown key type")
+
 
 # =============================================================================
-
-def load_jwk(txt):
-    """
-    Load and create keys from a JWK representation
-
-    Expects something on this form
-    {"keys":
-        [
-            {"alg":"EC",
-             "crv":"P-256",
-             "x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
-             "y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
-             "use":"enc",
-             "kid":"1"},
-
-            {"alg":"RSA",
-             "mod": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFb....."
-             "xpo":"AQAB",
-             "kid":"2011-04-29"}
-        ]
-    }
-
-    :param txt: The JWK string representation
-    :return: list of 2-tuples containing key, type
-    """
-    spec = json.loads(txt)
-    res = []
-    for kspec in spec["keys"]:
-        if kspec["alg"] == "RSA":
-            e = base64_to_long(str(kspec["xpo"]))
-            n = base64_to_long(str(kspec["mod"]))
-
-            k = M2Crypto.RSA.new_pub_key((long_to_mpi(e),
-                                          long_to_mpi(n)))
-
-            res.append(("rsa", k))
-        elif kspec["alg"] == "HMAC":
-            res.append(("hmac", kspec["mod"]))
-
-    return res
 
 def loads(txt):
     """
@@ -154,23 +147,39 @@ def loads(txt):
 
     return res
 
-def dumps(keys, use=""):
+def dumps(key, use="", kid=""):
     """
-    Dump to JWK string representation
+    Dump to JWK dictionary representation
 
-    :param keys: The keys to dump
+    :param key: The keys to dump
     :param use: What the key are expected to be use for
     :return: The JWK string representation or None
     """
-    kspecs = []
-    for key in keys:
-        if isinstance(key, M2Crypto.RSA.RSA):
-            kspecs.append(kspec(key, use))
-
-    if kspecs:
-        return json.dumps({"keys": kspecs})
+    if isinstance(key, M2Crypto.RSA.RSA):
+        kspec = kspec_rsa(key)
+    elif isinstance(key, basestring):
+        kspec = kspec_hmac(key)
     else:
-        return None
+        raise Exception("Unknown key type")
+
+    if use:
+        kspec["use"] = use
+    if kid:
+        kspec["kid"] = kid
+
+    return kspec
+
+def dump_jwk(keyspecs):
+    """
+
+    :param keyspecs: list of dictionaries describing keys
+    :return:
+    """
+    res = []
+    for keyspec in keyspecs:
+        res.append(dumps(**keyspec))
+
+    return json.dumps({"keys": res})
 
 def load_jwk(url, spec2key):
     """
