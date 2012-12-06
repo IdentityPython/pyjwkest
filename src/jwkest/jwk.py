@@ -59,8 +59,8 @@ def dicthash(d):
 def kspec_rsa(key):
     return {
         "alg": "RSA",
-        "mod": long_to_base64(mpi_to_long(key.n)),
-        "xpo": long_to_base64(mpi_to_long(key.e)),
+        "n": long_to_base64(mpi_to_long(key.n)),
+        "e": long_to_base64(mpi_to_long(key.e)),
     }
 
 def kspec_ec(key):
@@ -127,11 +127,8 @@ def loads(txt):
     res = []
     for kspec in spec["keys"]:
         if kspec["alg"] == "RSA":
-            try:
-                e = base64_to_long(str(kspec["xpo"]))
-            except KeyError:
-                e = base64_to_long(str(kspec["exp"]))
-            n = base64_to_long(str(kspec["mod"]))
+            e = base64_to_long(str(kspec["e"]))
+            n = base64_to_long(str(kspec["n"]))
 
             k = M2Crypto.RSA.new_pub_key((long_to_mpi(e),
                                           long_to_mpi(n)))

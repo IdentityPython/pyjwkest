@@ -20,8 +20,8 @@ KEY = "certs/server.key"
 
 JWK = {"keys":[{'alg': 'RSA',
                 'use': 'foo',
-                'xpo': 'AQAB',
-                'mod': 'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8'}]}
+                'e': 'AQAB',
+                'n': 'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8'}]}
 
 def _eq(l1, l2):
     return set(l1) == set(l2)
@@ -35,8 +35,8 @@ def test_x509_rsa_loads_2():
     _jwk = kspec_rsa(_ckey)
 
     print _jwk
-    e = base64_to_long(_jwk["xpo"])
-    n = base64_to_long(_jwk["mod"])
+    e = base64_to_long(_jwk["e"])
+    n = base64_to_long(_jwk["n"])
 
     _jkey = M2Crypto.RSA.new_pub_key((long_to_mpi(e), long_to_mpi(n)))
 
@@ -50,8 +50,8 @@ def test_kspec():
     _jwk = kspec(_ckey)
     print _jwk
     assert _jwk["alg"] == "RSA"
-    assert _jwk["xpo"] == JWK["keys"][0]["xpo"]
-    assert _jwk["mod"] == JWK["keys"][0]["mod"]
+    assert _jwk["e"] == JWK["keys"][0]["e"]
+    assert _jwk["n"] == JWK["keys"][0]["n"]
 
 def test_loads_0():
 
@@ -69,13 +69,13 @@ def test_loads_0():
 def test_loads_1():
     JWK = {"keys":[{'alg': 'RSA',
                     'use': 'foo',
-                    'xpo': 'AQAB',
-                    'mod': 'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8',
+                    'e': 'AQAB',
+                    "n": 'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8',
                     'kid': "1"},
                    {'alg': 'RSA',
                     'use': 'bar',
-                    'xpo': 'AQAB',
-                    'mod': 'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8',
+                    'e': 'AQAB',
+                    "n": 'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8',
                     'kid': "2"}
                    ]}
 
@@ -88,7 +88,7 @@ def test_loads_1():
 def test_dumps():
     _ckey = x509_rsa_loads(open(CERT).read())
     jwk = dumps(_ckey)
-    assert _eq(jwk.keys(), ["alg", "xpo", "mod"])
+    assert _eq(jwk.keys(), ["alg", "e", "n"])
 
 def test_dump_jwk():
     _ckey = x509_rsa_loads(open(CERT).read())
@@ -97,7 +97,7 @@ def test_dump_jwk():
     _wk = json.loads(jwk)
     assert _wk.keys() == ["keys"]
     assert len(_wk["keys"]) == 1
-    assert _eq(_wk["keys"][0].keys(), ["alg", "xpo", "mod"])
+    assert _eq(_wk["keys"][0].keys(), ["alg", "e", "n"])
 
 def test_load_jwk():
     _ckey = x509_rsa_loads(open(CERT).read())
@@ -114,16 +114,16 @@ def test_rsa_load():
     assert isinstance(_ckey, M2Crypto.RSA.RSA)
     jwk = dumps(_ckey)
     print jwk
-    assert _eq(jwk.keys(), ["alg", "xpo", "mod"])
-    assert jwk["mod"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
-    assert jwk['xpo'] == 'AQAB'
+    assert _eq(jwk.keys(), ["alg", "e", "n"])
+    assert jwk["n"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
+    assert jwk['e'] == 'AQAB'
 
 def test_rsa_loads():
     _ckey = rsa_loads(open(KEY).read())
     assert isinstance(_ckey, M2Crypto.RSA.RSA)
     jwk = dumps(_ckey)
     print jwk
-    assert _eq(jwk.keys(), ["alg", "xpo", "mod"])
-    assert jwk["mod"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
-    assert jwk['xpo'] == 'AQAB'
+    assert _eq(jwk.keys(), ["alg", "e", "n"])
+    assert jwk["n"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
+    assert jwk['e'] == 'AQAB'
 
