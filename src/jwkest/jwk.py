@@ -16,6 +16,9 @@ __author__ = 'rohe0002'
 
 logger = logging.getLogger(__name__)
 
+class FormatError(Exception):
+    pass
+
 def bytes( long_int ):
     bytes = []
     while long_int:
@@ -58,7 +61,7 @@ def dicthash(d):
 
 def kspec_rsa(key):
     return {
-        "alg": "RSA",
+        "kty": "RSA",
         "n": long_to_base64(mpi_to_long(key.n)),
         "e": long_to_base64(mpi_to_long(key.e)),
     }
@@ -70,7 +73,7 @@ def kspec_ec(key):
     :return:
     """
     return {
-        "alg": "EC",
+        "kty": "EC",
         "crv": None,
         "x": None,
         "y": None
@@ -84,7 +87,7 @@ def kspec_hmac(key):
     :return:
     """
     return {
-        "alg": "HMAC",
+        "kty": "HMAC",
         "mod": key
     }
 
@@ -106,14 +109,14 @@ def loads(txt):
     Expects something on this form
     {"keys":
         [
-            {"alg":"EC",
+            {"kty":"EC",
              "crv":"P-256",
              "x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
             "y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
             "use":"enc",
             "kid":"1"},
 
-            {"alg":"RSA",
+            {"kty":"RSA",
             "mod": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFb....."
             "xpo":"AQAB",
             "kid":"2011-04-29"}
@@ -126,9 +129,12 @@ def loads(txt):
     spec = json.loads(txt)
     res = []
     for kspec in spec["keys"]:
-        if kspec["alg"] == "RSA":
-            e = base64_to_long(str(kspec["e"]))
-            n = base64_to_long(str(kspec["n"]))
+        if kspec["kty"] == "RSA":
+            try:
+                e = base64_to_long(str(kspec["e"]))
+                n = base64_to_long(str(kspec["n"]))
+            except KeyError:
+                raise FormatError("Wrong parameters in a JWK")
 
             k = M2Crypto.RSA.new_pub_key((long_to_mpi(e),
                                           long_to_mpi(n)))
@@ -139,7 +145,7 @@ def loads(txt):
                 tag = "rsa"
 
             res.append((tag, k))
-        elif kspec["alg"] == "HMAC":
+        elif kspec["kty"] == "HMAC":
             res.append(("hmac", kspec["mod"]))
 
     return res
