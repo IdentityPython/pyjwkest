@@ -18,7 +18,7 @@ __author__ = 'rohe0002'
 CERT = "certs/cert.pem"
 KEY = "certs/server.key"
 
-JWK = {"keys":[{'alg': 'RSA',
+JWK = {"keys":[{'kty': 'RSA',
                 'use': 'foo',
                 'e': 'AQAB',
                 'n': 'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8'}]}
@@ -49,7 +49,7 @@ def test_kspec():
     _ckey = x509_rsa_loads(open(CERT).read())
     _jwk = kspec(_ckey)
     print _jwk
-    assert _jwk["alg"] == "RSA"
+    assert _jwk["kty"] == "RSA"
     assert _jwk["e"] == JWK["keys"][0]["e"]
     assert _jwk["n"] == JWK["keys"][0]["n"]
 
@@ -67,12 +67,12 @@ def test_loads_0():
     assert key.e == _ckey.e
 
 def test_loads_1():
-    JWK = {"keys":[{'alg': 'RSA',
+    JWK = {"keys":[{'kty': 'RSA',
                     'use': 'foo',
                     'e': 'AQAB',
                     "n": 'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8',
                     'kid': "1"},
-                   {'alg': 'RSA',
+                   {'kty': 'RSA',
                     'use': 'bar',
                     'e': 'AQAB',
                     "n": 'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8',
@@ -88,7 +88,7 @@ def test_loads_1():
 def test_dumps():
     _ckey = x509_rsa_loads(open(CERT).read())
     jwk = dumps(_ckey)
-    assert _eq(jwk.keys(), ["alg", "e", "n"])
+    assert _eq(jwk.keys(), ["kty", "e", "n"])
 
 def test_dump_jwk():
     _ckey = x509_rsa_loads(open(CERT).read())
@@ -97,7 +97,7 @@ def test_dump_jwk():
     _wk = json.loads(jwk)
     assert _wk.keys() == ["keys"]
     assert len(_wk["keys"]) == 1
-    assert _eq(_wk["keys"][0].keys(), ["alg", "e", "n"])
+    assert _eq(_wk["keys"][0].keys(), ["kty", "e", "n"])
 
 def test_load_jwk():
     _ckey = x509_rsa_loads(open(CERT).read())
@@ -114,7 +114,7 @@ def test_rsa_load():
     assert isinstance(_ckey, M2Crypto.RSA.RSA)
     jwk = dumps(_ckey)
     print jwk
-    assert _eq(jwk.keys(), ["alg", "e", "n"])
+    assert _eq(jwk.keys(), ["kty", "e", "n"])
     assert jwk["n"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
     assert jwk['e'] == 'AQAB'
 
@@ -123,7 +123,7 @@ def test_rsa_loads():
     assert isinstance(_ckey, M2Crypto.RSA.RSA)
     jwk = dumps(_ckey)
     print jwk
-    assert _eq(jwk.keys(), ["alg", "e", "n"])
+    assert _eq(jwk.keys(), ["kty", "e", "n"])
     assert jwk["n"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
     assert jwk['e'] == 'AQAB'
 
