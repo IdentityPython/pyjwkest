@@ -35,5 +35,5 @@ setup(
     install_requires = ["M2Crypto", "pycrypto", "requests"],
 
     zip_safe=False,
-    scripts= glob.glob('scripts/*.py'),
+    scripts= glob.glob('script/*.py'),
 )
