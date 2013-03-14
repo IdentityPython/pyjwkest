@@ -1,5 +1,5 @@
 import json
-from oic.utils.keystore import rsa_load
+#from oic.utils.keystore import rsa_load
 
 __author__ = 'rohe0002'
 
@@ -8,6 +8,14 @@ from jwkest import jws
 from jwkest.jwk import load_jwks, x509_rsa_loads
 
 CERT = "certs/cert.pem"
+KEY  = "certs/server.key"
+
+def rsa_load(filename):
+    """Read a PEM-encoded RSA key pair from a file.
+        - same code as : https://github.com/rohe/pyoidc/blob/master/src/oic/utils/keyio.py
+    """
+    import M2Crypto
+    return M2Crypto.RSA.load_key(filename, M2Crypto.util.no_passphrase_callback)
 
 JWK = {"keys":[{'alg': 'RSA',
                 'use': 'foo',
@@ -66,7 +74,7 @@ def test_left_hash_hs512():
     assert hsh == "_h6feWLt8zbYcOFnaBmekTzMJYEHdVTaXlDgJSWsEeY"
 
 def test_rs256():
-    rsapub = rsa_load("certs/mycert.key")
+    rsapub = rsa_load(KEY )
 
     payload = "Please take a moment to register today"
     keycol = {"rsa": [rsapub]}
@@ -78,7 +86,7 @@ def test_rs256():
     assert info == payload
 
 def test_rs384():
-    rsapub = rsa_load("certs/mycert.key")
+    rsapub = rsa_load(KEY)
 
     payload = "Please take a moment to register today"
     keycol = {"rsa": [rsapub]}
@@ -90,7 +98,7 @@ def test_rs384():
     assert info == payload
 
 def test_rs512():
-    rsapub = rsa_load("certs/mycert.key")
+    rsapub = rsa_load(KEY)
 
     payload = "Please take a moment to register today"
     keycol = {"rsa": [rsapub]}

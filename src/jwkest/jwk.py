@@ -176,7 +176,7 @@ def dump_jwk(key, use="", kid=""):
     elif isinstance(key, basestring):
         kspec = kspec_hmac(key)
     else:
-        raise Exception("Unknown key type")
+        raise Exception("Unknown key type:key="+str(type(key)))
 
     if use:
         kspec["use"] = use
