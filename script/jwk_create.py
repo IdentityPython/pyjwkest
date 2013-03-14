@@ -3,7 +3,7 @@ import argparse
 import os
 import M2Crypto
 from M2Crypto.util import no_passphrase_callback
-from jwkest.jwk import dumps
+from jwkest.jwk import dump_jwk
 
 __author__ = 'rolandh'
 
@@ -19,7 +19,7 @@ def create_and_store_rsa_key_pair(name="pyoidc", path=".", size=1024):
     key.save_key('%s%s' % (path, name), None, callback=no_passphrase_callback)
     key.save_pub_key('%s%s.pub' % (path, name))
 
-    jwk_spec = dumps([key], "enc")
+    jwk_spec = dump_jwk([key], "enc")
 
     f = open("%s%s.jwk" % (path, name), "w")
     f.write(jwk_spec)

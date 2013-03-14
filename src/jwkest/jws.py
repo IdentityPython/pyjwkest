@@ -11,7 +11,7 @@ import hashlib
 import hmac
 import struct
 from jwkest.jwk import load_x509_cert, load_x509_cert_chain
-from jwkest.jwk import load_jwk
+from jwkest.jwk import load_jwks_from_url
 
 from jwkest import b64e
 from jwkest import safe_str_cmp
@@ -26,14 +26,18 @@ from jwkest import pack
 
 logger = logging.getLogger(__name__)
 
+
 def sha256_digest(msg):
     return hashlib.sha256(msg).digest()
+
 
 def sha384_digest(msg):
     return hashlib.sha384(msg).digest()
 
+
 def sha512_digest(msg):
     return hashlib.sha512(msg).digest()
+
 
 def left_hash(msg, func="HS256"):
     """ 128 bits == 16 bytes """
@@ -44,9 +48,11 @@ def left_hash(msg, func="HS256"):
     elif func == 'HS512':
         return b64e(sha512_digest(msg)[:32])
 
+
 def mpint(b):
     b = b"\x00" + b
     return struct.pack(">L", len(b)) + b
+
 
 def mp2bin(b):
     # just ignore the length...
@@ -54,6 +60,7 @@ def mp2bin(b):
         return b[5:]
     else:
         return b[4:]
+
 
 class Signer(object):
     """Abstract base class for signing algorithms."""
@@ -64,6 +71,7 @@ class Signer(object):
     def verify(self, msg, sig, key):
         """Return True if ``sig`` is a valid signature for ``msg``."""
         raise NotImplementedError
+
 
 class HMACSigner(Signer):
     def __init__(self, digest):
@@ -76,6 +84,7 @@ class HMACSigner(Signer):
         if not safe_str_cmp(self.sign(msg, key), sig):
             raise BadSignature(repr(sig))
         return
+
 
 class RSASigner(Signer):
     def __init__(self, digest, algo):
@@ -90,6 +99,7 @@ class RSASigner(Signer):
             return key.verify(self.digest(msg), sig, self.algo)
         except M2Crypto.RSA.RSAError, e:
             raise BadSignature(e)
+
 
 class ECDSASigner(Signer):
     def __init__(self, digest):
@@ -124,7 +134,8 @@ SIGNER_ALGS = {
     u'ES256': ECDSASigner(sha256_digest),
 #    u'AES256': AESEncrypter
     u'none': None
-    }
+}
+
 
 def alg2keytype(alg):
     if alg.startswith("RS"):
@@ -135,6 +146,7 @@ def alg2keytype(alg):
         return "ec"
     else:
         return None
+
 
 def verify(token, dkeys=None):
     """
@@ -151,7 +163,7 @@ def verify(token, dkeys=None):
 
     if not dkeys:
         if u'jwk' in header:
-            keys = load_jwk(header["jwk"], {})
+            keys = load_jwks_from_url(header["jwk"], {})
             # list of 2-tuples (typ, key) convert into dict
             dkeys = dict(keys)
         elif u'x5u'in header:
@@ -161,7 +173,7 @@ def verify(token, dkeys=None):
                 ca_chain = load_x509_cert_chain(header["x5u"])
 
     alg = header[u'alg']
-    if alg == "none": # not signed
+    if alg == "none":  # not signed
         return claim
     elif alg not in SIGNER_ALGS:
         raise UnknownAlgorithm(alg)
@@ -187,6 +199,7 @@ def verify(token, dkeys=None):
             pass
 
     raise
+
 
 def check(token, key):
     try:
@@ -233,4 +246,3 @@ def sign(payload, keys, alg=None):
 
 
 # =============================================================================
-

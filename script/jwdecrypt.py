@@ -5,11 +5,11 @@ __author__ = 'rohe0002'
 
 import argparse
 import requests
-from jwkest.jwk import load_jwk
+from jwkest.jwk import load_jwks_from_url
 from jwkest.jwk import rsa_load
 from jwkest.jwk import load_x509_cert
 from jwkest.jwk import x509_rsa_loads
-from jwkest.jwk import loads
+from jwkest.jwk import load_jwks
 from jwkest.jwe import decrypt
 
 def assign(lst):
@@ -51,12 +51,12 @@ if __name__ == "__main__":
 
     keys = {}
     if args.jwk_url:
-        keys = assign(load_jwk(lrequest, args.jwk_url))
+        keys = assign(load_jwks_from_url(lrequest, args.jwk_url))
         if args.mode == "private":
             print >> sys.stderr, "Missing private key to decrypt with"
             exit()
     elif args.jwk_file:
-        keys = assign(loads(open(args.jwk_file).read()))
+        keys = assign(load_jwks(open(args.jwk_file).read()))
         if args.mode == "private":
             print >> sys.stderr, "Missing private key to decrypt with"
             exit()

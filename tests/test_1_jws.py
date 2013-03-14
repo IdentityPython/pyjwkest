@@ -5,7 +5,7 @@ __author__ = 'rohe0002'
 
 import jwkest
 from jwkest import jws
-from jwkest.jwk import loads, x509_rsa_loads
+from jwkest.jwk import load_jwks, x509_rsa_loads
 
 CERT = "certs/cert.pem"
 

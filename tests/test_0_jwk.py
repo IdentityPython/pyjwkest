@@ -2,16 +2,16 @@ from binascii import hexlify
 import json
 import M2Crypto
 from jwkest import jwe
-from jwkest.jwk import dumps
+from jwkest.jwk import dump_jwk
 from jwkest.jwk import kspec_rsa
 from jwkest.jwk import kspec
-from jwkest.jwk import loads
+from jwkest.jwk import load_jwks
 from jwkest.jwk import base64_to_long
 from jwkest.jwk import long_to_mpi
 from jwkest.jwk import x509_rsa_loads
 from jwkest.jwk import rsa_load
 from jwkest.jwk import rsa_loads
-from jwkest.jwk import dump_jwk
+from jwkest.jwk import dump_jwks
 
 __author__ = 'rohe0002'
 
@@ -55,7 +55,7 @@ def test_kspec():
 
 def test_loads_0():
 
-    keys = loads(json.dumps(JWK))
+    keys = load_jwks(json.dumps(JWK))
     assert len(keys) == 1
     (type,key) = keys[0]
     assert type == "rsa"
@@ -79,7 +79,7 @@ def test_loads_1():
                     'kid': "2"}
                    ]}
 
-    keys = loads(json.dumps(JWK))
+    keys = load_jwks(json.dumps(JWK))
     print keys
     assert len(keys) == 2
     key_ids = [id for id,key in keys]
@@ -87,12 +87,12 @@ def test_loads_1():
 
 def test_dumps():
     _ckey = x509_rsa_loads(open(CERT).read())
-    jwk = dumps(_ckey)
+    jwk = dump_jwk(_ckey)
     assert _eq(jwk.keys(), ["kty", "e", "n"])
 
 def test_dump_jwk():
     _ckey = x509_rsa_loads(open(CERT).read())
-    jwk = dump_jwk([{"key":_ckey}])
+    jwk = dump_jwks([{"key":_ckey}])
     print jwk
     _wk = json.loads(jwk)
     assert _wk.keys() == ["keys"]
@@ -101,8 +101,8 @@ def test_dump_jwk():
 
 def test_load_jwk():
     _ckey = x509_rsa_loads(open(CERT).read())
-    jwk = dump_jwk([{"key":_ckey}])
-    wk = loads(jwk)
+    jwk = dump_jwks([{"key":_ckey}])
+    wk = load_jwks(jwk)
     print wk
     assert len(wk) == 1
     (typ, key) = wk[0]
@@ -112,7 +112,7 @@ def test_load_jwk():
 def test_rsa_load():
     _ckey = rsa_load(KEY)
     assert isinstance(_ckey, M2Crypto.RSA.RSA)
-    jwk = dumps(_ckey)
+    jwk = dump_jwk(_ckey)
     print jwk
     assert _eq(jwk.keys(), ["kty", "e", "n"])
     assert jwk["n"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
@@ -121,7 +121,7 @@ def test_rsa_load():
 def test_rsa_loads():
     _ckey = rsa_loads(open(KEY).read())
     assert isinstance(_ckey, M2Crypto.RSA.RSA)
-    jwk = dumps(_ckey)
+    jwk = dump_jwk(_ckey)
     print jwk
     assert _eq(jwk.keys(), ["kty", "e", "n"])
     assert jwk["n"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'

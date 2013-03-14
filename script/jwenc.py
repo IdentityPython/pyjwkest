@@ -5,10 +5,10 @@ __author__ = 'rohe0002'
 
 import argparse
 import requests
-from jwkest.jwk import load_jwk, rsa_load
+from jwkest.jwk import load_jwks_from_url, rsa_load
 from jwkest.jwk import load_x509_cert
 from jwkest.jwk import x509_rsa_loads
-from jwkest.jwk import loads
+from jwkest.jwk import load_jwks
 from jwkest.jwe import SUPPORTED
 from jwkest.jwe import encrypt
 
@@ -55,9 +55,9 @@ if __name__ == "__main__":
     keys = {}
     mode = "public"
     if args.jwk_url:
-        keys = assign(load_jwk(args.jwk_url, {}))
+        keys = assign(load_jwks_from_url(args.jwk_url, {}))
     elif args.jwk_file:
-        keys = assign(loads(open(args.jwk_file).read()))
+        keys = assign(load_jwks(open(args.jwk_file).read()))
     elif args.x509_url:
         keys = assign(load_x509_cert(lrequest, args.x509_url))
     elif args.x509_file:
