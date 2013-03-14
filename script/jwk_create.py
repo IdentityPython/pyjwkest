@@ -13,16 +13,14 @@ def create_and_store_rsa_key_pair(name="pyoidc", path=".", size=1024):
 
     key = M2Crypto.RSA.gen_key(size, 65537, lambda : None)
 
-    if not path.endswith("/"):
-        path += "/"
+    keyfile = os.path.join(path,name)
 
-    key.save_key('%s%s' % (path, name), None, callback=no_passphrase_callback)
-    key.save_pub_key('%s%s.pub' % (path, name))
+    key.save_key(keyfile, None, callback=no_passphrase_callback)
+    key.save_pub_key(keyfile +".pub" )
 
-    jwk_spec = dumps([key], "enc")
-
-    f = open("%s%s.jwk" % (path, name), "w")
-    f.write(jwk_spec)
+    jwk_spec = dumps(key, "enc")
+    f = open(keyfile + ".jwk", "w")
+    f.write( str(jwk_spec) )
     f.close()
 
     return key
