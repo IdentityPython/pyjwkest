@@ -16,6 +16,7 @@
 #
 
 from setuptools import setup
+import glob
 
 __author__ = 'rohe0002'
 
@@ -34,6 +35,5 @@ setup(
     install_requires = ["M2Crypto", "pycrypto", "requests"],
 
     zip_safe=False,
-    scripts=["script/jwenc.py", "script/jwsign.py", "script/jwverify.py",
-             "script/jwdecrypt.py"],
+    scripts= glob.glob('scripts/*.py'),
 )
