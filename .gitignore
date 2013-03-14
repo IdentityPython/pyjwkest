@@ -1,2 +1,4 @@
 *.pyc
 *.egg-info
+_files
+certs
