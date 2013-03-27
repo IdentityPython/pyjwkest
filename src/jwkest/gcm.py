@@ -63,10 +63,10 @@ def gctr(k, icb, plaintext):
     cb = icb
 
     for i in range(0, len(plaintext), aes.block_size):
-        cb = inc32(cb)
         encrypted = aes.encrypt(cb)
         plaintext_block = plaintext[i:i+aes.block_size]
         y += strxor.strxor(plaintext_block, encrypted[:len(plaintext_block)])
+        cb = inc32(cb)
 
     return y
 
