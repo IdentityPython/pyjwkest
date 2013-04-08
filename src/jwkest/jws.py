@@ -155,7 +155,9 @@ def verify(token, dkeys=None):
     """
     header, claim, crypto, header_b64, claim_b64 = unpack(token)
 
+    #logger.debug("token: %s" % token)
     logger.debug("dkeys: %s, header: %s" % (dkeys, header))
+    logger.debug("claim: '%s'" % claim)
 
     if u'typ' in header:
         if header[u'typ'] not in JWT_TYPES:
@@ -191,11 +193,12 @@ def verify(token, dkeys=None):
     if not keys:
         raise MissingKey(alg)
 
+    logger.debug("Keys: %s" % keys)
     for key in keys:
         try:
             verifier.verify(sigdata, crypto, key)
             return claim
-        except Exception, exc:
+        except BadSignature:
             pass
 
     raise
@@ -209,7 +212,7 @@ def check(token, key):
         return False
 
 
-def sign(payload, keys, alg=None):
+def sign(payload, keys, alg=None, **kwargs):
     """Sign the payload with the given algorithm and key.
 
     The payload can be any JSON-dumpable object.
@@ -225,6 +228,9 @@ def sign(payload, keys, alg=None):
         raise UnknownAlgorithm(alg)
 
     header = {u'alg': alg}
+    if kwargs:
+        header.update(kwargs)
+
     signer = SIGNER_ALGS[alg]
     if isinstance(signer, HMACSigner):
         key = str(keys["hmac"][0])

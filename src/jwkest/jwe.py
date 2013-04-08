@@ -40,6 +40,8 @@ class MethodNotSupported(Exception):
 
 # ---------------------------------------------------------------------------
 # Base class
+
+
 class Encrypter(object):
     """Abstract base class for encryption algorithms."""
 
@@ -61,6 +63,7 @@ class Encrypter(object):
     def private_decrypt(self, msg, key):
         """Return decrypted message."""
         raise NotImplementedError
+
 
 class RSAEncrypter(Encrypter):
 
@@ -88,8 +91,10 @@ class RSAEncrypter(Encrypter):
 
 # ---------------------------------------------------------------------------
 
+
 def int2bigendian(n):
     return [ord(c) for c in struct.pack('>I', n)]
+
 
 def party_value(pv):
     if pv:
@@ -99,6 +104,7 @@ def party_value(pv):
         return r
     else:
         return [0,0,0,0]
+
 
 def _hash_input(cmk, enc, label, round=1, length=128, hashsize=256,
                 epu="", epv=""):
@@ -116,6 +122,7 @@ def _hash_input(cmk, enc, label, round=1, length=128, hashsize=256,
     #- SuppPubInfo
     r.extend(label)
     return r
+
 
 def key_derivation(cmk, enc, label, round=1, hashsize=256, epu="", epv="",
                    bsize=128):
@@ -158,6 +165,7 @@ def key_derivation(cmk, enc, label, round=1, hashsize=256, epu="", epv="",
     #return hd[:(length/4)]
     return hd[:(bsize/8)]
 
+
 def get_cek(cmk, enc, round=1, hashsize=256, epu="", epv="", bsize=0):
     if not bsize:
         bsize = len(cmk)*4
@@ -166,6 +174,7 @@ def get_cek(cmk, enc, round=1, hashsize=256, epu="", epv="", bsize=0):
                           [69, 110, 99, 114, 121, 112, 116, 105, 111, 110],
                           round=round,
                           hashsize=hashsize, epu=epu, epv=epv, bsize=bsize)
+
 
 def get_cik(cmk, enc, round=1, hashsize=256, epu="", epv="", bsize=0):
     if not bsize:
@@ -178,6 +187,7 @@ def get_cik(cmk, enc, round=1, hashsize=256, epu="", epv="", bsize=0):
 
 # ---------------------------------------------------------------------------
 
+
 def cipher_filter(cipher, inf, outf):
     while 1:
         buf=inf.read()
@@ -187,13 +197,15 @@ def cipher_filter(cipher, inf, outf):
     outf.write(cipher.final())
     return outf.getvalue()
 
-def aes_enc(key, str):
-    pbuf=cStringIO.StringIO(str)
+
+def aes_enc(key, txt):
+    pbuf=cStringIO.StringIO(txt)
     cbuf=cStringIO.StringIO()
     ciphertext = cipher_filter(key, pbuf, cbuf)
     pbuf.close()
     cbuf.close()
     return ciphertext
+
 
 def aes_dec(key, ciptxt):
     pbuf=cStringIO.StringIO()
@@ -202,6 +214,7 @@ def aes_dec(key, ciptxt):
     pbuf.close()
     cbuf.close()
     return plaintext
+
 
 def keysize(spec):
     if spec.startswith("HS"):
@@ -218,6 +231,7 @@ SUPPORTED = {
     "alg": ["RSA1_5", "RSA-OAEP"],
     "enc": ["A128CBC+HS256", "A256CBC+HS512", "A256GCM"],
 }
+
 
 class ENV(object):
     def __init__(self, alg=None, enc=None, epk=None, zip=None, jku=None,
@@ -255,6 +269,7 @@ class ENV(object):
             assert self.zip == "DEF"
 
 # ---------------------------------------------------------------------------
+
 
 def rsa_encrypt(msg, key, alg="RSA-OAEP", enc="A256GCM",
                 context="public", kdf="CS256", iv="", cmk="",
@@ -330,6 +345,7 @@ def rsa_encrypt(msg, key, alg="RSA-OAEP", enc="A256GCM",
     res += b'.' + b64e(tag)
     return res
 
+
 def rsa_decrypt(token, key, context, debug=False):
     """
     Does decryption according to the JWE proposal
@@ -396,6 +412,7 @@ def rsa_decrypt(token, key, context, debug=False):
 
 # =============================================================================
 
+
 def encrypt(payload, keys, alg, enc, context, **kwargs):
     if alg.startswith("RSA") and alg in ["RSA-OAEP", "RSA1_5"]:
         encrypter = rsa_encrypt
@@ -406,6 +423,7 @@ def encrypt(payload, keys, alg, enc, context, **kwargs):
     token = encrypter(payload, key, alg, enc, context, **kwargs)
 
     return token
+
 
 def decrypt(token, dkeys, context, debug=False):
 
