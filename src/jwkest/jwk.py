@@ -3,6 +3,7 @@ import struct
 import logging
 import json
 import M2Crypto
+from M2Crypto.RSA import new_pub_key
 
 from requests import request
 
@@ -288,3 +289,8 @@ def rsa_loads(key):
 def rsa_pub_load(filename):
     """Read a PEM-encoded public RSA key from a file."""
     return M2Crypto.RSA.load_pub_key(filename)
+
+
+def rsa_priv_to_pub(filename):
+    _priv = rsa_load(filename)
+    return new_pub_key((_priv.pub()))
