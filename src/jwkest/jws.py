@@ -10,21 +10,26 @@ import M2Crypto
 import hashlib
 import hmac
 import struct
-from jwkest.jwk import load_x509_cert, load_x509_cert_chain
+from jwkest.jwk import load_x509_cert
+from jwkest.jwk import load_x509_cert_chain
+from jwkest.jwk import keyrep
 from jwkest.jwk import load_jwks_from_url
 
 from jwkest import b64e
+from jwkest import b64d
 from jwkest import safe_str_cmp
 from jwkest import BadSignature
-from jwkest import unpack
-from jwkest import JWT_TYPES
-from jwkest import BadType
 from jwkest import UnknownAlgorithm
-from jwkest import MissingKey
-from jwkest import Invalid
-from jwkest import pack
 
 logger = logging.getLogger(__name__)
+
+
+class NoSuitableSigningKeys(Exception):
+    pass
+
+
+class FormatError(Exception):
+    pass
 
 
 def sha256_digest(msg):
@@ -139,116 +144,275 @@ SIGNER_ALGS = {
 
 def alg2keytype(alg):
     if alg.startswith("RS"):
-        return "rsa"
+        return "RSA"
     elif alg.startswith("HS"):
-        return "hmac"
+        return "oct"
     elif alg.startswith("ES"):
-        return "ec"
+        return "EC"
     else:
         return None
 
 
-def verify(token, dkeys=None):
+class JWx(object):
+    args = ["alg", "jku", "jwk", "x5u", "x5t", "x5c", "kid", "typ", "cty",
+            "crit"]
     """
-    Verifies that a token is correctly signed.
-
+    :param alg: The signing algorithm
+    :param jku: a URI that refers to a resource for a set of JSON-encoded
+        public keys, one of which corresponds to the key used to digitally
+        sign the JWS
+    :param jwk: A JSON Web Key that corresponds to the key used to
+        digitally sign the JWS
+    :param x5u: a URI that refers to a resource for the X.509 public key
+        certificate or certificate chain [RFC5280] corresponding to the key
+        used to digitally sign the JWS.
+    :param x5t: a base64url encoded SHA-1 thumbprint (a.k.a. digest) of the
+        DER encoding of the X.509 certificate [RFC5280] corresponding to
+        the key used to digitally sign the JWS.
+    :param x5c: the X.509 public key certificate or certificate chain
+        corresponding to the key used to digitally sign the JWS.
+    :param kid: a hint indicating which key was used to secure the JWS.
+    :param typ: the type of this object. 'JWS' == JWS Compact Serialization
+        'JWS+JSON' == JWS JSON Serialization
+    :param cty: the type of the secured content
+    :param crit: indicates which extensions that are being used and MUST
+        be understood and processed.
+    :param kwargs: Extra header parameters
+    :return: A class instance
     """
-    header, claim, crypto, header_b64, claim_b64 = unpack(token)
 
-    #logger.debug("token: %s" % token)
-    logger.debug("dkeys: %s, header: %s" % (dkeys, header))
-    logger.debug("claim: '%s'" % claim)
-
-    if u'typ' in header:
-        if header[u'typ'] not in JWT_TYPES:
-            raise BadType(header)
-
-    if not dkeys:
-        if u'jwk' in header:
-            keys = load_jwks_from_url(header["jwk"], {})
-            # list of 2-tuples (typ, key) convert into dict
-            dkeys = dict(keys)
-        elif u'x5u'in header:
+    def __init__(self, msg=None, **kwargs):
+        self.msg = msg
+        self._dict = {}
+        for key in self.args:
             try:
-                dkeys = {"rsa": [load_x509_cert(header["x5u"], {})]}
-            except Exception:
-                ca_chain = load_x509_cert_chain(header["x5u"])
+                _val = kwargs[key]
+            except KeyError:
+                if key == "alg":
+                    self._dict[key] = "none"
+                continue
 
-    alg = header[u'alg']
-    if alg == "none":  # not signed
-        return claim
-    elif alg not in SIGNER_ALGS:
-        raise UnknownAlgorithm(alg)
+            if key == "jwk":
+                if isinstance(_val, dict):
+                    self._dict["jwk"] = keyrep(_val)
+                elif isinstance(_val, basestring):
+                    self._dict["jwk"] = keyrep(json.loads(_val))
+                else:
+                    self._dict["jwk"] = _val
+            elif key == "x5c" or key == "crit":
+                self._dict["x5c"] = _val or []
+            else:
+                self._dict[key] = _val
 
-    sigdata = header_b64 + b'.' + claim_b64
+    def __contains__(self, item):
+        return item in self._dict
 
-    verifier = SIGNER_ALGS[alg]
-    if isinstance(verifier, HMACSigner):
-        keys = [str(k) for k in dkeys["hmac"]]
-    elif isinstance(verifier, RSASigner):
-        keys = dkeys["rsa"]
-    else:
-        keys = dkeys["ec"]
+    def __getitem__(self, item):
+        return self._dict[item]
 
-    if not keys:
-        raise MissingKey(alg)
+    def __setitem__(self, key, value):
+        self._dict[key] = value
 
-    logger.debug("Keys: %s" % keys)
-    for key in keys:
+    def __getattr__(self, item):
         try:
-            verifier.verify(sigdata, crypto, key)
-            return claim
-        except BadSignature:
-            pass
+            return self._dict[item]
+        except KeyError:
+            raise AttributeError(item)
 
-    raise
+    def keys(self):
+        return self._dict.keys()
+
+    def _encoded_payload(self):
+        if isinstance(self.msg, basestring):
+            return b64e(self.msg)
+        else:
+            return b64e(json.dumps(self.msg, separators=(",", ":")))
+
+    def _header(self, extra=None):
+        _extra = extra or {}
+        _header = {}
+        for param in self.args:
+            try:
+                _header[param] = _extra[param]
+            except KeyError:
+                try:
+                    _header[param] = self._dict[param]
+                except KeyError:
+                    pass
+
+        if "jwk" in self:
+            _header["jwk"] = self["jwk"].to_dict()
+        elif "jwk" in _extra:
+            _header["jwk"] = extra["jwk"].to_dict()
+        return _header
+
+    def _encoded_header(self, extra=None):
+        return b64e(json.dumps(self._header(extra), separators=(",", ":")))
+
+    def parse_header(self, encheader):
+        for attr, val in json.loads(b64d(encheader)).items():
+            if attr == "jwk":
+                self["jwk"] = keyrep(val)
+            else:
+                self[attr] = val
+
+    def _get_keys(self):
+        if "jwk" in self:
+            return [self["jwk"]]
+        elif "jku" in self:
+            keys = load_jwks_from_url(self["jku"], {})
+            return dict(keys)
+        elif "x5u" in self:
+            try:
+                return {"rsa": [load_x509_cert(self["x5u"], {})]}
+            except Exception:
+                ca_chain = load_x509_cert_chain(self["x5u"])
+
+        return {}
+
+    def _pick_keys(self, keys):
+        """
+
+        :param keys:
+        :return:
+        """
+        _kty = alg2keytype(self["alg"])
+        if _kty == "RSA":
+            # you sign with your private key
+            _keys = [k for k in keys
+                     if k.kty == _kty and k._keytype == "private"]
+        else:
+            _keys = [k for k in keys if k.kty == _kty]
+        if "kid" in self:
+            for _key in _keys:
+                if self["kid"] == _key["kid"]:
+                    return [_key]
+        else:
+            return _keys
+
+    def _decode(self, payload):
+        _msg = b64d(payload)
+        if "cty" in self:
+            if self["cty"] == "JWT":
+                _msg = json.loads(_msg)
+        return _msg
 
 
-def check(token, key):
-    try:
-        verify(token, key)
-        return True
-    except Invalid:
-        return False
+class JWS(JWx):
 
+    def sign_compact(self, keys=None):
+        """
+        Produce a JWS using the JWS Compact Serialization
 
-def sign(payload, keys, alg=None, **kwargs):
-    """Sign the payload with the given algorithm and key.
+        :param keys: A dictionary of keys
+        :return:
+        """
 
-    The payload can be any JSON-dumpable object.
+        enc_head = self._encoded_header()
+        enc_payload = self._encoded_payload()
 
-    Returns a token string."""
+        _alg = self["alg"]
+        if not _alg or _alg.lower() == "none":
+            return enc_head + b"." + enc_payload + b"."
 
-    logger.debug("sign using '%s'" % alg)
+        try:
+            _signer = SIGNER_ALGS[_alg]
+        except KeyError:
+            raise UnknownAlgorithm(_alg)
 
-    if not alg or alg.lower() == "none":
-        return pack(payload)
+        if keys:
+            keys = self._pick_keys(keys)
+        else:
+            keys = self._pick_keys(self._get_keys())
 
-    if alg not in SIGNER_ALGS:
-        raise UnknownAlgorithm(alg)
+        if keys:
+            key = keys[0]
+        else:
+            raise NoSuitableSigningKeys(_alg)
 
-    header = {u'alg': alg}
-    if kwargs:
-        header.update(kwargs)
+        _input = b".".join([enc_head, enc_payload])
+        sig = _signer.sign(_input, key.key)
+        return b".".join([enc_head, enc_payload, b64e(sig)])
 
-    signer = SIGNER_ALGS[alg]
-    if isinstance(signer, HMACSigner):
-        key = str(keys["hmac"][0])
-    elif isinstance(signer, RSASigner):
-        key = keys["rsa"][0]
-    else:
-        key = keys["ec"][0]
+    def verify_compact(self, jws, keys=None):
+        _header, _payload, _sig = jws.split(".")
 
-    logger.debug("key: %s" % key)
-    header_b64 = b64e(json.dumps(header, separators=(",", ":")))
-    payload_b64 = b64e(payload)
+        self.parse_header(_header)
 
-    token = header_b64 + b"." + payload_b64
+        if "alg" in self:
+            if self["alg"] == "none":
+                self.msg = self._decode(_payload)
+                return self.msg
 
-    sig = signer.sign(token, key)
-    token += b"." + b64e(sig)
+        if keys:
+            _keys = self._pick_keys(keys)
+        else:
+            _keys = self._pick_keys(self._get_keys())
 
-    return token
+        verifier = SIGNER_ALGS[self["alg"]]
 
+        for key in _keys:
+            try:
+                verifier.verify(_header + '.' + _payload, b64d(_sig), key.key)
+            except BadSignature:
+                pass
+            else:
+                self.msg = self._decode(_payload)
+                return self.msg
 
-# =============================================================================
+        raise BadSignature()
+
+    def sign_json(self, per_signature_header=None, **kwargs):
+        """
+        Produce JWS using the JWS JSON Serialization
+
+        :param per_signature_header: Header parameter values that are to be
+            applied to a specific signature
+        :return:
+        """
+        res = {"signatures": []}
+
+        if per_signature_header is None:
+            per_signature_header = [{"alg": "none"}]
+
+        for _kwa in per_signature_header:
+            _kwa.update(kwargs)
+            _jws = JWS(self.msg, **_kwa)
+            header, payload, signature = _jws.sign_compact().split(".")
+            res["signatures"].append({"header": header,
+                                      "signature": signature})
+
+        res["payload"] = self.msg
+
+        return res
+
+    def verify_json(self, jws, keys=None):
+        """
+
+        :param jws:
+        :param keys:
+        :return:
+        """
+
+        _jwss = json.load(jws)
+
+        try:
+            _payload = _jwss["payload"]
+        except KeyError:
+            raise FormatError("Missing payload")
+
+        try:
+            _signs = _jwss["signatures"]
+        except KeyError:
+            raise FormatError("Missing signatures")
+
+        _claim = None
+        for _sign in _signs:
+            token = b".".join([_sign["header"], _payload, _sign["signature"]])
+            _tmp = self.verify_compact(token, keys)
+            if _claim is None:
+                _claim = _tmp
+            else:
+                assert _claim == _tmp
+
+        return _claim

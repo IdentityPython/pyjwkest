@@ -15,6 +15,10 @@ logger = logging.getLogger(__name__)
 
 JWT_TYPES = (u"JWT", u"application/jws", u"JWS", u"JWE")
 
+JWT_CLAIMS = {"iss": str, "sub": str, "aud": str, "exp": int, "nbf": int,
+              "iat": int, "jti": str, "typ": str}
+
+JWT_HEADERS = ["typ", "cty"]
 
 # XXX Should this be a subclass of ValueError?
 class Invalid(Exception):
@@ -97,10 +101,9 @@ def b64d(b):
 
 
 def split_token(token):
-    if token.count(b".") != 2:
+    if not token.count(b"."):
         raise BadSyntax(token,
-                        "expected token to contain 2 dots, not %d" %
-                        token.count(b"."))
+                        "expected token to contain at least one dot")
     return tuple(token.split(b"."))
 
 
@@ -126,15 +129,14 @@ def unpack(token):
     if isinstance(token, unicode):
         token = str(token)
 
-    header_b64, claim_b64, crypto_b64 = split_token(token)
+    part = split_token(token)
 
-    header = b64d(header_b64)
-    claim = b64d(claim_b64)
-    crypto = b64d(crypto_b64)
+    res = [b64d(p) for p in part]
 
-    header = json.loads(header)
-
-    return header, claim, crypto, header_b64, claim_b64
+    res[0] = json.loads(res[0])
+    res.append(part[0])
+    res.append(part[1])
+    return res
 
 
 def pack(payload):
