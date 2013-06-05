@@ -358,14 +358,14 @@ class JWE_RSA(JWx):
         b64_head, b64_jek, b64_iv, b64_ctxt, b64_tag = token.split(b".")
 
         self.parse_header(b64_head)
-        iv = b64d(b64_iv)
+        iv = b64d(str(b64_iv))
 
         if context == "private":
             _decrypt = RSAEncrypter().private_decrypt
         else:
             _decrypt = RSAEncrypter().public_decrypt
 
-        jek = b64d(b64_jek)
+        jek = b64d(str(b64_jek))
 
         if debug:
             print >> sys.stderr, "enc_key", hd2ia(hexlify(jek))
@@ -386,27 +386,28 @@ class JWE_RSA(JWx):
 
         auth_data = b64_head
 
+        _ctxt = b64d(str(b64_ctxt))
+        _tag = b64d(str(b64_tag))
         if enc == "A256GCM":
-            msg = gcm_decrypt(cek, iv, b64d(b64_ctxt), auth_data, b64d(b64_tag))
+            msg = gcm_decrypt(cek, iv, _ctxt, auth_data, _tag)
         elif enc.startswith("A128CBC-") or enc.startswith("A256CBC-"):
             enc, hashf = enc.split("-")
             mac_key = cek[:16]
             enc_key = cek[16:]
             c = M2Crypto.EVP.Cipher(alg=ENC2ALG[enc], key=enc_key, iv=iv,
                                     op=DEC)
-            msg = aes_dec(c, b64d(b64_ctxt))
+            msg = aes_dec(c, _ctxt)
 
             al = int2bigendian(len(auth_data) * 8)
             while len(al) < 8:
                 al.insert(0, 0)
 
-            _inp = auth_data + iv + b64d(b64_ctxt) + intarr2str(al)
+            _inp = str(auth_data) + iv + _ctxt + intarr2str(al)
 
             verifier = SIGNER_ALGS[hashf]
             # Can't use the verify function directly since the tag I have only
             # are the first 128 bits of the signature
-            if not safe_str_cmp(verifier.sign(_inp, mac_key)[:16],
-                                b64d(b64_tag)):
+            if not safe_str_cmp(verifier.sign(_inp, mac_key)[:16], _tag):
                 raise BadSignature()
         else:
             raise MethodNotSupported(enc)

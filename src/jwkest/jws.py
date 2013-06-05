@@ -184,25 +184,26 @@ class JWx(object):
     def __init__(self, msg=None, **kwargs):
         self.msg = msg
         self._dict = {}
-        for key in self.args:
-            try:
-                _val = kwargs[key]
-            except KeyError:
-                if key == "alg":
-                    self._dict[key] = "none"
-                continue
+        if kwargs:
+            for key in self.args:
+                try:
+                    _val = kwargs[key]
+                except KeyError:
+                    if key == "alg":
+                        self._dict[key] = "none"
+                    continue
 
-            if key == "jwk":
-                if isinstance(_val, dict):
-                    self._dict["jwk"] = keyrep(_val)
-                elif isinstance(_val, basestring):
-                    self._dict["jwk"] = keyrep(json.loads(_val))
+                if key == "jwk":
+                    if isinstance(_val, dict):
+                        self._dict["jwk"] = keyrep(_val)
+                    elif isinstance(_val, basestring):
+                        self._dict["jwk"] = keyrep(json.loads(_val))
+                    else:
+                        self._dict["jwk"] = _val
+                elif key == "x5c" or key == "crit":
+                    self._dict["x5c"] = _val or []
                 else:
-                    self._dict["jwk"] = _val
-            elif key == "x5c" or key == "crit":
-                self._dict["x5c"] = _val or []
-            else:
-                self._dict[key] = _val
+                    self._dict[key] = _val
 
     def __contains__(self, item):
         return item in self._dict
@@ -250,7 +251,7 @@ class JWx(object):
         return b64e(json.dumps(self._header(extra), separators=(",", ":")))
 
     def parse_header(self, encheader):
-        for attr, val in json.loads(b64d(encheader)).items():
+        for attr, val in json.loads(b64d(str(encheader))).items():
             if attr == "jwk":
                 self["jwk"] = keyrep(val)
             else:
@@ -272,17 +273,15 @@ class JWx(object):
 
     def _pick_keys(self, keys):
         """
+        The assumption is that upper layer has made certain you only get
+        keys you can use.
 
-        :param keys:
-        :return:
+        :param keys: A list of KEY instances
+        :return: A list of KEY instances that fulfill the requirements
         """
         _kty = alg2keytype(self["alg"])
-        if _kty == "RSA":
-            # you sign with your private key
-            _keys = [k for k in keys
-                     if k.kty == _kty and k._keytype == "private"]
-        else:
-            _keys = [k for k in keys if k.kty == _kty]
+        _keys = [k for k in keys if k.kty == _kty]
+
         if "kid" in self:
             for _key in _keys:
                 if self["kid"] == _key["kid"]:
@@ -291,7 +290,7 @@ class JWx(object):
             return _keys
 
     def _decode(self, payload):
-        _msg = b64d(payload)
+        _msg = b64d(str(payload))
         if "cty" in self:
             if self["cty"] == "JWT":
                 _msg = json.loads(_msg)
@@ -353,7 +352,8 @@ class JWS(JWx):
 
         for key in _keys:
             try:
-                verifier.verify(_header + '.' + _payload, b64d(_sig), key.key)
+                verifier.verify(_header + '.' + _payload, b64d(str(_sig)),
+                                key.key)
             except BadSignature:
                 pass
             else:

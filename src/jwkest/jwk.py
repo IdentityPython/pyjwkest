@@ -248,13 +248,11 @@ class RSA_key(Key):
         Key.__init__(self, kty, alg, use, kid, key)
         self.n = n
         self.e = e
-        self._keytype = None
 
     def comp(self):
         self.key = M2Crypto.RSA.new_pub_key(
             (long_to_mpi(base64_to_long(str(self.e))),
              long_to_mpi(base64_to_long(str(self.n)))))
-        self._keytype = "public"
 
     def decomp(self):
         self.n = long_to_base64(mpi_to_long(self.key.n))
@@ -262,16 +260,9 @@ class RSA_key(Key):
 
     def load(self, filename):
         self.key = rsa_load(filename)
-        self._keytype = "private"
 
     def dc(self):
         if self.key:
-            if isinstance(self.key, RSA):
-                self._keytype = "private"
-            elif isinstance(self.key, RSA_pub):
-                self._keytype = "public"
-            else:
-                self._keytype = None
             self.decomp()
         elif self.n and self.e:
             self.comp()
