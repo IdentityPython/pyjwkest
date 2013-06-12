@@ -10,6 +10,7 @@ import M2Crypto
 import hashlib
 import hmac
 import struct
+from M2Crypto.RSA import RSA_pub
 from jwkest.jwk import load_x509_cert
 from jwkest.jwk import load_x509_cert_chain
 from jwkest.jwk import keyrep
@@ -29,6 +30,10 @@ class NoSuitableSigningKeys(Exception):
 
 
 class FormatError(Exception):
+    pass
+
+
+class WrongTypeOfKey(Exception):
     pass
 
 
@@ -97,6 +102,8 @@ class RSASigner(Signer):
         self.algo = algo
 
     def sign(self, msg, key):
+        if isinstance(key, RSA_pub):
+            raise WrongTypeOfKey()
         return key.sign(self.digest(msg), self.algo)
 
     def verify(self, msg, sig, key):
