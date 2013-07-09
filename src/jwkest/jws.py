@@ -291,7 +291,7 @@ class JWx(object):
 
         if "kid" in self:
             for _key in _keys:
-                if self["kid"] == _key["kid"]:
+                if self["kid"] == _key_key .kid:
                     return [_key]
         else:
             return _keys
