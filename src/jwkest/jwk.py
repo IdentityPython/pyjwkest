@@ -4,8 +4,6 @@ import logging
 import json
 import M2Crypto
 from M2Crypto.RSA import new_pub_key
-from M2Crypto.RSA import RSA_pub
-from M2Crypto.RSA import RSA
 
 from requests import request
 
