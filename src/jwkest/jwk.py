@@ -17,6 +17,9 @@ __author__ = 'rohe0002'
 
 logger = logging.getLogger(__name__)
 
+PREFIX = "-----BEGIN CERTIFICATE-----"
+POSTFIX = "-----END CERTIFICATE-----"
+
 
 class FormatError(Exception):
     pass
@@ -202,14 +205,18 @@ def x509_rsa_load(txt):
 
 
 class Key():
-    members = ["kty", "alg", "use", "kid"]
+    members = ["kty", "alg", "use", "kid", "x5c", "x5t", "x5u"]
 
-    def __init__(self, kty="", alg="", use="", kid="", key=""):
+    def __init__(self, kty="", alg="", use="", kid="", key="", x5c=None,
+                 x5t="", x5u=""):
         self.key = key
         self.kty = kty
         self.alg = alg
         self.use = use
         self.kid = kid
+        self.x5c = x5c or []
+        self.x5t = x5t
+        self.x5u = x5u
 
     def to_dict(self):
         res = {}
@@ -240,21 +247,32 @@ class Key():
 
 
 class RSA_key(Key):
-    members = ["kty", "alg", "use", "kid", "n", "e"]
+    members = Key.members.extend(["n", "e"])
 
-    def __init__(self, kty="RSA", alg="", use="", kid="", n="", e="", key=""):
-        Key.__init__(self, kty, alg, use, kid, key)
+    def __init__(self, kty="RSA", alg="", use="", kid="", key="",
+                 x5c=None, x5t="", x5u="", n="", e=""):
+        Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.n = n
         self.e = e
 
     def comp(self):
-        self.key = M2Crypto.RSA.new_pub_key(
-            (long_to_mpi(base64_to_long(str(self.e))),
-             long_to_mpi(base64_to_long(str(self.n)))))
+        if self.n and self.e:
+            self.key = M2Crypto.RSA.new_pub_key(
+                (long_to_mpi(base64_to_long(str(self.e))),
+                 long_to_mpi(base64_to_long(str(self.n)))))
+        elif self.x5c:
+            if self.x5t:  # verify the cert
+                pass
+            cert = "\n".join([PREFIX, str(self.x5c[0]), POSTFIX])
+            self.key = x509_rsa_loads(cert)
+            if len(self.x5c) > 1:  # verify chain
+                pass
 
-    def decomp(self):
+    def decomp(self, do_x5=False):
         self.n = long_to_base64(mpi_to_long(self.key.n))
         self.e = long_to_base64(mpi_to_long(self.key.e))
+        if do_x5:  # construct the x5u, x5t members
+            pass
 
     def load(self, filename):
         self.key = rsa_load(filename)
@@ -271,9 +289,9 @@ class RSA_key(Key):
 class EC_key(Key):
     members = ["kty", "alg", "use", "kid", "crv", "x", "y"]
 
-    def __init__(self, kty="EC", alg="", use="", kid="", crv="", x="", y="",
-                 key=""):
-        Key.__init__(self, kty, alg, use, kid, key)
+    def __init__(self, kty="EC", alg="", use="", kid="", key="",
+                 x5c=None, x5t="", x5u="", crv="", x="", y=""):
+        Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.crv = crv
         self.x = x
         self.y = y
@@ -282,8 +300,9 @@ class EC_key(Key):
 class SYM_key(Key):
     members = ["kty", "alg", "use", "kid", "k"]
 
-    def __init__(self, kty="oct", alg="", use="", kid="", k="", key=""):
-        Key.__init__(self, kty, alg, use, kid, key)
+    def __init__(self, kty="oct", alg="", use="", kid="", key="",
+                 x5c=None, x5t="", x5u="", k=""):
+        Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.k = k
 
     def comp(self):
@@ -293,16 +312,12 @@ class SYM_key(Key):
         self.k = b64e(str(self.key))
 
 
-PREFIX = "-----BEGIN CERTIFICATE-----"
-POSTFIX = "-----END CERTIFICATE-----"
-
-
 class PKIX_key(Key):
     members = ["kty", "alg", "use", "kid", "n", "e"]
 
-    def __init__(self, kty="rsa", alg="", use="", kid="", x5c="", key=""):
-        Key.__init__(self, kty, alg, use, kid, key)
-        self.x5c = x5c
+    def __init__(self, kty="RSA", alg="", use="", kid="", key="",
+                 x5c=None, x5t="", x5u=""):
+        Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.key = key
 
     def dc(self):
