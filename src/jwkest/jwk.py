@@ -247,7 +247,8 @@ class Key():
 
 
 class RSA_key(Key):
-    members = Key.members.extend(["n", "e"])
+    members = Key.members
+    members.extend(["n", "e"])
 
     def __init__(self, kty="RSA", alg="", use="", kid="", key="",
                  x5c=None, x5t="", x5u="", n="", e=""):
