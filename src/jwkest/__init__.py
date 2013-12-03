@@ -20,6 +20,7 @@ JWT_CLAIMS = {"iss": str, "sub": str, "aud": str, "exp": int, "nbf": int,
 
 JWT_HEADERS = ["typ", "cty"]
 
+
 # XXX Should this be a subclass of ValueError?
 class Invalid(Exception):
     """The JWT is invalid."""
@@ -27,6 +28,7 @@ class Invalid(Exception):
 
 class BadSyntax(Invalid):
     """The JWT could not be parsed because the syntax is invalid."""
+
     def __init__(self, value, msg):
         Invalid.__init__(self)
         self.value = value
@@ -61,6 +63,7 @@ def b64e(b):
 
     Uses the url-safe - and _ characters, and doesn't pad with = characters."""
     return base64.urlsafe_b64encode(b).rstrip(b"=")
+
 
 _b64_re = re.compile(b"^[A-Za-z0-9_-]*$")
 
@@ -107,7 +110,7 @@ def split_token(token):
     return tuple(token.split(b"."))
 
 
-# Stolen from Werkzeug
+# 'Stolen' from Werkzeug
 def safe_str_cmp(a, b):
     """Compare two strings in constant time."""
     if len(a) != len(b):

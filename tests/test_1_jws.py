@@ -1,29 +1,26 @@
 import json
-from jwkest.jwk import SYM_key, RSA_key
-from jwkest.jws import SIGNER_ALGS
-from jwkest.jws import JWS
-
-__author__ = 'rohe0002'
 
 import jwkest
 from jwkest import jws
 from jwkest import b64e
 
+from jwkest.jwk import SYMKey
+from jwkest.jwk import import_rsa_key_from_file
+from jwkest.jwk import RSAKey
+from jwkest.jws import SIGNER_ALGS
+from jwkest.jws import JWS
+
+
 KEY = "certs/server.key"
-
-
-def rsa_load(filename):
-    """Read a PEM-encoded RSA key pair from a file.
-        - same code as :
-            https://github.com/rohe/pyoidc/blob/master/src/oic/utils/keyio.py
-    """
-    import M2Crypto
-    return M2Crypto.RSA.load_key(filename, M2Crypto.util.no_passphrase_callback)
 
 JWK = {"keys": [{'alg': 'RSA',
                  'use': 'foo',
                  'e': 'AQAB',
-                 'n': 'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8'}]}
+                 'n': (
+                     'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtV'
+                     'zeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B'
+                     '0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6J'
+                     'tu82nB5k8')}]}
 
 HMAC_KEY = [3, 35, 53, 75, 43, 15, 165, 188, 131, 126, 6, 101, 119, 123, 166,
             143, 90, 179, 40, 230, 240, 84, 201, 40, 169, 15, 132, 178, 210, 80,
@@ -51,7 +48,7 @@ def test_1():
 
 def test_hmac_256():
     payload = "Please take a moment to register today"
-    keys = [SYM_key(key=jwkest.intarr2bin(HMAC_KEY))]
+    keys = [SYMKey(key=jwkest.intarr2bin(HMAC_KEY))]
     _jws = JWS(payload, alg="HS256")
     _jwt = _jws.sign_compact(keys)
 
@@ -62,7 +59,7 @@ def test_hmac_256():
 
 def test_hmac_384():
     payload = "Please take a moment to register today"
-    keys = [SYM_key(key="My hollow echo")]
+    keys = [SYMKey(key="My hollow echo")]
     _jws = JWS(payload, alg="HS256")
     _jwt = _jws.sign_compact(keys)
 
@@ -74,7 +71,7 @@ def test_hmac_384():
 
 def test_hmac_512():
     payload = "Please take a moment to register today"
-    keys = [SYM_key(key="My hollow echo")]
+    keys = [SYMKey(key="My hollow echo")]
     _jws = JWS(payload, alg="HS256")
     _jwt = _jws.sign_compact(keys)
 
@@ -95,8 +92,8 @@ def test_left_hash_hs512():
 
 def test_rs256():
     payload = "Please take a moment to register today"
-    keys = [RSA_key(key=rsa_load(KEY))]
-    keys[0]._keytype = "private"
+    keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
+    #keys[0]._keytype = "private"
     _jws = JWS(payload, alg="RS256")
     _jwt = _jws.sign_compact(keys)
 
@@ -108,8 +105,8 @@ def test_rs256():
 
 def test_rs384():
     payload = "Please take a moment to register today"
-    keys = [RSA_key(key=rsa_load(KEY))]
-    keys[0]._keytype = "private"
+    keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
+    #keys[0]._keytype = "private"
     _jws = JWS(payload, alg="RS384")
     _jwt = _jws.sign_compact(keys)
 
@@ -120,8 +117,8 @@ def test_rs384():
 
 def test_rs512():
     payload = "Please take a moment to register today"
-    keys = [RSA_key(key=rsa_load(KEY))]
-    keys[0]._keytype = "private"
+    keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
+    #keys[0]._keytype = "private"
     _jws = JWS(payload, alg="RS512")
     _jwt = _jws.sign_compact(keys)
 
@@ -139,7 +136,8 @@ def test_a_1_1a():
 def test_a_1_1b():
     payload = '{"iss":"joe",\r\n "exp":1300819380,\r\n "http://example.com/is_root":true}'
     val = b64e(payload)
-    assert val == "eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"
+    assert val == ("eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9"
+                   "leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ")
 
 
 def test_a_1_1c():
@@ -153,26 +151,30 @@ def test_a_1_1c():
 
 
 def test_a_1_3a():
-    _jwt = "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+    _jwt = ("eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJle"
+            "HAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnV"
+            "lfQ.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
 
     #keycol = {"hmac": jwkest.intarr2bin(HMAC_KEY)}
     header, claim, crypto, header_b64, claim_b64 = jwkest.unpack(_jwt)
 
     hmac = jwkest.intarr2bin(HMAC_KEY)
     signer = SIGNER_ALGS["HS256"]
-    info = signer.verify(header_b64 + '.' + claim_b64, crypto, hmac)
+    signer.verify(header_b64 + '.' + claim_b64, crypto, hmac)
 
 
 def test_a_1_3b():
-    _jwt = "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
-    keys = [SYM_key(key=jwkest.intarr2bin(HMAC_KEY))]
+    _jwt = ("eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJqb2UiLA0KICJl"
+            "eHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0c"
+            "nVlfQ.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
+    keys = [SYMKey(key=jwkest.intarr2bin(HMAC_KEY))]
     _jws2 = JWS()
     _jws2.verify_compact(_jwt, keys)
 
 
 def test_jws_1():
     msg = {"iss": "joe", "exp": 1300819380, "http://example.com/is_root": True}
-    jwk = SYM_key(key=jwkest.intarr2bin(HMAC_KEY))
+    jwk = SYMKey(key=jwkest.intarr2bin(HMAC_KEY))
     jwk.decomp()
     _jws = JWS(msg, cty="JWT", alg="HS256", jwk=json.dumps(jwk.to_dict()))
     res = _jws.sign_compact()
@@ -182,4 +184,4 @@ def test_jws_1():
     assert _jws2.msg == msg
 
 if __name__ == "__main__":
-    test_jws_1()
+    test_a_1_3a()

@@ -6,13 +6,20 @@
 import json
 import logging
 
-import M2Crypto
 import hashlib
 import hmac
 import struct
-from M2Crypto.RSA import RSA_pub
+from Crypto.Hash import SHA, SHA256, SHA384, SHA512, HMAC
+from Crypto.PublicKey import DSA
+from Crypto.PublicKey.RSA import _RSAobj
+from Crypto.Random import random
+from Crypto.Signature import PKCS1_v1_5, PKCS1_PSS
+from Crypto.Util.number import bytes_to_long
+from cryptlib.ecc import P256
+from cryptlib.ecc import P384
+from cryptlib.ecc import P521
+
 from jwkest.jwk import load_x509_cert
-from jwkest.jwk import load_x509_cert_chain
 from jwkest.jwk import keyrep
 from jwkest.jwk import load_jwks_from_url
 
@@ -88,7 +95,9 @@ class HMACSigner(Signer):
         self.digest = digest
 
     def sign(self, msg, key):
-        return hmac.new(key, msg, digestmod=self.digest).digest()
+        h = HMAC.new(key, msg, digestmod=self.digest)
+        return h.digest()
+        #return hmac.new(key, msg, digestmod=self.digest).digest()
 
     def verify(self, msg, sig, key):
         if not safe_str_cmp(self.sign(msg, key), sig):
@@ -97,54 +106,66 @@ class HMACSigner(Signer):
 
 
 class RSASigner(Signer):
-    def __init__(self, digest, algo):
-        self.digest = digest
-        self.algo = algo
-
-    def sign(self, msg, key):
-        if isinstance(key, RSA_pub):
-            raise WrongTypeOfKey()
-        return key.sign(self.digest(msg), self.algo)
-
-    def verify(self, msg, sig, key):
-        try:
-            return key.verify(self.digest(msg), sig, self.algo)
-        except M2Crypto.RSA.RSAError, e:
-            raise BadSignature(e)
-
-
-class ECDSASigner(Signer):
     def __init__(self, digest):
         self.digest = digest
 
     def sign(self, msg, key):
-        r, s = key.sign_dsa(self.digest(msg))
-        return mp2bin(r).rjust(32, '\x00') + mp2bin(s).rjust(32, '\x00')
+        h = self.digest.new(msg)
+        signer = PKCS1_v1_5.new(key)
+        return signer.sign(h)
 
     def verify(self, msg, sig, key):
-        # XXX check sig length
-        half = len(sig) // 2
-        r = mpint(sig[:half])
-        s = mpint(sig[half:])
-        try:
-            r = key.verify_dsa(self.digest(msg), r, s)
-        except M2Crypto.EC.ECError, e:
-            raise BadSignature(e)
-        else:
-            if not r:
-                raise BadSignature
+        h = self.digest.new(msg)
+        verifier = PKCS1_v1_5.new(key)
+        return verifier.verify(h, sig)
+
+
+class DSASigner(Signer):
+    def __init__(self, digest, sign):
+        self.digest = digest
+        self.sign = sign
+
+    def sign(self, msg, key):
+        h = bytes_to_long(self.digest.new(msg).digest())
+        return self.sign.dsa_sign(h, key)
+
+    def verify(self, msg, sig, key):
+        h = bytes_to_long(self.digest.new(msg).digest())
+        return self.sign.dsa_verify(h, sig, key)
+
+
+class PSSSigner(Signer):
+    def __init__(self, digest):
+        self.digest = digest
+
+    def sign(self, msg, key):
+        h = self.digest.new(msg)
+        signer = PKCS1_PSS.new(key)
+        return signer.sign(h)
+
+    def verify(self, msg, sig, key):
+        h = self.digest.new(msg)
+        verifier = PKCS1_PSS.new(key)
+        return verifier.verify(h, sig)
+
 
 SIGNER_ALGS = {
-    u'HS256': HMACSigner(hashlib.sha256),
-    u'HS384': HMACSigner(hashlib.sha384),
-    u'HS512': HMACSigner(hashlib.sha512),
+    u'HS256': HMACSigner(SHA256),
+    u'HS384': HMACSigner(SHA384),
+    u'HS512': HMACSigner(SHA512),
 
-    u'RS256': RSASigner(sha256_digest, 'sha256'),
-    u'RS384': RSASigner(sha384_digest, 'sha384'),
-    u'RS512': RSASigner(sha512_digest, 'sha512'),
+    u'RS256': RSASigner(SHA256),
+    u'RS384': RSASigner(SHA384),
+    u'RS512': RSASigner(SHA512),
 
-    u'ES256': ECDSASigner(sha256_digest),
-#    u'AES256': AESEncrypter
+    u'ES256': DSASigner(SHA256, P256),
+    u'ES384': DSASigner(SHA384, P384),
+    u'ES512': DSASigner(SHA512, P521),
+
+    u'PS256': PSSSigner(SHA256),
+    u'PS384': PSSSigner(SHA384),
+    u'PS512': PSSSigner(SHA512),
+
     u'none': None
 }
 
@@ -274,7 +295,8 @@ class JWx(object):
             try:
                 return {"rsa": [load_x509_cert(self["x5u"], {})]}
             except Exception:
-                ca_chain = load_x509_cert_chain(self["x5u"])
+                #ca_chain = load_x509_cert_chain(self["x5u"])
+                pass
 
         return {}
 
@@ -291,7 +313,7 @@ class JWx(object):
 
         if "kid" in self:
             for _key in _keys:
-                if self["kid"] == _key_key .kid:
+                if self["kid"] == _key.kid:
                     return [_key]
         else:
             return _keys

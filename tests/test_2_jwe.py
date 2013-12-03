@@ -1,19 +1,16 @@
 import hashlib
-import M2Crypto
-from jwkest.jwk import RSA_key
+from Crypto.PublicKey import RSA
+from cryptlib import aes
+from jwkest.extra import aes_cbc_hmac_encrypt
+from jwkest.jwk import RSAKey
 from aes_key_wrap_crypto import aes_wrap_key
 
 __author__ = 'rohe0002'
 
-from M2Crypto import RSA
-
 from jwkest import b64e
-from jwkest.jwe import JWE_RSA
+from jwkest.jwe import JWE_RSA, JWe
 from jwkest.jwe import JWE
-from jwkest.jwe import ENC2ALG
-from jwkest.jwe import aes_enc
 from jwkest.jwe import int2bigendian
-from jwkest.jwe import ciphertext_and_authentication_tag
 from jwkest.jws import SIGNER_ALGS
 from jwkest.gcm import gcm_encrypt
 
@@ -142,8 +139,10 @@ def test_jwe_09_a3():
                                 77, 84, 73, 52, 81, 48, 74, 68, 76, 85, 104, 84,
                                 77, 106, 85, 50, 73, 110, 48]
 
-    ctxt, tag = ciphertext_and_authentication_tag(msg, cek, aadp, iv,
-                                                  algo="A128CBC-HS256")
+    _jwe = JWe()
+    ctxt, tag, key = _jwe.enc_setup("A128CBC-HS256", msg, aadp, cek, iv=iv)
+
+    print str2intarr(ctxt)
 
     assert str2intarr(ctxt) == [
         40, 57, 83, 181, 119, 33, 133, 148, 198, 185, 243, 24, 152, 230, 6,
@@ -160,78 +159,7 @@ def test_jwe_09_a3():
     assert enc_authn_tag == "U0m_YmjN04DJvceFICbCVQ"
 
 
-def test_jwe_09_b():
-    #AES_128_CBC_HMAC_SHA_256 computation
-
-    key = intarr2str([4, 211, 31, 197, 84, 157, 252, 254, 11, 100, 157, 250, 63,
-                      170, 106, 206, 107, 124, 212, 45, 111, 107, 9, 219, 200,
-                      177, 0, 240, 143, 156, 44, 207])
-
-    mac_key = key[:16]
-    enc_key = key[16:]
-
-    msg = intarr2str([76, 105, 118, 101, 32, 108, 111, 110, 103, 32, 97, 110,
-                      100, 32, 112, 114, 111, 115, 112, 101, 114, 46])
-
-    ivv = [3, 22, 60, 12, 43, 67, 104, 105, 108, 108, 105, 99, 111, 116, 104,
-           101]
-
-    ivv_str = intarr2str(ivv)
-
-    # Encrypt the Plaintext with AES in Cipher Block Chaining (CBC) mode
-    # using PKCS #5 padding using the enc_key above.
-
-    c = M2Crypto.EVP.Cipher(alg=ENC2ALG["A128CBC"], key=enc_key,
-                            iv=ivv_str, op=1)
-
-    ctxt = aes_enc(c, msg)
-
-    assert str2intarr(ctxt) == [40, 57, 83, 181, 119, 33, 133, 148, 198, 185,
-                                243, 24, 152, 230, 6, 75, 129, 223, 127, 19,
-                                210, 82, 183, 230, 168, 33, 215, 104, 143,
-                                112, 56, 102]
-
-    aad = [101, 121, 74, 104, 98, 71, 99, 105, 79, 105, 74, 66, 77,
-           84, 73, 52, 83, 49, 99, 105, 76, 67, 74, 108, 98, 109, 77,
-           105, 79, 105, 74, 66, 77, 84, 73, 52, 81, 48, 74, 68, 76,
-           85, 104, 84, 77, 106, 85, 50, 73, 110, 48, 46, 54, 75, 66,
-           55, 48, 55, 100, 77, 57, 89, 84, 73, 103, 72, 116, 76,
-           118, 116, 103, 87, 81, 56, 109, 75, 119, 98, 111, 74, 87,
-           51, 111, 102, 57, 108, 111, 99, 105, 122, 107, 68, 84, 72,
-           122, 66, 67, 50, 73, 108, 114, 84, 49, 111, 79, 81]
-
-    al = int2bigendian(len(aad) * 8)
-    while len(al) < 8:
-        al.insert(0, 0)
-
-    _inp = aad + ivv + str2intarr(ctxt) + al
-
-    assert _inp == [101, 121, 74, 104, 98, 71, 99, 105, 79, 105, 74, 66, 77, 84,
-                    73, 52, 83, 49, 99, 105, 76, 67, 74, 108, 98, 109, 77, 105,
-                    79, 105, 74, 66, 77, 84, 73, 52, 81, 48, 74, 68, 76, 85,
-                    104, 84, 77, 106, 85, 50, 73, 110, 48, 46, 54, 75, 66, 55,
-                    48, 55, 100, 77, 57, 89, 84, 73, 103, 72, 116, 76, 118, 116,
-                    103, 87, 81, 56, 109, 75, 119, 98, 111, 74, 87, 51, 111,
-                    102, 57, 108, 111, 99, 105, 122, 107, 68, 84, 72, 122, 66,
-                    67, 50, 73, 108, 114, 84, 49, 111, 79, 81, 3, 22, 60, 12,
-                    43, 67, 104, 105, 108, 108, 105, 99, 111, 116, 104, 101, 40,
-                    57, 83, 181, 119, 33, 133, 148, 198, 185, 243, 24, 152, 230,
-                    6, 75, 129, 223, 127, 19, 210, 82, 183, 230, 168, 33, 215,
-                    104, 143, 112, 56, 102, 0, 0, 0, 0, 0, 0, 3, 80]
-
-    func = SIGNER_ALGS["HS256"]
-    m = func.sign(intarr2str(_inp), mac_key)
-    mi = str2intarr(m)
-    assert mi == [8, 65, 248, 101, 45, 185, 28, 218, 232, 112, 83, 79, 84, 221,
-                  18, 172, 50, 145, 207, 8, 14, 74, 44, 220, 100, 117, 32, 57,
-                  239, 149, 173, 226]
-
-
-def gen_callback(*args):
-    pass
-
-
-rsa = RSA.gen_key(2048, 65537, gen_callback)
+rsa = RSA.generate(2048)
 plain = "Now is the time for all good men to come to the aid of their country."
 
 
@@ -239,30 +167,30 @@ def test_rsa_encrypt_decrypt_rsa_cbc():
     _rsa = JWE_RSA(plain, alg="RSA1_5", enc="A128CBC-HS256")
     jwt = _rsa.encrypt(rsa)
     dec = JWE_RSA()
-    msg = dec.decrypt(jwt, rsa, "private")
+    msg = dec.decrypt(jwt, rsa)
 
     assert msg == plain
 
 
 def test_rsa_encrypt_decrypt_rsa_oaep_gcm():
     jwt = JWE_RSA(plain, alg="RSA-OAEP", enc="A256GCM").encrypt(rsa)
-    msg = JWE_RSA().decrypt(jwt, rsa, "private")
+    msg = JWE_RSA().decrypt(jwt, rsa)
 
     assert msg == plain
 
 
 def test_encrypt_decrypt_rsa_cbc():
-    _key = RSA_key(key=rsa)
+    _key = RSAKey(key=rsa)
     _key._keytype = "private"
     _jwe0 = JWE(plain, alg="RSA1_5", enc="A128CBC-HS256")
 
-    jwt = _jwe0.encrypt([_key], "public")
+    jwt = _jwe0.encrypt([_key])
 
     _jwe1 = JWE()
-    msg = _jwe1.decrypt(jwt, [_key], "private")
+    msg = _jwe1.decrypt(jwt, [_key])
 
     assert msg == plain
 
 
 if __name__ == "__main__":
-    test_encrypt_decrypt_rsa_cbc()
+    test_rsa_encrypt_decrypt_rsa_oaep_gcm()

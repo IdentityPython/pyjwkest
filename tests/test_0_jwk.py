@@ -1,15 +1,12 @@
 from binascii import hexlify
 import json
-import M2Crypto
-from jwkest import jwe
+from Crypto.PublicKey import RSA
+from Crypto.PublicKey.RSA import _RSAobj
 from jwkest.jwk import dump_jwk
-from jwkest.jwk import RSA_key
-from jwkest.jwk import long_to_mpi
+from jwkest.jwk import pem_cert2rsa
+from jwkest.jwk import RSAKey
 from jwkest.jwk import base64_to_long
 from jwkest.jwk import load_jwks
-from jwkest.jwk import x509_rsa_loads
-from jwkest.jwk import rsa_load
-from jwkest.jwk import rsa_loads
 from jwkest.jwk import dump_jwks
 
 __author__ = 'rohe0002'
@@ -27,29 +24,26 @@ def _eq(l1, l2):
     return set(l1) == set(l2)
 
 
-def test_x509_rsa_loads():
-    _ckey = x509_rsa_loads(open(CERT).read())
-    assert isinstance(_ckey, M2Crypto.RSA.RSA_pub)
+def test_pem_cert2rsa():
+    _ckey = pem_cert2rsa(CERT)
+    assert isinstance(_ckey, _RSAobj)
 
 
-def test_x509_rsa_loads_2():
-    _ckey = x509_rsa_loads(open(CERT).read())
-    _jwk = RSA_key(key=_ckey)
+def test_extract_rsa_from_cert_2():
+    _ckey = pem_cert2rsa(CERT)
+    _jwk = RSAKey(key=_ckey)
     _jwk.decomp()
 
     print _jwk
 
-    _n = long_to_mpi(base64_to_long(str(_jwk.n)))
+    _n = base64_to_long(str(_jwk.n))
 
-    cn = jwe.hd2ia(hexlify(_ckey.n))
-    jn = jwe.hd2ia(hexlify(_n))
-
-    assert cn == jn
+    assert _ckey.n == _n
 
 
 def test_kspec():
-    _ckey = x509_rsa_loads(open(CERT).read())
-    _jwk = RSA_key(key=_ckey)
+    _ckey = pem_cert2rsa(CERT)
+    _jwk = RSAKey(key=_ckey)
     _jwk.decomp()
 
     print _jwk
@@ -65,17 +59,17 @@ def test_loads_0():
     assert key.kid == "abc"
     assert key.kty == "RSA"
 
-    _ckey = x509_rsa_loads(open(CERT).read())
+    _ckey = pem_cert2rsa(CERT)
 
     print key
-    _n = long_to_mpi(base64_to_long(str(key.n)))
+    _n = base64_to_long(str(key.n))
     assert _n == _ckey.n
-    _e = long_to_mpi(base64_to_long(str(key.e)))
+    _e = base64_to_long(str(key.e))
     assert _e == _ckey.e
 
 
 def test_loads_1():
-    JWK = {
+    jwk = {
         "keys": [
             {
                 'kty': 'RSA',
@@ -93,7 +87,7 @@ def test_loads_1():
         ]
     }
 
-    keys = load_jwks(json.dumps(JWK))
+    keys = load_jwks(json.dumps(jwk))
     print keys
     assert len(keys) == 2
     kids = [k.kid for k in keys]
@@ -101,13 +95,13 @@ def test_loads_1():
 
 
 def test_dumps():
-    _ckey = x509_rsa_loads(open(CERT).read())
+    _ckey = pem_cert2rsa(CERT)
     jwk = dump_jwk(_ckey)
     assert _eq(jwk.keys(), ["kty", "e", "n"])
 
 
 def test_dump_jwk():
-    _ckey = x509_rsa_loads(open(CERT).read())
+    _ckey = pem_cert2rsa(CERT)
     jwk = dump_jwks([{"key": _ckey}])
     print jwk
     _wk = json.loads(jwk)
@@ -117,34 +111,25 @@ def test_dump_jwk():
 
 
 def test_load_jwk():
-    _ckey = x509_rsa_loads(open(CERT).read())
+    _ckey = pem_cert2rsa(CERT)
     jwk = dump_jwks([{"key": _ckey}])
     wk = load_jwks(jwk)
     print wk
     assert len(wk) == 1
     key = wk[0]
     assert key.kty == "RSA"
-    assert isinstance(key.key, M2Crypto.RSA.RSA)
+    assert isinstance(key.key, _RSAobj)
 
 
-def test_rsa_load():
-    _ckey = rsa_load(KEY)
-    assert isinstance(_ckey, M2Crypto.RSA.RSA)
+def test_import_rsa_key():
+    _ckey = RSA.importKey(open(KEY, 'r').read())
+    assert isinstance(_ckey, _RSAobj)
     jwk = dump_jwk(_ckey)
     print jwk
     assert _eq(jwk.keys(), ["kty", "e", "n"])
     assert jwk["n"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
     assert jwk['e'] == 'AQAB'
 
-
-def test_rsa_loads():
-    _ckey = rsa_loads(open(KEY).read())
-    assert isinstance(_ckey, M2Crypto.RSA.RSA)
-    jwk = dump_jwk(_ckey)
-    print jwk
-    assert _eq(jwk.keys(), ["kty", "e", "n"])
-    assert jwk["n"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
-    assert jwk['e'] == 'AQAB'
 
 if __name__ == "__main__":
-    test_dumps()
+    test_pem_cert2rsa()

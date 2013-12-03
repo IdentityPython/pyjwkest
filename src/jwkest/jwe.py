@@ -1,26 +1,29 @@
 # JSON Web Encryption
-# Implemented
-# draft-ietf-jose-json-web-encryption-09
 
-import os
 import struct
-import M2Crypto
 import cStringIO
 import logging
 import zlib
 
-from binascii import hexlify
-import sys
-from jwkest.aes_key_wrap_m2 import aes_wrap_key
+from Crypto import Random
+from Crypto.Hash import SHA
+from Crypto.Util.number import bytes_to_long
+from Crypto.Util.number import long_to_bytes
+from Crypto.Cipher import PKCS1_v1_5
+from Crypto.Cipher import PKCS1_OAEP
+
+from cryptlib.aes_gcm import AES_GCM
+from cryptlib.aes_key_wrap import aes_wrap_key
+from cryptlib.ecc import NISTEllipticCurve
 
 from jwkest import b64d
 from jwkest import b64e
-from jwkest import hd2ia
-from jwkest import safe_str_cmp
-from jwkest import BadSignature
-from jwkest.gcm import gcm_encrypt
-from jwkest.gcm import gcm_decrypt
-from jwkest.jws import SIGNER_ALGS, JWx
+#from jwkest.aes_key_wrap_m2 import aes_wrap_key
+from jwkest.extra import aes_cbc_hmac_encrypt
+from jwkest.extra import ecdh_derive_key
+from jwkest.extra import aes_cbc_hmac_decrypt
+from jwkest.jwk import intarr2str, ECKey
+from jwkest.jws import JWx
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +53,20 @@ class NoSuitableEncryptionKey(Exception):
     pass
 
 
+class DecryptionFailed(Exception):
+    pass
+
 # ---------------------------------------------------------------------------
 # Base class
+
+KEYLEN = {
+    "A128GCM": 128,
+    "A192GCM": 192,
+    "A256GCM": 256,
+    "A128CBC-HS256": 256,
+    "A192CBC-HS384": 384,
+    "A256CBC-HS512": 512
+}
 
 
 class Encrypter(object):
@@ -60,46 +75,50 @@ class Encrypter(object):
     def __init__(self):
         pass
 
-    def public_encrypt(self, msg, key):
+    def encrypt(self, msg, key):
         """Encrypt ``msg`` with ``key`` and return the encrypted message."""
         raise NotImplementedError
 
-    def public_decrypt(self, msg, key):
-        """Return decrypted message."""
-        raise NotImplementedError
-
-    def private_encrypt(self, msg, key):
-        """Encrypt ``msg`` with ``key`` and return the encrypted message."""
-        raise NotImplementedError
-
-    def private_decrypt(self, msg, key):
+    def decrypt(self, msg, key):
         """Return decrypted message."""
         raise NotImplementedError
 
 
 class RSAEncrypter(Encrypter):
 
-    def public_encrypt(self, msg, key, padding="pkcs1_padding"):
-        p = getattr(M2Crypto.RSA, padding)
-        return key.public_encrypt(msg, p)
+    @staticmethod
+    def encrypt(msg, key, padding="pkcs1_padding"):
+        if padding == "pkcs1_padding":
+            cipher = PKCS1_v1_5.new(key)
+            h = SHA.new(msg)
+            msg += h.digest()
+        elif padding == "pkcs1_oaep_padding":
+            cipher = PKCS1_OAEP.new(key)
+        else:
+            raise Exception("Unsupported padding")
+        return cipher.encrypt(msg)
 
-    def private_encrypt(self, msg, key, padding="pkcs1_padding"):
-        p = getattr(M2Crypto.RSA, padding)
-        return key.private_encrypt(msg, p)
+    @staticmethod
+    def decrypt(msg, key, padding="pkcs1_padding"):
+        dsize = SHA.digest_size
+        if padding == "pkcs1_padding":
+            cipher = PKCS1_v1_5.new(key)
+            sentinel = Random.new().read(32+dsize)
+            text = cipher.decrypt(msg, sentinel)
+            _digest = text[-dsize:]
+            _msg = text[:-dsize]
+            digest = SHA.new(_msg).digest()
+            if digest == _digest:
+                text = _msg
+            else:
+                raise DecryptionFailed()
+        elif padding == "pkcs1_oaep_padding":
+            cipher = PKCS1_OAEP.new(key)
+            text = cipher.decrypt(msg)
+        else:
+            raise Exception("Unsupported padding")
 
-    def public_decrypt(self, msg, key, padding="pkcs1_padding"):
-        p = getattr(M2Crypto.RSA, padding)
-        try:
-            return key.public_decrypt(msg, p)
-        except M2Crypto.RSA.RSAError, e:
-            raise CannotDecode(e)
-
-    def private_decrypt(self, msg, key, padding="pkcs1_padding"):
-        p = getattr(M2Crypto.RSA, padding)
-        try:
-            return key.private_decrypt(msg, p)
-        except M2Crypto.RSA.RSAError, e:
-            raise CannotDecode(e)
+        return text
 
 # ---------------------------------------------------------------------------
 
@@ -134,47 +153,6 @@ def _hash_input(cmk, enc, label, rond=1, length=128, hashsize=256,
     #- SuppPubInfo
     r.extend(label)
     return r
-
-
-def str2intarr(txt):
-    return [ord(c) for c in txt]
-
-
-def intarr2str(arr):
-    return "".join([chr(c) for c in arr])
-
-
-def ciphertext_and_authentication_tag(msg, key, aad, iv, algo="A128CBC-HS256"):
-    """
-    Creates and returns Cipher text and the Authentication Tag.
-    Default computed using AES_128_CBC_HMAC_SHA_256
-
-    :param key: A key
-    :param msg: The message to encrypt
-    :param aad: The Additional Authenticated Data
-    :param iv: The Initialization Vector
-    :return: The Authentication Tag
-    """
-
-    # Assumed a 256 bit long key
-    mac_key = key[:16]
-    enc_key = key[16:]
-
-    alg, hashf = algo.split("-")
-
-    c = M2Crypto.EVP.Cipher(alg=ENC2ALG[alg], key=enc_key, iv=iv, op=1)
-    ctxt = aes_enc(c, msg)
-
-    al = int2bigendian(len(aad) * 8)
-    while len(al) < 8:
-        al.insert(0, 0)
-
-    _inp = str2intarr(aad) + str2intarr(iv) + str2intarr(ctxt) + al
-
-    func = SIGNER_ALGS[hashf]
-    m = func.sign(intarr2str(_inp), mac_key)
-
-    return ctxt, m[:16]
 
 
 # ---------------------------------------------------------------------------
@@ -226,8 +204,100 @@ SUPPORTED = {
 
 # =============================================================================
 
+ENCALGLEN1 = {
+    "A128GCM": 16,
+    "A192GCM": 24,
+    "A256GCM": 32
+}
 
-class JWE_SYM(JWx):
+ENCALGLEN2 = {
+    "A128CBC-HS256": 32,
+    "A192CBC-HS384": 48,
+    "A256CBC-HS512": 64,
+}
+
+
+class JWe(JWx):
+    @staticmethod
+    def _generate_key_and_iv(encalg, cek="", iv=""):
+        if cek and iv:
+            return cek, iv
+
+        try:
+            _key = Random.get_random_bytes(ENCALGLEN1[encalg])
+            _iv = Random.get_random_bytes(12)
+        except KeyError:
+            try:
+                _key = Random.get_random_bytes(ENCALGLEN2[encalg])
+                _iv = Random.get_random_bytes(16)
+            except KeyError:
+                raise Exception("Unsupported encryption algorithm %s" % encalg)
+        if cek:
+            _key = cek
+        if iv:
+            _iv = iv
+
+        return _key, _iv
+
+    def enc_setup(self, enc_alg, msg, auth_data, key=None, iv=""):
+        """ Encrypt JWE content.
+
+        :param enc_alg: The JWE "enc" value specifying the encryption algorithm
+        :param msg: The plain text message
+        :param auth_data: Additional authenticated data
+        :param key: Key (CEK)
+        :return: Tuple (ciphertext, tag), both as bytes
+        """
+
+        key, iv = self._generate_key_and_iv(enc_alg, key, iv)
+
+        if enc_alg == "A256GCM":
+            gcm = AES_GCM(bytes_to_long(key))
+            ctxt, tag = gcm.encrypt(bytes_to_long(iv), msg, auth_data)
+            tag = long_to_bytes(tag)
+        elif enc_alg in ["A128CBC-HS256", "A192CBC-HS384", "A256CBC-HS512"]:
+            assert enc_alg in SUPPORTED["enc"]
+            #ealg, hashf = enc.split("-")
+            ctxt, tag = aes_cbc_hmac_encrypt(key, iv, auth_data, msg)
+        else:
+            raise NotSupportedAlgorithm(enc_alg)
+
+        return ctxt, tag, key
+
+    @staticmethod
+    def _decrypt(enc, key, ctxt, auth_data, iv, tag):
+        """ Decrypt JWE content.
+
+        :param enc: The JWE "enc" value specifying the encryption algorithm
+        :param key: Key (CEK)
+        :param iv : Initialization vector
+        :param auth_data: Additional authenticated data
+        :param ctxt : Ciphertext
+        :param tag: Authentication tag
+        :return: plain text message or None if decryption failed
+        """
+        if enc in ["A128GCM", "A192GCM", "A256GCM"]:
+            gcm = AES_GCM(bytes_to_long(key))
+            try:
+                text = gcm.decrypt(bytes_to_long(iv), ctxt, bytes_to_long(tag),
+                                   auth_data)
+                return text, True
+            except DecryptionFailed:
+                return None, False
+        elif enc in ["A128CBC-HS256", "A192CBC-HS384", "A256CBC-HS512"]:
+            return aes_cbc_hmac_decrypt(key, iv, auth_data, ctxt, tag)
+        else:
+            raise Exception("Unsupported encryption algorithm %s" % enc)
+
+    @staticmethod
+    def pack(b64_header, jek, iv, ctxt, tag):
+        res = b'.'.join([b64_header, b64e(jek), b64e(iv), b64e(ctxt),
+                         b64e(tag)])
+
+        return res
+
+
+class JWE_SYM(JWe):
     def encrypt(self, key, iv="", cek=""):
         """
 
@@ -240,48 +310,24 @@ class JWE_SYM(JWx):
 
         b64_header = self._encoded_header()
 
-        # content master key 256 bit
-        if not cek:
-            cek = os.urandom(32)
-
+        cek, iv = self._generate_key_and_iv(self["enc"], cek, iv)
         jek = aes_wrap_key(intarr2str(key), cek)
         auth_data = b64_header
 
         _enc = self["enc"]
-        if _enc == "A256GCM":
-            if not iv:
-                iv = os.urandom(12)  # 96 bits
-            ctxt, tag = gcm_encrypt(cek, iv, _msg, auth_data)
-        elif _enc.startswith("A128CBC-") or _enc.startswith("A256CBC-"):
-            assert _enc in SUPPORTED["enc"]
-            ealg, hashf = _enc.split("-")
-            if not iv:
-                if ealg == "A128CBC":
-                    iv = os.urandom(16)  # 128 bits
-                else:  # ealg == "A256CBC"
-                    iv = os.urandom(32)  # 256 bits
 
-
-            ctxt, tag = ciphertext_and_authentication_tag(cek, _msg, auth_data,
-                                                          iv,
-                                                          algo="A128CBC-HS256")
-        else:
-            raise NotSupportedAlgorithm(_enc)
-
-        res = b'.'.join([b64_header, b64e(jek), b64e(iv), b64e(ctxt),
-                         b64e(tag)])
-
-        return res
+        ctxt, tag, cek = self.enc_setup(_enc, cek, _msg, auth_data, iv=iv)
+        return self.pack(b64_header, jek, iv, ctxt, tag)
 
     def decrypt(self):
         pass
 
 
-class JWE_RSA(JWx):
+class JWE_RSA(JWe):
     args = ["msg", "alg", "enc", "epk", "zip", "jku", "jwk", "x5u", "x5t",
             "x5c", "kid", "typ", "cty", "apu", "crit"]
 
-    def encrypt(self, key, context="public", iv="", cek="", **kwargs):
+    def encrypt(self, key, iv="", cek="", **kwargs):
         """
         Produces a JWE using RSA algorithms
 
@@ -299,14 +345,9 @@ class JWE_RSA(JWx):
             else:
                 raise ParameterError("Zip has unknown value: %s" % self["zip"])
 
-        # content master key 256 bit
-        if not cek:
-            cek = os.urandom(32)
+        cek, iv = self._generate_key_and_iv(self["enc"], cek, iv)
 
-        if context == "private":
-            _encrypt = RSAEncrypter().private_encrypt
-        else:
-            _encrypt = RSAEncrypter().public_encrypt
+        _encrypt = RSAEncrypter().encrypt
 
         _alg = self["alg"]
         if _alg == "RSA-OAEP":
@@ -316,59 +357,28 @@ class JWE_RSA(JWx):
         else:
             raise NotSupportedAlgorithm(_alg)
 
-        #if debug:
-        #    print >> sys.stderr, "enc_key:", hd2ia(hexlify(jwe_enc_key))
-
         enc_header = self._encoded_header()
         auth_data = enc_header
 
         _enc = self["enc"]
-        if _enc == "A256GCM":
-            if not iv:
-                iv = os.urandom(12)  # 96 bits
-            ctxt, tag = gcm_encrypt(cek, iv, _msg, auth_data)
-        elif _enc.startswith("A128CBC-") or _enc.startswith("A256CBC-"):
-            assert _enc in SUPPORTED["enc"]
-            ealg, hashf = _enc.split("-")
-            if not iv:
-                if ealg == "A128CBC":
-                    iv = os.urandom(16)  # 128 bits
-                else:  # ealg == "A256CBC"
-                    iv = os.urandom(32)  # 256 bits
 
-            ctxt, tag = ciphertext_and_authentication_tag(_msg, cek, auth_data,
-                                                          iv, algo=_enc)
-        else:
-            raise NotSupportedAlgorithm(_enc)
+        ctxt, tag, key = self.enc_setup(_enc, _msg, auth_data, cek, iv)
+        return self.pack(enc_header, jwe_enc_key, iv, ctxt, tag)
 
-        res = b'.'.join([enc_header, b64e(jwe_enc_key), b64e(iv), b64e(ctxt),
-                         b64e(tag)])
+    def decrypt(self, token, key):
+        """ Decrypts a JWT
 
-        return res
-
-    def decrypt(self, token, key, context, debug=False):
-        """
-        Does decryption according to the JWE proposal
-        draft-ietf-jose-json-web-encryption-06
-
-        :param token: The
-        :param key:
-        :return:
+        :param token: The JWT
+        :param key: A key to use for decrypting
+        :return: The decrypted message
         """
         b64_head, b64_jek, b64_iv, b64_ctxt, b64_tag = token.split(b".")
 
         self.parse_header(b64_head)
         iv = b64d(str(b64_iv))
 
-        if context == "private":
-            _decrypt = RSAEncrypter().private_decrypt
-        else:
-            _decrypt = RSAEncrypter().public_decrypt
-
+        _decrypt = RSAEncrypter().decrypt
         jek = b64d(str(b64_jek))
-
-        if debug:
-            print >> sys.stderr, "enc_key", hd2ia(hexlify(jek))
 
         _alg = self["alg"]
         if _alg == "RSA-OAEP":
@@ -388,35 +398,63 @@ class JWE_RSA(JWx):
 
         _ctxt = b64d(str(b64_ctxt))
         _tag = b64d(str(b64_tag))
-        if enc == "A256GCM":
-            msg = gcm_decrypt(cek, iv, _ctxt, auth_data, _tag)
-        elif enc.startswith("A128CBC-") or enc.startswith("A256CBC-"):
-            enc, hashf = enc.split("-")
-            mac_key = cek[:16]
-            enc_key = cek[16:]
-            c = M2Crypto.EVP.Cipher(alg=ENC2ALG[enc], key=enc_key, iv=iv,
-                                    op=DEC)
-            msg = aes_dec(c, _ctxt)
 
-            al = int2bigendian(len(auth_data) * 8)
-            while len(al) < 8:
-                al.insert(0, 0)
-
-            _inp = str(auth_data) + iv + _ctxt + intarr2str(al)
-
-            verifier = SIGNER_ALGS[hashf]
-            # Can't use the verify function directly since the tag I have only
-            # are the first 128 bits of the signature
-            if not safe_str_cmp(verifier.sign(_inp, mac_key)[:16], _tag):
-                raise BadSignature()
-        else:
-            raise MethodNotSupported(enc)
+        msg, flag = self._decrypt(enc, cek, _ctxt, auth_data, iv, _tag)
+        if flag is False:
+            raise DecryptionFailed()
 
         if "zip" in self and self["zip"] == "DEF":
             msg = zlib.decompress(msg)
 
         return msg
 
+
+class JWE_EC(JWe):
+    def enc_setup(self, msg, auth_data, key=None, **kwargs):
+
+        encrypted_key = ""
+        # Generate the input parameters
+        try:
+            apu = b64d(kwargs["apu"])
+        except KeyError:
+            apu = b64d(Random.get_random_bytes(16))
+        try:
+            apv = b64d(kwargs["apv"])
+        except KeyError:
+            apv = b64d(Random.get_random_bytes(16))
+        # Generate an ephemeral key pair
+        curve = NISTEllipticCurve.by_name(key.crv)
+        if "epk" in kwargs:
+            epk = ECKey(key=kwargs["epk"], private=False)
+            eprivk = ECKey(kwargs["epk"], private=True)
+        else:
+            (eprivk, epk) = curve.key_pair()
+            # Derive the KEK and encrypt
+        params = {
+            "apu": b64e(apu),
+            "apv": b64e(apv),
+            #"epk": exportKey(epk, "EC", curve)
+        }
+        
+        cek, iv = self._generate_key_and_iv(self.enc)
+        if self.alg == "ECDH-ES":
+            try:
+                dk_len = KEYLEN[self.enc]
+            except KeyError:
+                raise Exception(
+                    "Unknown key length for algorithm %s" % self.enc)
+            
+            cek = ecdh_derive_key(curve, eprivk, key, apu, apv, self.enc, 
+                                  dk_len)
+        elif self.alg in ["ECDH-ES+A128KW", "ECDH-ES+A192KW", "ECDH-ES+A256KW"]:
+            _pre, _post = self.alg.split("+")
+            klen = int(_post[1:4])
+            kek = ecdh_derive_key(curve, eprivk, key, apu, apv, _post, klen)
+            encrypted_key = aes_wrap_key(kek, cek)
+        else:
+            raise Exception("Unsupported algorithm %s" % self.alg)
+
+        return cek, encrypted_key, iv, params
 
 class JWE(JWx):
     args = ["alg", "enc", "epk", "zip", "jku", "jwk", "x5u", "x5t",
@@ -452,7 +490,7 @@ class JWE(JWx):
     :return: A class instance
     """
 
-    def encrypt(self, keys=None, context="public", cek="", iv="", **kwargs):
+    def encrypt(self, keys=None, cek="", iv="", **kwargs):
         """
 
         :param keys: A set of possibly usable keys
@@ -472,9 +510,7 @@ class JWE(JWx):
             else:
                 keys = self._pick_keys(self._get_keys())
 
-            if keys:
-                key = keys[0]
-            else:
+            if not keys:
                 raise NoSuitableEncryptionKey(_alg)
 
             if cek:
@@ -484,16 +520,22 @@ class JWE(JWx):
         else:
             raise NotSupportedAlgorithm
 
-        token = encrypter.encrypt(key.key, context, **kwargs)
+        for key in keys:
+            try:
+                token = encrypter.encrypt(key.key, **kwargs)
+            except Exception:
+                pass
+            else:
+                return token
 
-        return token
+        raise NoSuitableEncryptionKey()
 
-    def decrypt(self, token, keys=None, context="public"):
+
+    def decrypt(self, token, keys=None):
         header, ek, eiv, ctxt, tag = token.split(b".")
         self.parse_header(header)
 
-        if self["alg"].startswith("RSA") and \
-                self["alg"] in ["RSA-OAEP", "RSA1_5"]:
+        if self["alg"] in ["RSA-OAEP", "RSA1_5"]:
             decrypter = JWE_RSA(**self._dict)
 
             if keys:
@@ -509,7 +551,7 @@ class JWE(JWx):
 
         for key in keys:
             try:
-                msg = decrypter.decrypt(str(token), key.key, context)
+                msg = decrypter.decrypt(str(token), key.key)
                 return msg
             except KeyError:
                 pass

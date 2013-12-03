@@ -1,16 +1,22 @@
 import base64
+import re
 import struct
 import logging
 import json
-import M2Crypto
-from M2Crypto.RSA import new_pub_key
+
+from binascii import a2b_base64
+
+from Crypto.PublicKey import RSA
+from Crypto.PublicKey.RSA import importKey, _RSAobj
+from Crypto.Util.asn1 import DerSequence
+from Crypto.Util.number import bytes_to_long, long_to_bytes
 
 from requests import request
+from cryptlib.ecc import NISTEllipticCurve
 
-from binascii import b2a_hex
-from M2Crypto.__m2crypto import bn_to_mpi
-from M2Crypto.__m2crypto import hex_to_bn
-from jwkest import intarr2long, b64d, b64e
+from jwkest import intarr2long
+from jwkest import b64d
+from jwkest import b64e
 from jwkest import dehexlify
 
 __author__ = 'rohe0002'
@@ -53,72 +59,59 @@ def base64_to_long(data):
     return intarr2long(dehexlify(_d))
 
 
-def long_to_mpi(num):
-    """Converts a python integer or long to OpenSSL MPInt used by M2Crypto.
-    Borrowed from Snowball.Shared.Crypto"""
-    h = hex(num)[2:]  # strip leading 0x in string
-    if len(h) % 2 == 1:
-        h = '0' + h  # add leading 0 to get even number of hexdigits
-    return bn_to_mpi(hex_to_bn(h))  # convert using OpenSSL BinNum
-
-
-def mpi_to_long(mpi):
-    """Converts an OpenSSL MPint used by M2Crypto to a python integer/long.
-    Borrowed from Snowball.Shared.Crypto"""
-    return eval("0x%s" % b2a_hex(mpi[4:]))
-
-
 def dicthash(d):
     return hash(repr(sorted(d.items())))
 
 
-# def kspec_rsa(key):
-#     return {
-#         "kty": "RSA",
-#         "n": long_to_base64(mpi_to_long(key.n)),
-#         "e": long_to_base64(mpi_to_long(key.e)),
-#     }
-#
-#
-# def kspec_ec(key):
-#     """
-#     TODO
-#     :param key:
-#     :return:
-#     """
-#     return {
-#         "kty": "EC",
-#         "crv": None,
-#         "x": None,
-#         "y": None
-#     }
-#
-#
-# def kspec_hmac(key, kid=""):
-#     """
-#     :param key:
-#     :return:
-#     """
-#     res = {"kty": "oct", "k": key}
-#     if kid:
-#         res["kid"] = kid
-#     return res
-#
-#
-# def kspec(key):
-#     if isinstance(key, M2Crypto.RSA.RSA):
-#         return kspec_rsa(key)
-#     elif isinstance(key, basestring):
-#         return kspec_hmac(key)
-#     else:
-#         raise Exception("Unknown key type")
+def intarr2str(arr):
+    return "".join([chr(c) for c in arr])
 
 
 # =============================================================================
 
-def x509_rsa_loads(string):
-    cert = M2Crypto.X509.load_cert_string(string)
-    return cert.get_pubkey().get_rsa()
+
+def import_rsa_key_from_file(filename):
+    return RSA.importKey(open(filename, 'r').read())
+
+
+def import_rsa_key(key):
+    """
+    Extract an RSA key from a PEM-encoded certificate
+
+    :param key: RSA key encoded in standard form
+    :return: RSA key instance
+    """
+    return importKey(key)
+
+
+def der2rsa(der):
+    # Extract subjectPublicKeyInfo field from X.509 certificate (see RFC3280)
+    cert = DerSequence()
+    cert.decode(der)
+    tbsCertificate = DerSequence()
+    tbsCertificate.decode(cert[0])
+    subjectPublicKeyInfo = tbsCertificate[6]
+
+    # Initialize RSA key
+    return RSA.importKey(subjectPublicKeyInfo)
+
+
+def pem_cert2rsa(pem_file):
+    # Convert from PEM to DER
+    pem = open(pem_file).read()
+    lines = pem.replace(" ", '').split()
+    return der2rsa(a2b_base64(''.join(lines[1:-1])))
+
+
+def der_cert2rsa(der):
+    """
+    Extract an RSA key from a DER certificate
+
+    @param der: DER-encoded certificate
+    @return: RSA instance
+    """
+    pem = re.sub(r'[^A-Za-z0-9+/]', '', der)
+    return der2rsa(base64.b64decode(pem))
 
 
 def load_x509_cert(url, spec2key):
@@ -136,7 +129,7 @@ def load_x509_cert(url, spec2key):
             try:
                 _key = spec2key[cert]
             except KeyError:
-                _key = x509_rsa_loads(cert)
+                _key = import_rsa_key(cert)
                 spec2key[cert] = _key
             return [("rsa", _key)]
         else:
@@ -146,32 +139,10 @@ def load_x509_cert(url, spec2key):
         return []
 
 
-def load_x509_cert_chain(url):
-    """
-    Place holder
-    """
-    return []
-
-
 def rsa_load(filename):
     """Read a PEM-encoded RSA key pair from a file."""
-    return M2Crypto.RSA.load_key(filename, M2Crypto.util.no_passphrase_callback)
-
-
-def rsa_loads(key):
-    """Read a PEM-encoded RSA key pair from a string."""
-    return M2Crypto.RSA.load_key_string(key,
-                                        M2Crypto.util.no_passphrase_callback)
-
-
-def rsa_pub_load(filename):
-    """Read a PEM-encoded public RSA key from a file."""
-    return M2Crypto.RSA.load_pub_key(filename)
-
-
-def rsa_priv_to_pub(filename):
-    _priv = rsa_load(filename)
-    return new_pub_key((_priv.pub()))
+    pem = open(filename, 'r').read()
+    return import_rsa_key(pem)
 
 
 def rsa_eq(key1, key2):
@@ -186,14 +157,10 @@ def key_eq(key1, key2):
     if type(key1) == type(key2):
         if isinstance(key1, basestring):
             return key1 == key2
-        elif isinstance(key1, M2Crypto.RSA.RSA):
+        elif isinstance(key1, RSA):
             return rsa_eq(key1, key2)
 
     return False
-
-
-def ec_load(filename):
-    return M2Crypto.EC.load_key(filename, M2Crypto.util.no_passphrase_callback)
 
 
 def x509_rsa_load(txt):
@@ -201,13 +168,13 @@ def x509_rsa_load(txt):
     :param txt:
     :return:
     """
-    return [("rsa", x509_rsa_loads(txt))]
+    return [("rsa", import_rsa_key(txt))]
 
 
 class Key():
     members = ["kty", "alg", "use", "kid", "x5c", "x5t", "x5u"]
 
-    def __init__(self, kty="", alg="", use="", kid="", key="", x5c=None,
+    def __init__(self, kty="", alg="", use="", kid="", key=None, x5c=None,
                  x5t="", x5u=""):
         self.key = key
         self.kty = kty
@@ -246,32 +213,40 @@ class Key():
         pass
 
 
-class RSA_key(Key):
+class RSAKey(Key):
     members = Key.members
-    members.extend(["n", "e"])
+    members.extend(["n", "e", "private"])
 
-    def __init__(self, kty="RSA", alg="", use="", kid="", key="",
-                 x5c=None, x5t="", x5u="", n="", e=""):
+    def __init__(self, kty="RSA", alg="", use="", kid="", key=None,
+                 x5c=None, x5t="", x5u="", n="", e="", d="", private=False):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.n = n
         self.e = e
+        self.d = d
+        self.private = private
 
     def comp(self):
         if self.n and self.e:
-            self.key = M2Crypto.RSA.new_pub_key(
-                (long_to_mpi(base64_to_long(str(self.e))),
-                 long_to_mpi(base64_to_long(str(self.n)))))
+            e = base64_to_long(str(self.e))
+            n = base64_to_long(str(self.n))
+            if self.private:
+                d = base64_to_long(str(self.d))
+                self.key = RSA.construct((n, e, d))
+            else:
+                self.key = RSA.construct((n, e))
         elif self.x5c:
             if self.x5t:  # verify the cert
                 pass
             cert = "\n".join([PREFIX, str(self.x5c[0]), POSTFIX])
-            self.key = x509_rsa_loads(cert)
+            self.key = import_rsa_key(cert)
             if len(self.x5c) > 1:  # verify chain
                 pass
 
     def decomp(self, do_x5=False):
-        self.n = long_to_base64(mpi_to_long(self.key.n))
-        self.e = long_to_base64(mpi_to_long(self.key.e))
+        self.n = long_to_base64(self.key.n)
+        self.e = long_to_base64(self.key.e)
+        if self.private:
+            self.d = long_to_base64(self.key.d)
         if do_x5:  # construct the x5u, x5t members
             pass
 
@@ -287,21 +262,53 @@ class RSA_key(Key):
             pass
 
 
-class EC_key(Key):
-    members = ["kty", "alg", "use", "kid", "crv", "x", "y"]
+class ECKey(Key):
+    members = ["kty", "alg", "use", "kid", "crv", "x", "y", "d", "private"]
 
-    def __init__(self, kty="EC", alg="", use="", kid="", key="",
-                 x5c=None, x5t="", x5u="", crv="", x="", y=""):
+    def __init__(self, kty="EC", alg="", use="", kid="", key=None,
+                 x5c=None, x5t="", x5u="", crv="", x="", y="", d="",
+                 curve=None, private=False):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.crv = crv
         self.x = x
         self.y = y
+        self.d = d
+        self.curve = curve
+        self.private = private
+
+    def comp(self):
+        if not self.private:
+            x = bytes_to_long(b64d(self.x))
+            y = bytes_to_long(b64d(self.y))
+            self.key = (x, y)
+        else:
+            self.key = bytes_to_long(b64d(self.d))
+
+    def decomp(self):
+        if not self.crv and not self.curve:
+            raise Exception("Curve must be provided for EC export")
+
+        if self.crv and not self.curve:
+            self.curve = NISTEllipticCurve.by_name(self.crv)
+        elif self.curve and not self.crv:
+            self.crv = self.curve.name()
+
+        if isinstance(self.key, tuple):
+            self.private = False
+            self.x = b64e(long_to_bytes(self.key[0]))
+            self.y = b64e(long_to_bytes(self.key[1]))
+        else:
+            self.private = True
+            self.d = b64e(long_to_bytes(self.key))
+            pub = self.curve.public_key_for(self.key)
+            self.x = b64e(long_to_bytes(pub[0])),
+            self.y = b64e(long_to_bytes(pub[1]))
 
 
-class SYM_key(Key):
+class SYMKey(Key):
     members = ["kty", "alg", "use", "kid", "k"]
 
-    def __init__(self, kty="oct", alg="", use="", kid="", key="",
+    def __init__(self, kty="oct", alg="", use="", kid="", key=None,
                  x5c=None, x5t="", x5u="", k=""):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.k = k
@@ -313,10 +320,10 @@ class SYM_key(Key):
         self.k = b64e(str(self.key))
 
 
-class PKIX_key(Key):
+class PKIXKey(Key):
     members = ["kty", "alg", "use", "kid", "n", "e"]
 
-    def __init__(self, kty="RSA", alg="", use="", kid="", key="",
+    def __init__(self, kty="RSA", alg="", use="", kid="", key=None,
                  x5c=None, x5t="", x5u=""):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.key = key
@@ -324,7 +331,7 @@ class PKIX_key(Key):
     def dc(self):
         if self.x5c:
             cert = "\n".join([PREFIX, str(self.x5c[0]), POSTFIX])
-            self.key = x509_rsa_loads(cert)
+            self.key = import_rsa_key(cert)
         elif self.key:
             self.x5c = []
         else:  # do nothing
@@ -333,13 +340,27 @@ class PKIX_key(Key):
 # -----------------------------------------------------------------------------
 
 
+def keyitems2keyreps(keyitems):
+    keys = []
+    for key_type, _keys in keyitems.items():
+        if key_type.upper() == "RSA":
+            keys.extend([RSAKey(key=k) for k in _keys])
+        elif key_type.upper() == "OCT":
+            keys.extend([SYMKey(key=k) for k in _keys])
+        elif key_type.upper() == "EC":
+            keys.extend([ECKey(key=k) for k in _keys])
+        else:
+            keys.extend([Key(key=k) for k in _keys])
+    return keys
+
+
 def keyrep(kspec):
     if kspec["kty"] == "RSA":
-        item = RSA_key(**kspec)
+        item = RSAKey(**kspec)
     elif kspec["kty"] == "oct":
-        item = SYM_key(**kspec)
+        item = SYMKey(**kspec)
     elif kspec["kty"] == "EC":
-        item = EC_key(**kspec)
+        item = ECKey(**kspec)
     else:
         item = Key(**kspec)
     item.comp()
@@ -386,10 +407,10 @@ def dump_jwk(key, use="", kid=""):
     :param use: What the key are expected to be use for
     :return: The JWK string representation or None
     """
-    if isinstance(key, M2Crypto.RSA.RSA):
-        kspec = RSA_key(key=key)
+    if isinstance(key, _RSAobj):
+        kspec = RSAKey(key=key)
     elif isinstance(key, basestring):
-        kspec = SYM_key(key=key)
+        kspec = SYMKey(key=key)
     else:
         raise Exception("Unknown key type:key="+str(type(key)))
 
