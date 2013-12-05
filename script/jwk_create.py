@@ -3,6 +3,7 @@ import json
 from Crypto.PublicKey import RSA
 import argparse
 import os
+from jwkest.jwk import RSAKey
 
 __author__ = 'rolandh'
 
@@ -12,16 +13,19 @@ def create_and_store_rsa_key_pair(name="pyoidc", path=".", size=1024):
 
     keyfile = os.path.join(path, name)
 
-    f = open("%s.key" % keyfile)
+    f = open("%s.key" % keyfile, "w")
     f.write(key.exportKey("PEM"))
     f.close()
-    f = open("%s.pub" % keyfile)
-    f.write(key.pyblickey().exportKey("PEM"))
+    f = open("%s.pub" % keyfile, "w")
+    f.write(key.publickey().exportKey("PEM"))
     f.close()
 
-    jwk_spec = json.dumps(key, "enc")
+    rsa_key = RSAKey(key=key)
+    rsa_key.serialize()
+    # This will create JWK from the public RSA key
+    jwk_spec = json.dumps(rsa_key.to_dict(), "enc")
     f = open(keyfile + ".jwk", "w")
-    f.write( str(jwk_spec) )
+    f.write(str(jwk_spec))
     f.close()
 
     return key

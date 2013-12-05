@@ -88,12 +88,12 @@ def der2rsa(der):
     # Extract subjectPublicKeyInfo field from X.509 certificate (see RFC3280)
     cert = DerSequence()
     cert.decode(der)
-    tbsCertificate = DerSequence()
-    tbsCertificate.decode(cert[0])
-    subjectPublicKeyInfo = tbsCertificate[6]
+    tbs_certificate = DerSequence()
+    tbs_certificate.decode(cert[0])
+    subject_public_key_info = tbs_certificate[6]
 
     # Initialize RSA key
-    return RSA.importKey(subjectPublicKeyInfo)
+    return RSA.importKey(subject_public_key_info)
 
 
 def pem_cert2rsa(pem_file):
@@ -192,22 +192,25 @@ class Key():
                 _val = getattr(self, key)
                 if _val:
                     res[key] = _val
-            except KeyError:
+            except (KeyError, AttributeError):
                 pass
         return res
 
     def __str__(self):
         return str(self.to_dict())
 
-    def comp(self):
-        """
-
-        :return:
+    def deserialize(self):
+        """ Assumes that the parameters where set from a JWK object
         """
         pass
 
-    def decomp(self):
+    def serialize(self):
+        """ Converts attributes into a representation that is exportable
+        """
         pass
+
+    def get_key(self, **kwargs):
+        return self.key
 
     def dc(self):
         pass
@@ -215,21 +218,24 @@ class Key():
 
 class RSAKey(Key):
     members = Key.members
-    members.extend(["n", "e", "private"])
+    members.extend(["n", "e", "d", "p", "q"])
 
     def __init__(self, kty="RSA", alg="", use="", kid="", key=None,
-                 x5c=None, x5t="", x5u="", n="", e="", d="", private=False):
+                 x5c=None, x5t="", x5u="", n="", e="", d="", p=0, q=0,
+                 private=False):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.n = n
         self.e = e
         self.d = d
+        self.p = p
+        self.q = q
         self.private = private
 
-    def comp(self):
+    def deserialize(self):
         if self.n and self.e:
             e = base64_to_long(str(self.e))
             n = base64_to_long(str(self.n))
-            if self.private:
+            if self.d:
                 d = base64_to_long(str(self.d))
                 self.key = RSA.construct((n, e, d))
             else:
@@ -242,7 +248,7 @@ class RSAKey(Key):
             if len(self.x5c) > 1:  # verify chain
                 pass
 
-    def decomp(self, do_x5=False):
+    def serialize(self, do_x5=False):
         self.n = long_to_base64(self.key.n)
         self.e = long_to_base64(self.key.e)
         if self.private:
@@ -255,15 +261,15 @@ class RSAKey(Key):
 
     def dc(self):
         if self.key:
-            self.decomp()
+            self.serialize()
         elif self.n and self.e:
-            self.comp()
+            self.deserialize()
         else:  # do nothing
             pass
 
 
 class ECKey(Key):
-    members = ["kty", "alg", "use", "kid", "crv", "x", "y", "d", "private"]
+    members = ["kty", "alg", "use", "kid", "crv", "x", "y", "d"]
 
     def __init__(self, kty="EC", alg="", use="", kid="", key=None,
                  x5c=None, x5t="", x5u="", crv="", x="", y="", d="",
@@ -276,33 +282,29 @@ class ECKey(Key):
         self.curve = curve
         self.private = private
 
-    def comp(self):
-        if not self.private:
-            x = bytes_to_long(b64d(self.x))
-            y = bytes_to_long(b64d(self.y))
-            self.key = (x, y)
-        else:
-            self.key = bytes_to_long(b64d(self.d))
+    def deserialize(self):
+        self.x = base64_to_long(self.x)
+        self.y = base64_to_long(self.y)
+        self.curve = NISTEllipticCurve.by_name(self.crv)
+        if self.d:
+            self.d = base64_to_long(self.d)
 
-    def decomp(self):
+    def get_key(self, private=True):
+        if private:
+            return self.d
+        else:
+            return self.x, self.y
+
+    def serialize(self):
         if not self.crv and not self.curve:
             raise Exception("Curve must be provided for EC export")
 
-        if self.crv and not self.curve:
-            self.curve = NISTEllipticCurve.by_name(self.crv)
-        elif self.curve and not self.crv:
+        if self.curve and not self.crv:
             self.crv = self.curve.name()
 
-        if isinstance(self.key, tuple):
-            self.private = False
-            self.x = b64e(long_to_bytes(self.key[0]))
-            self.y = b64e(long_to_bytes(self.key[1]))
-        else:
-            self.private = True
-            self.d = b64e(long_to_bytes(self.key))
-            pub = self.curve.public_key_for(self.key)
-            self.x = b64e(long_to_bytes(pub[0])),
-            self.y = b64e(long_to_bytes(pub[1]))
+        self.d = long_to_base64(self.d)
+        self.x = long_to_base64(self.x)
+        self.y = long_to_base64(self.y)
 
 
 class SYMKey(Key):
@@ -313,10 +315,10 @@ class SYMKey(Key):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.k = k
 
-    def comp(self):
+    def deserialize(self):
         self.key = b64d(str(self.k))
 
-    def decomp(self):
+    def serialize(self):
         self.k = b64e(str(self.key))
 
 
@@ -363,7 +365,7 @@ def keyrep(kspec):
         item = ECKey(**kspec)
     else:
         item = Key(**kspec)
-    item.comp()
+    item.deserialize()
     return item
 
 
@@ -414,7 +416,7 @@ def dump_jwk(key, use="", kid=""):
     else:
         raise Exception("Unknown key type:key="+str(type(key)))
 
-    kspec.decomp()
+    kspec.serialize()
 
     if use:
         kspec.use = use

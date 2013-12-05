@@ -1,19 +1,19 @@
 """JSON Web Token"""
 
-# Most of the code herein I have borrowed/stolen from other people
-# Most notably Jeff Lindsay, Ryan Kelly
+# Most of the code, ideas herein I have borrowed/stolen from other people
+# Most notably Jeff Lindsay, Ryan Kelly and Richard Barnes
 
 import json
 import logging
 
 import hashlib
-import hmac
 import struct
-from Crypto.Hash import SHA, SHA256, SHA384, SHA512, HMAC
-from Crypto.PublicKey import DSA
-from Crypto.PublicKey.RSA import _RSAobj
-from Crypto.Random import random
-from Crypto.Signature import PKCS1_v1_5, PKCS1_PSS
+from Crypto.Hash import SHA256
+from Crypto.Hash import SHA384
+from Crypto.Hash import SHA512
+from Crypto.Hash import HMAC
+from Crypto.Signature import PKCS1_v1_5
+from Crypto.Signature import PKCS1_PSS
 from Crypto.Util.number import bytes_to_long
 from cryptlib.ecc import P256
 from cryptlib.ecc import P384
@@ -123,15 +123,16 @@ class RSASigner(Signer):
 class DSASigner(Signer):
     def __init__(self, digest, sign):
         self.digest = digest
-        self.sign = sign
+        self._sign = sign
 
     def sign(self, msg, key):
+        # verify the key
         h = bytes_to_long(self.digest.new(msg).digest())
-        return self.sign.dsa_sign(h, key)
+        return self._sign.sign(h, key)
 
     def verify(self, msg, sig, key):
         h = bytes_to_long(self.digest.new(msg).digest())
-        return self.sign.dsa_verify(h, sig, key)
+        return self._sign.verify(h, sig, key)
 
 
 class PSSSigner(Signer):
@@ -164,14 +165,14 @@ SIGNER_ALGS = {
 
     u'PS256': PSSSigner(SHA256),
     u'PS384': PSSSigner(SHA384),
-    u'PS512': PSSSigner(SHA512),
+    #u'PS512': PSSSigner(SHA512),
 
     u'none': None
 }
 
 
 def alg2keytype(alg):
-    if alg.startswith("RS"):
+    if alg.startswith("RS") or alg.startswith("PS"):
         return "RSA"
     elif alg.startswith("HS"):
         return "oct"
@@ -300,7 +301,7 @@ class JWx(object):
 
         return {}
 
-    def _pick_keys(self, keys):
+    def _pick_keys(self, keys, use="", alg=""):
         """
         The assumption is that upper layer has made certain you only get
         keys you can use.
@@ -311,12 +312,24 @@ class JWx(object):
         _kty = alg2keytype(self["alg"])
         _keys = [k for k in keys if k.kty == _kty]
 
-        if "kid" in self:
-            for _key in _keys:
-                if self["kid"] == _key.kid:
-                    return [_key]
-        else:
-            return _keys
+        pkey = []
+        for _key in _keys:
+            try:
+                assert self["kid"] == _key.kid
+            except (KeyError, AttributeError):
+                pass
+            except AssertionError:
+                continue
+
+            if use and _key.use and _key.use != use:
+                continue
+
+            if alg and _key.alg and _key.alg != alg:
+                continue
+
+            pkey.append(_key)
+
+        return pkey
 
     def _decode(self, payload):
         _msg = b64d(str(payload))
@@ -349,7 +362,7 @@ class JWS(JWx):
             raise UnknownAlgorithm(_alg)
 
         if keys:
-            keys = self._pick_keys(keys)
+            keys = self._pick_keys(keys, use="sig")
         else:
             keys = self._pick_keys(self._get_keys())
 
@@ -359,7 +372,7 @@ class JWS(JWx):
             raise NoSuitableSigningKeys(_alg)
 
         _input = b".".join([enc_head, enc_payload])
-        sig = _signer.sign(_input, key.key)
+        sig = _signer.sign(_input, key.get_key(private=True))
         return b".".join([enc_head, enc_payload, b64e(sig)])
 
     def verify_compact(self, jws, keys=None):
@@ -382,7 +395,7 @@ class JWS(JWx):
         for key in _keys:
             try:
                 verifier.verify(_header + '.' + _payload, b64d(str(_sig)),
-                                key.key)
+                                key.get_key(private=False))
             except BadSignature:
                 pass
             else:

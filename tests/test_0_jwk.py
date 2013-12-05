@@ -2,7 +2,7 @@ from binascii import hexlify
 import json
 from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import _RSAobj
-from jwkest.jwk import dump_jwk
+from jwkest.jwk import dump_jwk, ECKey
 from jwkest.jwk import pem_cert2rsa
 from jwkest.jwk import RSAKey
 from jwkest.jwk import base64_to_long
@@ -32,7 +32,7 @@ def test_pem_cert2rsa():
 def test_extract_rsa_from_cert_2():
     _ckey = pem_cert2rsa(CERT)
     _jwk = RSAKey(key=_ckey)
-    _jwk.decomp()
+    _jwk.serialize()
 
     print _jwk
 
@@ -44,7 +44,7 @@ def test_extract_rsa_from_cert_2():
 def test_kspec():
     _ckey = pem_cert2rsa(CERT)
     _jwk = RSAKey(key=_ckey)
-    _jwk.decomp()
+    _jwk.serialize()
 
     print _jwk
     assert _jwk.kty == "RSA"
@@ -131,5 +131,22 @@ def test_import_rsa_key():
     assert jwk['e'] == 'AQAB'
 
 
+ECKEY = {
+    "crv": "P-521",
+    "x": "AekpBQ8ST8a8VcfVOTNl353vSrDCLLJXmPk06wTjxrrjcBpXp5EOnYG_NjFZ6OvLFV1jSfS9tsz4qUxcWceqwQGk",
+    "y": "ADSmRA43Z1DSNx_RvcLI87cdL07l6jQyyBXMoxVg_l2Th-x3S1WDhjDly79ajL4Kkd0AZMaZmh9ubmf63e3kyMj2",
+    "d": "AY5pb7A0UFiB3RELSD64fTLOSV_jazdF7fLYyuTw8lOfRhWg6Y6rUrPAxerEzgdRhajnu0ferB0d53vM9mE15j2C"
+}
+
+
+def test_import_export_eckey():
+    _key = ECKey(**ECKEY)
+    _key.deserialize()
+
+    _key.serialize()
+    exp_key = _key.to_dict()
+    assert _eq(exp_key.keys(), ["y", "x", "crv", "kty", "d"])
+
+
 if __name__ == "__main__":
-    test_pem_cert2rsa()
+    test_import_export_eckey()

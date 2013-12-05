@@ -4,7 +4,7 @@ import jwkest
 from jwkest import jws
 from jwkest import b64e
 
-from jwkest.jwk import SYMKey
+from jwkest.jwk import SYMKey, ECKey
 from jwkest.jwk import import_rsa_key_from_file
 from jwkest.jwk import RSAKey
 from jwkest.jws import SIGNER_ALGS
@@ -175,7 +175,7 @@ def test_a_1_3b():
 def test_jws_1():
     msg = {"iss": "joe", "exp": 1300819380, "http://example.com/is_root": True}
     jwk = SYMKey(key=jwkest.intarr2bin(HMAC_KEY))
-    jwk.decomp()
+    jwk.serialize()
     _jws = JWS(msg, cty="JWT", alg="HS256", jwk=json.dumps(jwk.to_dict()))
     res = _jws.sign_compact()
 
@@ -183,5 +183,94 @@ def test_jws_1():
     _jws2.verify_compact(res)
     assert _jws2.msg == msg
 
+
+def test_signer_es256():
+    payload = "Please take a moment to register today"
+    _key = ECKey(crv="P-521",
+                 x="AekpBQ8ST8a8VcfVOTNl353vSrDCLLJXmPk06wTjxrrjcBpXp5EOnYG_NjFZ6OvLFV1jSfS9tsz4qUxcWceqwQGk",
+                 y="ADSmRA43Z1DSNx_RvcLI87cdL07l6jQyyBXMoxVg_l2Th-x3S1WDhjDly79ajL4Kkd0AZMaZmh9ubmf63e3kyMj2",
+                 d="AY5pb7A0UFiB3RELSD64fTLOSV_jazdF7fLYyuTw8lOfRhWg6Y6rUrPAxerEzgdRhajnu0ferB0d53vM9mE15j2C")
+    _key.deserialize()
+    keys = [_key]
+    #keys[0]._keytype = "private"
+    _jws = JWS(payload, alg="ES256")
+    _jwt = _jws.sign_compact(keys)
+
+    _rj = JWS()
+    info = _rj.verify_compact(_jwt, keys)
+    assert info == payload
+
+
+def test_signer_es384():
+    payload = "Please take a moment to register today"
+    _key = ECKey(crv="P-521",
+                 x="AekpBQ8ST8a8VcfVOTNl353vSrDCLLJXmPk06wTjxrrjcBpXp5EOnYG_NjFZ6OvLFV1jSfS9tsz4qUxcWceqwQGk",
+                 y="ADSmRA43Z1DSNx_RvcLI87cdL07l6jQyyBXMoxVg_l2Th-x3S1WDhjDly79ajL4Kkd0AZMaZmh9ubmf63e3kyMj2",
+                 d="AY5pb7A0UFiB3RELSD64fTLOSV_jazdF7fLYyuTw8lOfRhWg6Y6rUrPAxerEzgdRhajnu0ferB0d53vM9mE15j2C")
+    _key.deserialize()
+    keys = [_key]
+    #keys[0]._keytype = "private"
+    _jws = JWS(payload, alg="ES384")
+    _jwt = _jws.sign_compact(keys)
+
+    _rj = JWS()
+    info = _rj.verify_compact(_jwt, keys)
+    assert info == payload
+
+
+def test_signer_es512():
+    payload = "Please take a moment to register today"
+    _key = ECKey(crv="P-521",
+                 x="AekpBQ8ST8a8VcfVOTNl353vSrDCLLJXmPk06wTjxrrjcBpXp5EOnYG_NjFZ6OvLFV1jSfS9tsz4qUxcWceqwQGk",
+                 y="ADSmRA43Z1DSNx_RvcLI87cdL07l6jQyyBXMoxVg_l2Th-x3S1WDhjDly79ajL4Kkd0AZMaZmh9ubmf63e3kyMj2",
+                 d="AY5pb7A0UFiB3RELSD64fTLOSV_jazdF7fLYyuTw8lOfRhWg6Y6rUrPAxerEzgdRhajnu0ferB0d53vM9mE15j2C")
+    _key.deserialize()
+    keys = [_key]
+    #keys[0]._keytype = "private"
+    _jws = JWS(payload, alg="ES512")
+    _jwt = _jws.sign_compact(keys)
+
+    _rj = JWS()
+    info = _rj.verify_compact(_jwt, keys)
+    assert info == payload
+
+
+def test_signer_ps256():
+    payload = "Please take a moment to register today"
+    keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
+    #keys[0]._keytype = "private"
+    _jws = JWS(payload, alg="PS256")
+    _jwt = _jws.sign_compact(keys)
+
+    _rj = JWS()
+    info = _rj.verify_compact(_jwt, keys)
+    assert info == payload
+
+
+def test_signer_ps384():
+    payload = "Please take a moment to register today"
+    keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
+    #keys[0]._keytype = "private"
+    _jws = JWS(payload, alg="PS384")
+    _jwt = _jws.sign_compact(keys)
+
+    _rj = JWS()
+    info = _rj.verify_compact(_jwt, keys)
+    assert info == payload
+
+
+def test_signer_ps512():
+    payload = "Please take a moment to register today"
+    # Key has to be big enough  > 512+512+2
+    keys = [RSAKey(key=import_rsa_key_from_file("./size2048.key"))]
+    #keys[0]._keytype = "private"
+    _jws = JWS(payload, alg="PS512")
+    _jwt = _jws.sign_compact(keys)
+
+    _rj = JWS()
+    info = _rj.verify_compact(_jwt, keys)
+    assert info == payload
+
+
 if __name__ == "__main__":
-    test_a_1_3a()
+    test_signer_ps256()

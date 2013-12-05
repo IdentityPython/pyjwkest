@@ -61,7 +61,7 @@ class NISTEllipticCurve:
         return self.int2bytes( mulp(self.a, self.b, self.p, pub, priv)[0] )
        
     # ECDSA (adapted from ecdsa.py)
-    def dsa_sign(self, h, priv, k=None): 
+    def sign(self, h, priv, k=None):
         while h > self.N:
             h >>= 1
         r = s = 0
@@ -76,7 +76,7 @@ class NISTEllipticCurve:
             s = (kinv * (h + r * priv)) % self.N
         return self.int2bytes(r) + self.int2bytes(s) 
 
-    def dsa_verify(self, h, sig, pub):
+    def verify(self, h, sig, pub):
         while h > self.N:
             h >>= 1
         r = self.bytes2int(sig[:self.bytes])
@@ -92,7 +92,6 @@ class NISTEllipticCurve:
 P256 = NISTEllipticCurve(256)
 P384 = NISTEllipticCurve(384)
 P521 = NISTEllipticCurve(521)
-
 
 if __name__ == "__main__":
     # Try ECDH, see if we get the same answer
@@ -124,15 +123,15 @@ if __name__ == "__main__":
     
     h = int(hashlib.new("SHA1", msg).hexdigest(), 16)
     sig = P256.int2bytes(R) + P256.int2bytes(S)
-    ver = P256.dsa_verify(h, sig, Q)
+    ver = P256.verify(h, sig, Q)
     if ver:
         print "Passed NIST ECDSA P-256 verification test"
     else:
         print "Failed NIST ECDSA P-256 verification test"
 
     # NB: This will differ because of k; fix k to test generation
-    sig = P256.dsa_sign(h, d)
-    ver2 = P256.dsa_verify(h, sig, Q)
+    sig = P256.sign(h, d)
+    ver2 = P256.verify(h, sig, Q)
     if ver2:
         print "Passed ECDSA P-256 signature test"
     else:
@@ -150,7 +149,7 @@ if __name__ == "__main__":
     h = int(hashlib.new("SHA384", msg).hexdigest(), 16)
     Q = (Qx, Qy)
     sig = P384.int2bytes(R) + P384.int2bytes(S)
-    ver = P384.dsa_verify(h, sig, Q)
+    ver = P384.verify(h, sig, Q)
     if ver:
         print "Passed Suite B ECDSA P-384 verification test"
     else:
@@ -166,7 +165,7 @@ if __name__ == "__main__":
     h = int(hashlib.new("SHA256", msg).hexdigest(), 16)
     Q = (Qx, Qy)
     sig = P256.int2bytes(R) + P256.int2bytes(S)
-    ver = P256.dsa_verify(h, sig, Q)
+    ver = P256.verify(h, sig, Q)
     if ver:
         print "Passed Suite B ECDSA P-256 verification test"
     else:
@@ -186,7 +185,7 @@ if __name__ == "__main__":
     h = int(hashlib.new("SHA512", msg).hexdigest(), 16)
     Q = (Qx, Qy)
     sig = P521.int2bytes(R) + P521.int2bytes(S)
-    ver = P521.dsa_verify(h, sig, Q)
+    ver = P521.verify(h, sig, Q)
     if ver:
         print "Passed NIST ECDSA P-521 verification test"
     else:
@@ -207,7 +206,7 @@ if __name__ == "__main__":
     h = int(hashlib.new("SHA512", msg).hexdigest(), 16)
     Q = (Qx, Qy)
     sig = P521.int2bytes(R) + P521.int2bytes(S)
-    ver = P521.dsa_verify(h, sig, Q)
+    ver = P521.verify(h, sig, Q)
     if not ver:
         print "Passed NIST ECDSA P-521 negative verification test"
     else:
@@ -222,8 +221,8 @@ if __name__ == "__main__":
     
     (priv, pub) = P521.key_pair()
     h = int(hashlib.new("SHA512", msg).hexdigest(), 16)
-    sig = P521.dsa_sign(h, priv)
-    ver = P521.dsa_verify(h, sig, pub)
+    sig = P521.sign(h, priv)
+    ver = P521.verify(h, sig, pub)
     if ver:
         print "Passed self-interop with P-521"
     else:
