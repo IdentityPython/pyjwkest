@@ -28,11 +28,11 @@ def aes_unwrap_key_and_iv(kek, wrapped):
     r = [None] + [wrapped[i * 8:i * 8 + 8] for i in range(1, n + 1)]
     a = QUAD.unpack(wrapped[:8])[0]
     decrypt = AES.new(kek).decrypt
-    for j in range(5, -1, -1): #counting down
-        for i in range(n, 0, -1): #(n, n-1, ..., 1)
-            ciphertext = QUAD.pack(A ^ (n * j + i)) + r[i]
+    for j in range(5, -1, -1):  #counting down
+        for i in range(n, 0, -1):  #(n, n-1, ..., 1)
+            ciphertext = QUAD.pack(a ^ (n * j + i)) + r[i]
             B = decrypt(ciphertext)
-            A = QUAD.unpack(B[:8])[0]
+            a = QUAD.unpack(B[:8])[0]
             r[i] = B[8:]
     return "".join(r[1:]), a
 
@@ -62,9 +62,9 @@ def aes_wrap_key(kek, plaintext, iv=0xa6a6a6a6a6a6a6a6):
     a = iv
     encrypt = AES.new(kek).encrypt
     for j in range(6):
-        import binascii
+        #import binascii
+        #print hex(a), binascii.hexlify(r[1]), binascii.hexlify(r[2])
 
-        print hex(a), binascii.hexlify(r[1]), binascii.hexlify(r[2])
         for i in range(1, n + 1):
             b = encrypt(QUAD.pack(a) + r[i])
             a = QUAD.unpack(b[:8])[0] ^ (n * j + i)
