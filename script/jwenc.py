@@ -5,7 +5,8 @@ __author__ = 'rohe0002'
 
 import argparse
 import requests
-from jwkest.jwk import load_jwks_from_url, RSAKey, keyitems2keyreps
+from jwkest.jwk import load_jwks_from_url
+from jwkest.jwk import keyitems2keyreps
 from jwkest.jwk import rsa_load
 from jwkest.jwk import load_x509_cert
 from jwkest.jwk import load_jwks
