@@ -174,8 +174,8 @@ SIGNER_ALGS = {
 def alg2keytype(alg):
     if alg.startswith("RS") or alg.startswith("PS"):
         return "RSA"
-    elif alg.startswith("HS"):
-        return "oct"
+    elif alg.startswith("HS") or alg.startswith("A"):
+        return "OCT"
     elif alg.startswith("ES"):
         return "EC"
     else:
@@ -309,8 +309,9 @@ class JWx(object):
         :param keys: A list of KEY instances
         :return: A list of KEY instances that fulfill the requirements
         """
-        _kty = alg2keytype(self["alg"])
-        _keys = [k for k in keys if k.kty == _kty]
+        _k = alg2keytype(self["alg"])
+        _kty = [_k.lower(), _k.upper()]
+        _keys = [k for k in keys if k.kty in _kty]
 
         pkey = []
         for _key in _keys:
