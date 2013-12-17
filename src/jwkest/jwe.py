@@ -13,7 +13,7 @@ from Crypto.Cipher import PKCS1_v1_5
 from Crypto.Cipher import PKCS1_OAEP
 
 from cryptlib.aes_gcm import AES_GCM
-from cryptlib.aes_key_wrap import aes_wrap_key
+from cryptlib.aes_key_wrap import aes_wrap_key, aes_unwrap_key
 from cryptlib.ecc import NISTEllipticCurve
 
 from jwkest import b64d
@@ -298,6 +298,9 @@ class JWe(JWx):
 
 
 class JWE_SYM(JWe):
+    args = JWe.args[:]
+    args.append("enc")
+
     def encrypt(self, key, iv="", cek=""):
         """
 
@@ -311,16 +314,40 @@ class JWE_SYM(JWe):
         b64_header = self._encoded_header()
 
         cek, iv = self._generate_key_and_iv(self["enc"], cek, iv)
-        jek = aes_wrap_key(intarr2str(key), cek)
+        if isinstance(key, basestring):
+            kek = key
+        else:
+            kek = intarr2str(key)
+
+        # The iv for this function must be 64 bit
+        # Which is certainly different from the one above
+        jek = aes_wrap_key(kek, cek)
         auth_data = b64_header
 
         _enc = self["enc"]
 
-        ctxt, tag, cek = self.enc_setup(_enc, cek, _msg, auth_data, iv=iv)
+        ctxt, tag, cek = self.enc_setup(_enc, _msg, auth_data, cek, iv=iv)
         return self.pack(b64_header, jek, iv, ctxt, tag)
 
-    def decrypt(self):
-        pass
+    def decrypt(self, token, key):
+        b64_head, b64_jek, b64_iv, b64_ctxt, b64_tag = token.split(b".")
+
+        self.parse_header(b64_head)
+        iv = b64d(str(b64_iv))
+        jek = b64d(str(b64_jek))
+
+        # The iv for this function must be 64 bit
+        cek = aes_unwrap_key(key, jek)
+        _ctxt = b64d(str(b64_ctxt))
+        _tag = b64d(str(b64_tag))
+        auth_data = b64_head
+
+        msg = self._decrypt(self["enc"], cek, _ctxt, auth_data, iv, _tag)
+
+        if "zip" in self and self["zip"] == "DEF":
+            msg = zlib.decompress(msg)
+
+        return msg
 
 
 class JWE_RSA(JWe):
@@ -504,55 +531,61 @@ class JWE(JWx):
         _alg = self["alg"]
         if _alg.startswith("RSA") and _alg in ["RSA-OAEP", "RSA1_5"]:
             encrypter = JWE_RSA(self.msg, **self._dict)
-
-            if keys:
-                keys = self._pick_keys(keys)
-            else:
-                keys = self._pick_keys(self._get_keys())
-
-            if not keys:
-                raise NoSuitableEncryptionKey(_alg)
-
-            if cek:
-                kwargs["cek"] = cek
-            if iv:
-                kwargs["iv"] = iv
+        elif _alg.startswith("A") and _alg.endswith("KW"):
+            encrypter = JWE_SYM(self.msg, **self._dict)
         else:
             raise NotSupportedAlgorithm
+
+        if keys:
+            keys = self._pick_keys(keys)
+        else:
+            keys = self._pick_keys(self._get_keys())
+
+        if not keys:
+            raise NoSuitableEncryptionKey(_alg)
+
+        if cek:
+            kwargs["cek"] = cek
+        if iv:
+            kwargs["iv"] = iv
 
         for key in keys:
             try:
                 token = encrypter.encrypt(key.key, **kwargs)
-            except Exception:
+            except Exception, err:
                 pass
             else:
                 return token
 
         raise NoSuitableEncryptionKey()
 
-
     def decrypt(self, token, keys=None):
         header, ek, eiv, ctxt, tag = token.split(b".")
         self.parse_header(header)
 
-        if self["alg"] in ["RSA-OAEP", "RSA1_5"]:
+        _alg = self["alg"]
+        if _alg in ["RSA-OAEP", "RSA1_5"]:
             decrypter = JWE_RSA(**self._dict)
-
-            if keys:
-                keys = self._pick_keys(keys)
-            else:
-                keys = self._pick_keys(self._get_keys())
-
-            if not keys:
-                raise NoSuitableEncryptionKey(self.alg)
-
+        elif _alg.startswith("A") and _alg.endswith("KW"):
+            decrypter = JWE_SYM(self.msg, **self._dict)
         else:
             raise NotSupportedAlgorithm
 
+        if keys:
+            keys = self._pick_keys(keys)
+        else:
+            keys = self._pick_keys(self._get_keys())
+
+        if not keys:
+            raise NoSuitableEncryptionKey(self.alg)
+
         for key in keys:
             try:
-                msg = decrypter.decrypt(str(token), key.key)
-                return msg
+                msg, flag = decrypter.decrypt(str(token), key.key)
+                if flag:
+                    return msg
+                else:
+                    raise Exception("Failed decryption")
             except KeyError:
                 pass
 
