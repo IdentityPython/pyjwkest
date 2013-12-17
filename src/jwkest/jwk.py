@@ -9,7 +9,6 @@ from binascii import a2b_base64
 from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import importKey, _RSAobj
 from Crypto.Util.asn1 import DerSequence
-from Crypto.Util.number import bytes_to_long, long_to_bytes
 
 from requests import request
 from cryptlib.ecc import NISTEllipticCurve
@@ -310,7 +309,7 @@ class ECKey(Key):
 class SYMKey(Key):
     members = ["kty", "alg", "use", "kid", "k"]
 
-    def __init__(self, kty="oct", alg="", use="", kid="", key=None,
+    def __init__(self, kty="OCT", alg="", use="", kid="", key=None,
                  x5c=None, x5t="", x5u="", k=""):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.k = k
@@ -359,7 +358,7 @@ def keyitems2keyreps(keyitems):
 def keyrep(kspec):
     if kspec["kty"] == "RSA":
         item = RSAKey(**kspec)
-    elif kspec["kty"] == "oct":
+    elif kspec["kty"] == "OCT":
         item = SYMKey(**kspec)
     elif kspec["kty"] == "EC":
         item = ECKey(**kspec)
