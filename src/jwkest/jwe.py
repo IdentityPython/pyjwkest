@@ -581,12 +581,10 @@ class JWE(JWx):
 
         for key in keys:
             try:
-                msg, flag = decrypter.decrypt(str(token), key.key)
-                if flag:
-                    return msg
-                else:
-                    raise Exception("Failed decryption")
+                msg = decrypter.decrypt(str(token), key.key)
             except KeyError:
                 pass
+            else:
+                return msg
 
         raise
