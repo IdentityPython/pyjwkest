@@ -5,23 +5,22 @@ __author__ = 'rohe0002'
 
 import argparse
 import requests
-from jwkest.jwk import load_jwks_from_url
-from jwkest.jwk import keyitems2keyreps
+from jwkest.jwk import load_jwks_from_url, RSAKey
 from jwkest.jwk import rsa_load
 from jwkest.jwk import load_x509_cert
 from jwkest.jwk import load_jwks
-from jwkest.jwe import SUPPORTED, JWE
+from jwkest.jwe import SUPPORTED
+from jwkest.jwe import JWE
 from jwkest.jwk import import_rsa_key_from_file
-#from jwkest.jwe import JWE_RSA
 
 
 def assign(lst):
     _keys = {}
-    for typ, key in lst:
+    for key in lst:
         try:
-            _keys[typ].append(key)
+            _keys[key.kty].append(key)
         except KeyError:
-            _keys[typ] = [key]
+            _keys[key.kty] = [key]
     return _keys
 
 
@@ -62,16 +61,24 @@ if __name__ == "__main__":
 
     keys = {}
     if args.jwk_url:
-        keys = assign(load_jwks_from_url(args.jwk_url, {}))
+        keys = load_jwks_from_url(args.jwk_url, {})
     elif args.jwk_file:
-        keys = assign(load_jwks(open(args.jwk_file).read()))
+        keys = load_jwks(open(args.jwk_file).read())
     elif args.x509_url:
-        keys = assign(load_x509_cert(lrequest, args.x509_url))
+        # load_x509_cert returns list of 2-tuples
+        keys = [RSAKey(key=x) for x, y in load_x509_cert(lrequest,
+                                                         args.x509_url)]
+        for key in keys:
+            key.serialize()
     elif args.x509_file:
-        keys = {"RSA": [import_rsa_key_from_file(args.x509_file)]}
+        # import_rsa_key_from_file returns RSA key instance
+        _key = RSAKey(key=import_rsa_key_from_file(args.x509_file))
+        _key.serialize()
+        keys = [_key]
     elif args.rsa_file:
-        keys = {"RSA": [rsa_load(args.rsa_file)]}
-        mode = ""
+        _key = RSAKey(key=rsa_load(args.rsa_file))
+        _key.serialize()
+        keys = [_key]
     else:
         print >> sys.stderr, "Needs encryption key"
         exit()
@@ -97,7 +104,5 @@ if __name__ == "__main__":
     else:
         message = args.message
 
-    krs = keyitems2keyreps(keys)
-
     jwe = JWE(message, alg=args.alg, enc=args.enc)
-    print jwe.encrypt(krs)
+    print jwe.encrypt(keys)

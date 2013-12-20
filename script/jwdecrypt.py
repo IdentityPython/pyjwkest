@@ -5,8 +5,7 @@ __author__ = 'rohe0002'
 
 import argparse
 import requests
-from jwkest.jwk import load_jwks_from_url
-from jwkest.jwk import keyitems2keyreps
+from jwkest.jwk import load_jwks_from_url, RSAKey
 from jwkest.jwk import rsa_load
 from jwkest.jwk import load_x509_cert
 from jwkest.jwk import load_jwks
@@ -16,11 +15,11 @@ from jwkest.jwe import JWE
 
 def assign(lst):
     _keys = {}
-    for typ, key in lst:
+    for key in lst:
         try:
-            _keys[typ].append(key)
+            _keys[key.kty].append(key)
         except KeyError:
-            _keys[typ] = [key]
+            _keys[key.kty] = [key]
     return _keys
 
 
@@ -46,8 +45,6 @@ if __name__ == "__main__":
     parser.add_argument('-r', dest="rsa_file",
                         help="A file containing a RSA key")
     parser.add_argument("-i", dest="int", help="Integrity method")
-    parser.add_argument("-m", dest="mode", default="private",
-                        help="Whether a public or private key should be used")
     parser.add_argument("-f", dest="file", help="File with the message")
     parser.add_argument("message", nargs="?", help="The message to encrypt")
 
@@ -56,26 +53,17 @@ if __name__ == "__main__":
     keys = {}
     if args.jwk_url:
         keys = assign(load_jwks_from_url(lrequest, args.jwk_url))
-        if args.mode == "private":
-            print >> sys.stderr, "Missing private key to decrypt with"
-            exit()
     elif args.jwk_file:
-        keys = assign(load_jwks(open(args.jwk_file).read()))
-        if args.mode == "private":
-            print >> sys.stderr, "Missing private key to decrypt with"
-            exit()
+        keys = load_jwks(open(args.jwk_file).read())
     elif args.x509_url:
-        keys = assign(load_x509_cert(lrequest, args.x509_url))
-        if args.mode == "private":
-            print >> sys.stderr, "Missing private key to decrypt with"
-            exit()
+        keys = load_x509_cert(lrequest, args.x509_url)
     elif args.x509_file:
-        keys = {"rsa": [import_rsa_key_from_file(args.x509_file)]}
-        if args.mode == "private":
-            print >> sys.stderr, "Missing private key to decrypt with"
-            exit()
+        keys = [import_rsa_key_from_file(args.x509_file)]
     elif args.rsa_file:
-        keys = {"rsa": [rsa_load(args.rsa_file)]}
+        key = rsa_load(args.rsa_file)
+        rsa_key = RSAKey(key=key)
+        rsa_key.serialize()
+        keys = [rsa_key]
     else:
         print >> sys.stderr, "Needs encryption key"
         exit()
@@ -86,7 +74,5 @@ if __name__ == "__main__":
     else:
         msg = args.message
 
-    krs = keyitems2keyreps(keys)
-
     jwe = JWE()
-    print jwe.decrypt(msg, krs)
+    print jwe.decrypt(msg, keys)
