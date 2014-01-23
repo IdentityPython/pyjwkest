@@ -30,6 +30,14 @@ class FormatError(Exception):
     pass
 
 
+class SerializationNotPossible(Exception):
+    pass
+
+
+class DeSerializationNotPossible(Exception):
+    pass
+
+
 def byte_arr(long_int):
     _bytes = []
     while long_int:
@@ -257,8 +265,13 @@ class RSAKey(Key):
             self.key = import_rsa_key(cert)
             if len(self.x5c) > 1:  # verify chain
                 pass
+        else:
+            raise DeSerializationNotPossible()
 
     def serialize(self, do_x5=False):
+        if not self.key:
+            raise SerializationNotPossible()
+
         self.n = long_to_base64(self.key.n)
         self.e = long_to_base64(self.key.e)
         if self.private:
@@ -307,8 +320,12 @@ class ECKey(Key):
         self.ser = False
 
     def deserialize(self):
-        self.x = base64_to_long(self.x)
-        self.y = base64_to_long(self.y)
+        try:
+            self.x = base64_to_long(self.x)
+            self.y = base64_to_long(self.y)
+        except TypeError:
+            raise DeSerializationNotPossible()
+
         self.curve = NISTEllipticCurve.by_name(self.crv)
         if self.d:
             self.d = base64_to_long(self.d)
@@ -326,7 +343,7 @@ class ECKey(Key):
 
     def serialize(self):
         if not self.crv and not self.curve:
-            raise Exception("Curve must be provided for EC export")
+            raise SerializationNotPossible()
 
         if self.curve and not self.crv:
             self.crv = self.curve.name()
