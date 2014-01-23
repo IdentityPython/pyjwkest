@@ -185,6 +185,9 @@ class Key():
         self.x5u = x5u
 
     def to_dict(self):
+        if not self.serialized():
+            self.serialize()
+
         res = {}
         for key in self.members:
             try:
@@ -206,6 +209,14 @@ class Key():
     def serialize(self):
         """ Converts attributes into a representation that is exportable
         """
+        pass
+
+    def serialized(self):
+        """ Check if the key has been serialized """
+        pass
+
+    def deserialized(self):
+        """ Check if the key has been deserialized """
         pass
 
     def get_key(self, **kwargs):
@@ -255,6 +266,18 @@ class RSAKey(Key):
         if do_x5:  # construct the x5u, x5t members
             pass
 
+    def serialized(self):
+        if self.n and self.e:
+            return True
+        else:
+            return False
+
+    def deserialized(self):
+        if self.key:
+            return True
+        else:
+            return False
+
     def load(self, filename):
         self.key = rsa_load(filename)
 
@@ -280,6 +303,8 @@ class ECKey(Key):
         self.d = d
         self.curve = curve
         self.private = private
+        self.deser = False
+        self.ser = False
 
     def deserialize(self):
         self.x = base64_to_long(self.x)
@@ -287,6 +312,11 @@ class ECKey(Key):
         self.curve = NISTEllipticCurve.by_name(self.crv)
         if self.d:
             self.d = base64_to_long(self.d)
+        self.deser = True
+        self.ser = False
+
+    def deserialized(self):
+        return self.deser
 
     def get_key(self, private=True):
         if private:
@@ -304,6 +334,11 @@ class ECKey(Key):
         self.d = long_to_base64(self.d)
         self.x = long_to_base64(self.x)
         self.y = long_to_base64(self.y)
+        self.deser = False
+        self.ser = True
+
+    def serialized(self):
+        return self.ser
 
 
 class SYMKey(Key):
@@ -319,6 +354,18 @@ class SYMKey(Key):
 
     def serialize(self):
         self.k = b64e(str(self.key))
+
+    def serialized(self):
+        if self.k:
+            return True
+        else:
+            return False
+
+    def deserialized(self):
+        if self.key:
+            return True
+        else:
+            return False
 
 
 class PKIXKey(Key):
