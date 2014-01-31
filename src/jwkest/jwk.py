@@ -308,7 +308,7 @@ class ECKey(Key):
 
     def __init__(self, kty="EC", alg="", use="", kid="", key=None,
                  x5c=None, x5t="", x5u="", crv="", x="", y="", d="",
-                 curve=None, private=False):
+                 curve=None, private=False, deser=False, ser=False):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.crv = crv
         self.x = x
@@ -316,8 +316,8 @@ class ECKey(Key):
         self.d = d
         self.curve = curve
         self.private = private
-        self.deser = False
-        self.ser = False
+        self.deser = deser
+        self.ser = ser
 
     def deserialize(self):
         try:
@@ -413,7 +413,7 @@ def keyitems2keyreps(keyitems):
         elif key_type.upper() == "OCT":
             keys.extend([SYMKey(key=k) for k in _keys])
         elif key_type.upper() == "EC":
-            keys.extend([ECKey(key=k) for k in _keys])
+            keys.extend([ECKey(key=k, ser=True) for k in _keys])
         else:
             keys.extend([Key(key=k) for k in _keys])
     return keys
