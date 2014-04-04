@@ -20,3 +20,8 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+.. raw:: html
+
+    <a href="https://github.com/rohe/pyjwkest" class="github" target="_blank">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="_static/ViewmeonGitHub.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
