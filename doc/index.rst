@@ -11,7 +11,7 @@ Implementation of JWT, JWS, JWE and JWK
 .. toctree::
    :maxdepth: 1
 
-   jwkest
+   contents
 
 Indices and tables
 ==================
