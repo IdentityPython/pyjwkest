@@ -1,17 +1,14 @@
 import hashlib
 from Crypto.PublicKey import RSA
-from cryptlib import aes
-from jwkest.extra import aes_cbc_hmac_encrypt
 from jwkest.jwk import RSAKey
 from aes_key_wrap_crypto import aes_wrap_key
 
 __author__ = 'rohe0002'
 
 from jwkest import b64e
-from jwkest.jwe import JWE_RSA, JWe
+from jwkest.jwe import JWE_RSA
+from jwkest.jwe import JWe
 from jwkest.jwe import JWE
-from jwkest.jwe import int2bigendian
-from jwkest.jws import SIGNER_ALGS
 from jwkest.gcm import gcm_encrypt
 
 
