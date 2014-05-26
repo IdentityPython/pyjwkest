@@ -1,4 +1,3 @@
-from binascii import hexlify
 import json
 from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import _RSAobj

@@ -33,27 +33,31 @@ ENC = 1
 DEC = 0
 
 
-class CannotDecode(Exception):
+class JWEException(Exception):
     pass
 
 
-class NotSupportedAlgorithm(Exception):
+class CannotDecode(JWEException):
     pass
 
 
-class MethodNotSupported(Exception):
+class NotSupportedAlgorithm(JWEException):
     pass
 
 
-class ParameterError(Exception):
+class MethodNotSupported(JWEException):
     pass
 
 
-class NoSuitableEncryptionKey(Exception):
+class ParameterError(JWEException):
     pass
 
 
-class DecryptionFailed(Exception):
+class NoSuitableEncryptionKey(JWEException):
+    pass
+
+
+class DecryptionFailed(JWEException):
     pass
 
 # ---------------------------------------------------------------------------
