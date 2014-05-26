@@ -305,12 +305,13 @@ class JWE_SYM(JWe):
     args = JWe.args[:]
     args.append("enc")
 
-    def encrypt(self, key, iv="", cek=""):
+    def encrypt(self, key, iv="", cek="", **kwargs):
         """
 
         :param key: Shared symmetric key
         :param iv:
         :param cek:
+        :param kwargs: Extra keyword arguments, just ignore for now.
         :return:
         """
         _msg = self.msg
@@ -554,9 +555,11 @@ class JWE(JWx):
             kwargs["iv"] = iv
 
         for key in keys:
+            _key = key.encryption_key(_alg)
+
             try:
-                token = encrypter.encrypt(key.key, **kwargs)
-            except Exception, err:
+                token = encrypter.encrypt(_key, **kwargs)
+            except Exception as err:
                 pass
             else:
                 return token
@@ -584,8 +587,9 @@ class JWE(JWx):
             raise NoSuitableEncryptionKey(self.alg)
 
         for key in keys:
+            _key = key.encryption_key(_alg)
             try:
-                msg = decrypter.decrypt(str(token), key.key)
+                msg = decrypter.decrypt(str(token), _key)
             except (KeyError, DecryptionFailed):
                 pass
             else:

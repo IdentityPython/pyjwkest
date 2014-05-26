@@ -6,7 +6,6 @@
 import json
 import logging
 
-import hashlib
 import struct
 from Crypto.Hash import SHA256
 from Crypto.Hash import SHA384
@@ -20,6 +19,9 @@ from cryptlib.ecc import P384
 from cryptlib.ecc import P521
 
 from jwkest.jwk import load_x509_cert
+from jwkest.jwk import sha256_digest
+from jwkest.jwk import sha384_digest
+from jwkest.jwk import sha512_digest
 from jwkest.jwk import keyrep
 from jwkest.jwk import load_jwks_from_url
 
@@ -42,18 +44,6 @@ class FormatError(Exception):
 
 class WrongTypeOfKey(Exception):
     pass
-
-
-def sha256_digest(msg):
-    return hashlib.sha256(msg).digest()
-
-
-def sha384_digest(msg):
-    return hashlib.sha384(msg).digest()
-
-
-def sha512_digest(msg):
-    return hashlib.sha512(msg).digest()
 
 
 def left_hash(msg, func="HS256"):

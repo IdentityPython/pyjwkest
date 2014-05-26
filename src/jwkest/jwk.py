@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import re
 import struct
 import logging
@@ -26,15 +27,19 @@ PREFIX = "-----BEGIN CERTIFICATE-----"
 POSTFIX = "-----END CERTIFICATE-----"
 
 
-class FormatError(Exception):
+class JWKException(Exception):
     pass
 
 
-class SerializationNotPossible(Exception):
+class FormatError(JWKException):
     pass
 
 
-class DeSerializationNotPossible(Exception):
+class SerializationNotPossible(JWKException):
+    pass
+
+
+class DeSerializationNotPossible(JWKException):
     pass
 
 
@@ -72,6 +77,18 @@ def dicthash(d):
 
 def intarr2str(arr):
     return "".join([chr(c) for c in arr])
+
+
+def sha256_digest(msg):
+    return hashlib.sha256(msg).digest()
+
+
+def sha384_digest(msg):
+    return hashlib.sha384(msg).digest()
+
+
+def sha512_digest(msg):
+    return hashlib.sha512(msg).digest()
 
 
 # =============================================================================
@@ -302,6 +319,12 @@ class RSAKey(Key):
         else:  # do nothing
             pass
 
+    def encryption_key(self, alg):
+        if not self.key:
+            self.serialize()
+
+        return self.key
+
 
 class ECKey(Key):
     members = ["kty", "alg", "use", "kid", "crv", "x", "y", "d"]
@@ -358,6 +381,13 @@ class ECKey(Key):
         return self.ser
 
 
+ALG2KEYLEN = {
+    "A128KW": 16,
+    "A192KW": 24,
+    "A256KW": 32,
+}
+
+
 class SYMKey(Key):
     members = ["kty", "alg", "use", "kid", "k"]
 
@@ -365,6 +395,7 @@ class SYMKey(Key):
                  x5c=None, x5t="", x5u="", k=""):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.k = k
+        self.enc_key = ''
 
     def deserialize(self):
         self.key = b64d(str(self.k))
@@ -384,6 +415,29 @@ class SYMKey(Key):
         else:
             return False
 
+    def encryption_key(self, alg):
+        if self.enc_key:
+            return self.enc_key
+
+        if not self.key:
+            self.serialize()
+
+        tsize = ALG2KEYLEN[alg]
+        _keylen = len(self.key)
+
+        if _keylen <= 32:
+            # SHA256
+            self.enc_key = sha256_digest(self.key)[:tsize]
+        elif _keylen <= 48:
+            # SHA384
+            self.enc_key = sha384_digest(self.key)[:tsize]
+        elif _keylen <= 64:
+            # SHA512
+            self.enc_key = sha512_digest(self.key)[:tsize]
+        else:
+            raise JWKException("No support for symmetric keys > 512 bits")
+
+        return self.enc_key
 
 class PKIXKey(Key):
     members = ["kty", "alg", "use", "kid", "n", "e"]
