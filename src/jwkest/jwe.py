@@ -198,11 +198,13 @@ def keysize(spec):
         return int(spec[1:4])
     return 0
 
-ENC2ALG = {"A128CBC": "aes_128_cbc", "A256CBC": "aes_256_cbc"}
+ENC2ALG = {"A128CBC": "aes_128_cbc", "A192CBC": "aes_192_cbc",
+           "A256CBC": "aes_256_cbc"}
 
 SUPPORTED = {
-    "alg": ["RSA1_5", "RSA-OAEP"],
-    "enc": ["A128CBC-HS256", "A256CBC-HS512", "A256GCM"],
+    "alg": ["RSA1_5", "RSA-OAEP", "A128KW", "A192KW", "A256KW"],
+    "enc": ["A128CBC-HS256", "A192CBC-HS384", "A256CBC-HS512",
+            "A128GCM", "A192GCM", "A256GCM"],
 }
 
 
