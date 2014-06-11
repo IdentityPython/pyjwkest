@@ -340,17 +340,7 @@ class JWS(JWx):
         :return:
         """
 
-        enc_head = self._encoded_header()
-        enc_payload = self._encoded_payload()
-
         _alg = self["alg"]
-        if not _alg or _alg.lower() == "none":
-            return enc_head + b"." + enc_payload + b"."
-
-        try:
-            _signer = SIGNER_ALGS[_alg]
-        except KeyError:
-            raise UnknownAlgorithm(_alg)
 
         if keys:
             keys = self._pick_keys(keys, use="sig")
@@ -361,6 +351,22 @@ class JWS(JWx):
             key = keys[0]
         else:
             raise NoSuitableSigningKeys(_alg)
+
+        if key.kid:
+            xargs = {"kid": key.kid}
+        else:
+            xargs = {}
+
+        enc_head = self._encoded_header(xargs)
+        enc_payload = self._encoded_payload()
+
+        if not _alg or _alg.lower() == "none":
+            return enc_head + b"." + enc_payload + b"."
+
+        try:
+            _signer = SIGNER_ALGS[_alg]
+        except KeyError:
+            raise UnknownAlgorithm(_alg)
 
         _input = b".".join([enc_head, enc_payload])
         sig = _signer.sign(_input, key.get_key(private=True))
