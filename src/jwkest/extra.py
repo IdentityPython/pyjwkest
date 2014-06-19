@@ -107,6 +107,8 @@ def aes_cbc_hmac_decrypt(key, iv, aad, ct, tag):
 
     # Verify A || IV || E || AL
     al = pack("!Q", 8*len(aad))
+    if isinstance(aad, unicode):
+        aad = aad.encode("utf-8")
     mac_input = aad + iv + ct + al
     h = HMAC.new(ka, digestmod=dgst)
     h.update(mac_input)
