@@ -162,7 +162,9 @@ SIGNER_ALGS = {
 
 
 def alg2keytype(alg):
-    if alg.startswith("RS") or alg.startswith("PS"):
+    if not alg:
+        return "none"
+    elif alg.startswith("RS") or alg.startswith("PS"):
         return "RSA"
     elif alg.startswith("HS") or alg.startswith("A"):
         return "OCT"
@@ -349,11 +351,10 @@ class JWS(JWx):
 
         if keys:
             key = keys[0]
-        else:
+            if key.kid:
+                xargs = {"kid": key.kid}
+        elif _alg:
             raise NoSuitableSigningKeys(_alg)
-
-        if key.kid:
-            xargs = {"kid": key.kid}
         else:
             xargs = {}
 
