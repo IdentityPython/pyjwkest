@@ -349,14 +349,14 @@ class JWS(JWx):
         else:
             keys = self._pick_keys(self._get_keys())
 
+        xargs = {}
+
         if keys:
             key = keys[0]
             if key.kid:
                 xargs = {"kid": key.kid}
         elif _alg:
             raise NoSuitableSigningKeys(_alg)
-        else:
-            xargs = {}
 
         enc_head = self._encoded_header(xargs)
         enc_payload = self._encoded_payload()
