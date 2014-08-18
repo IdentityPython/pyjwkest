@@ -357,6 +357,8 @@ class JWS(JWx):
                 xargs = {"kid": key.kid}
         elif _alg:
             raise NoSuitableSigningKeys(_alg)
+        else:
+            raise NoSuitableSigningKeys("None")
 
         enc_head = self._encoded_header(xargs)
         enc_payload = self._encoded_payload()
