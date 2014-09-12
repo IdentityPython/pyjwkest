@@ -311,15 +311,22 @@ class JWE_SYM(JWe):
         """
 
         :param key: Shared symmetric key
-        :param iv:
+        :param iv: initialization vector
         :param cek:
         :param kwargs: Extra keyword arguments, just ignore for now.
         :return:
         """
         _msg = self.msg
 
-        b64_header = self._encoded_header()
+        _args = {}
+        try:
+            _args["kid"] = kwargs["kid"]
+        except KeyError:
+            pass
 
+        b64_header = self._encoded_header(_args)
+
+        # If no iv and cek are given generate them
         cek, iv = self._generate_key_and_iv(self["enc"], cek, iv)
         if isinstance(key, basestring):
             kek = key
@@ -558,6 +565,9 @@ class JWE(JWx):
 
         for key in keys:
             _key = key.encryption_key(_alg)
+
+            if key.kid:
+                kwargs["kid"] = key.kid
 
             try:
                 token = encrypter.encrypt(_key, **kwargs)
