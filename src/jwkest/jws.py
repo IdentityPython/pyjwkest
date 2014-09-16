@@ -162,7 +162,7 @@ SIGNER_ALGS = {
 
 
 def alg2keytype(alg):
-    if not alg:
+    if not alg or alg == "none":
         return "none"
     elif alg.startswith("RS") or alg.startswith("PS"):
         return "RSA"
