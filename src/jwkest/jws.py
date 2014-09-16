@@ -302,6 +302,10 @@ class JWx(object):
         :return: A list of KEY instances that fulfill the requirements
         """
         _k = alg2keytype(self["alg"])
+        if _k is None:
+            logger.error("Unknown arlgorithm '%s'" % self["alg"])
+            return []
+
         _kty = [_k.lower(), _k.upper()]
         _keys = [k for k in keys if k.kty in _kty]
 
