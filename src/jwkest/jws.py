@@ -360,7 +360,7 @@ class JWS(JWx):
             if key.kid:
                 xargs = {"kid": key.kid}
         elif _alg == "none":
-            pass
+            key = None
         elif _alg:
             raise NoSuitableSigningKeys(_alg)
         else:
@@ -369,9 +369,11 @@ class JWS(JWx):
         enc_head = self._encoded_header(xargs)
         enc_payload = self._encoded_payload()
 
+        # Signing with alg == "none"
         if not _alg or _alg.lower() == "none":
             return enc_head + b"." + enc_payload + b"."
 
+        # All other cases
         try:
             _signer = SIGNER_ALGS[_alg]
         except KeyError:
