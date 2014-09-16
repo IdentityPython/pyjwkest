@@ -359,6 +359,8 @@ class JWS(JWx):
             key = keys[0]
             if key.kid:
                 xargs = {"kid": key.kid}
+        elif _alg == "none":
+            pass
         elif _alg:
             raise NoSuitableSigningKeys(_alg)
         else:
