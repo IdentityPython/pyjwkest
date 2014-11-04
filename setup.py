@@ -32,7 +32,7 @@ setup(
     classifiers=["Development Status :: 4 - Beta",
             "License :: OSI Approved :: Apache Software License",
             "Topic :: Software Development :: Libraries :: Python Modules"],
-    install_requires=["pycrypto", "requests", 'Crypto'],
+    install_requires=["pycrypto", "requests"],
     zip_safe=False,
     scripts=glob.glob('script/*.py'),
 )
