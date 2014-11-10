@@ -1,6 +1,7 @@
 import json
 from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import _RSAobj
+from cryptlib.ecc import P256
 from jwkest.jwk import dump_jwk, ECKey
 from jwkest.jwk import pem_cert2rsa
 from jwkest.jwk import RSAKey
@@ -146,6 +147,13 @@ def test_import_export_eckey():
     exp_key = _key.to_dict()
     assert _eq(exp_key.keys(), ["y", "x", "crv", "kty", "d"])
 
+
+def test_create_eckey():
+    priv, pub = P256.key_pair()
+    ec = ECKey(x=pub[0], y=pub[1], d=priv, crv="P-256")
+    ec.serialize()
+    exp_key = ec.to_dict()
+    assert _eq(exp_key.keys(), ["y", "x", "crv", "kty", "d"])
 
 if __name__ == "__main__":
     test_import_export_eckey()

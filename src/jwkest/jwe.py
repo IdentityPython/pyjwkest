@@ -202,11 +202,22 @@ ENC2ALG = {"A128CBC": "aes_128_cbc", "A192CBC": "aes_192_cbc",
            "A256CBC": "aes_256_cbc"}
 
 SUPPORTED = {
-    "alg": ["RSA1_5", "RSA-OAEP", "A128KW", "A192KW", "A256KW"],
+    "alg": ["RSA1_5", "RSA-OAEP", "A128KW", "A192KW", "A256KW",
+            "ECDH-ES", "ECDH-ES+A128KW", "ECDH-ES+A192KW", "ECDH-ES+A256KW"],
     "enc": ["A128CBC-HS256", "A192CBC-HS384", "A256CBC-HS512",
             "A128GCM", "A192GCM", "A256GCM"],
 }
 
+
+def alg2keytype(alg):
+    if alg.startswith("RSA"):
+        return "RSA"
+    elif alg.startswith("A"):
+        return "OCT"
+    elif alg.startswith("ECDH"):
+        return "EC"
+    else:
+        return None
 
 # =============================================================================
 
@@ -244,6 +255,9 @@ class JWe(JWx):
             _iv = iv
 
         return _key, _iv
+
+    def alg2keytype(self, alg):
+        return alg2keytype(alg)
 
     def enc_setup(self, enc_alg, msg, auth_data, key=None, iv=""):
         """ Encrypt JWE content.
@@ -496,6 +510,7 @@ class JWE_EC(JWe):
             raise Exception("Unsupported algorithm %s" % self.alg)
 
         return cek, encrypted_key, iv, params
+
 
 class JWE(JWx):
     args = ["alg", "enc", "epk", "zip", "jku", "jwk", "x5u", "x5t",

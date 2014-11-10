@@ -197,6 +197,7 @@ def x509_rsa_load(txt):
 
 class Key():
     members = ["kty", "alg", "use", "kid", "x5c", "x5t", "x5u"]
+    public_members = ["kty", "alg", "use", "kid", "x5c", "x5t", "x5u"]
 
     def __init__(self, kty="", alg="", use="", kid="", key=None, x5c=None,
                  x5t="", x5u=""):
@@ -208,13 +209,14 @@ class Key():
         self.x5c = x5c or []
         self.x5t = x5t
         self.x5u = x5u
+        self.inactive = False
 
     def to_dict(self):
         if not self.serialized():
             self.serialize()
 
         res = {}
-        for key in self.members:
+        for key in self.public_members:
             try:
                 _val = getattr(self, key)
                 if _val:
@@ -254,6 +256,8 @@ class Key():
 class RSAKey(Key):
     members = Key.members
     members.extend(["n", "e", "d", "p", "q"])
+    public_members = Key.public_members
+    public_members.extend(["n", "e"])
 
     def __init__(self, kty="RSA", alg="", use="", kid="", key=None,
                  x5c=None, x5t="", x5u="", n="", e="", d="", p=0, q=0,
@@ -328,11 +332,12 @@ class RSAKey(Key):
 
 class ECKey(Key):
     members = ["kty", "alg", "use", "kid", "crv", "x", "y", "d"]
+    public_members = ["kty", "alg", "use", "kid", "crv", "x", "y"]
 
     def __init__(self, kty="EC", alg="", use="", kid="", key=None,
-                 x5c=None, x5t="", x5u="", crv="", x="", y="", d="",
-                 curve=None, private=False, deser=False, ser=False):
-        Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
+                 crv="", x="", y="", d="", curve=None, private=False,
+                 deser=False, ser=False):
+        Key.__init__(self, kty, alg, use, kid, key)
         self.crv = crv
         self.x = x
         self.y = y
@@ -360,11 +365,20 @@ class ECKey(Key):
 
     def get_key(self, private=True):
         if private:
-            return self.d
+            if self.ser:
+                return base64_to_long(self.d)
+            else:
+                return self.d
         else:
-            return self.x, self.y
+            if self.ser:
+                return base64_to_long(self.x), base64_to_long(self.y)
+            else:
+                return self.x, self.y
 
     def serialize(self):
+        if self.ser:
+            return
+
         if not self.crv and not self.curve:
             raise SerializationNotPossible()
 
@@ -530,6 +544,8 @@ def dump_jwk(key, use="", kid=""):
         kspec = RSAKey(key=key)
     elif isinstance(key, basestring):
         kspec = SYMKey(key=key)
+    elif isinstance(key, ECKey):
+        kspec = key
     else:
         raise Exception("Unknown key type:key="+str(type(key)))
 

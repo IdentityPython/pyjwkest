@@ -162,7 +162,7 @@ SIGNER_ALGS = {
 
 
 def alg2keytype(alg):
-    if not alg or alg == "none":
+    if not alg or alg.lower() == "none":
         return "none"
     elif alg.startswith("RS") or alg.startswith("PS"):
         return "RSA"
@@ -293,6 +293,9 @@ class JWx(object):
 
         return {}
 
+    def alg2keytype(self, alg):
+        return alg2keytype(alg)
+
     def _pick_keys(self, keys, use="", alg=""):
         """
         The assumption is that upper layer has made certain you only get
@@ -301,9 +304,12 @@ class JWx(object):
         :param keys: A list of KEY instances
         :return: A list of KEY instances that fulfill the requirements
         """
-        _k = alg2keytype(self["alg"])
+        if not alg:
+            alg = self["alg"]
+
+        _k = self.alg2keytype(alg)
         if _k is None:
-            logger.error("Unknown arlgorithm '%s'" % self["alg"])
+            logger.error("Unknown arlgorithm '%s'" % alg)
             return []
 
         _kty = [_k.lower(), _k.upper()]
@@ -349,9 +355,9 @@ class JWS(JWx):
         _alg = self["alg"]
 
         if keys:
-            keys = self._pick_keys(keys, use="sig")
+            keys = self._pick_keys(keys, use="sig", alg=_alg)
         else:
-            keys = self._pick_keys(self._get_keys())
+            keys = self._pick_keys(self._get_keys(), use="sig", alg=_alg)
 
         xargs = {}
 
