@@ -1,8 +1,10 @@
+import base64
 import json
 from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import _RSAobj
+import struct
 from cryptlib.ecc import P256
-from jwkest.jwk import dump_jwk, ECKey
+from jwkest.jwk import dump_jwk, ECKey, byte_arr
 from jwkest.jwk import pem_cert2rsa
 from jwkest.jwk import RSAKey
 from jwkest.jwk import base64_to_long
@@ -22,6 +24,23 @@ JWK = {"keys": [
 
 def _eq(l1, l2):
     return set(l1) == set(l2)
+
+
+def test_urlsafe_base64decode():
+    l = base64_to_long(JWK["keys"][0]["n"])
+    # convert it to base64
+    bys = byte_arr(l)
+    data = struct.pack('%sB' % len(bys), *bys)
+    if not len(data):
+        data = '\x00'
+    s0 = base64.b64encode(data)
+    # try to convert it back to long, should throw an exception
+    try:
+        l = base64_to_long(s0)
+    except ValueError:
+        pass
+    else:
+        assert False
 
 
 def test_pem_cert2rsa():
@@ -145,7 +164,7 @@ def test_import_export_eckey():
 
     _key.serialize()
     exp_key = _key.to_dict()
-    assert _eq(exp_key.keys(), ["y", "x", "crv", "kty", "d"])
+    assert _eq(exp_key.keys(), ["y", "x", "crv", "kty"])
 
 
 def test_create_eckey():
@@ -153,7 +172,7 @@ def test_create_eckey():
     ec = ECKey(x=pub[0], y=pub[1], d=priv, crv="P-256")
     ec.serialize()
     exp_key = ec.to_dict()
-    assert _eq(exp_key.keys(), ["y", "x", "crv", "kty", "d"])
+    assert _eq(exp_key.keys(), ["y", "x", "crv", "kty"])
 
 if __name__ == "__main__":
-    test_import_export_eckey()
+    test_urlsafe_base64decode()

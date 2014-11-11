@@ -62,12 +62,21 @@ def long_to_base64(n):
 
 def b64_set_to_long(s):
     data = base64.urlsafe_b64decode(s + '==')
+    # verify that it's base64url encoded and not just base64
+    # that is no '+' and '/' characters and not trailing "="s.
+    if [e for e in ['+', '/', '='] if e in s]:
+        raise ValueError("Not base64url encoded")
     n = struct.unpack('>Q', '\x00' * (8 - len(data)) + data)
     return n[0]
 
 
 def base64_to_long(data):
+    # urlsafe_b64decode will happily convert b64encoded data
     _d = base64.urlsafe_b64decode(data + '==')
+    # verify that it's base64url encoded and not just base64
+    # that is no '+' and '/' characters and not trailing "="s.
+    if [e for e in ['+', '/', '='] if e in data]:
+        raise ValueError("Not base64url encoded")
     return intarr2long(dehexlify(_d))
 
 
@@ -393,6 +402,13 @@ class ECKey(Key):
 
     def serialized(self):
         return self.ser
+
+    def dc(self):
+        if self.deser:
+            self.serialize()
+        else:
+            self.deserialize()
+
 
 
 ALG2KEYLEN = {
