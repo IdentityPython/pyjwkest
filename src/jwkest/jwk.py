@@ -281,13 +281,16 @@ class RSAKey(Key):
 
     def deserialize(self):
         if self.n and self.e:
-            e = base64_to_long(str(self.e))
-            n = base64_to_long(str(self.n))
-            if self.d:
-                d = base64_to_long(str(self.d))
-                self.key = RSA.construct((n, e, d))
-            else:
-                self.key = RSA.construct((n, e))
+            try:
+                e = base64_to_long(str(self.e))
+                n = base64_to_long(str(self.n))
+                if self.d:
+                    d = base64_to_long(str(self.d))
+                    self.key = RSA.construct((n, e, d))
+                else:
+                    self.key = RSA.construct((n, e))
+            except ValueError as err:
+                raise DeSerializationNotPossible("%s" % err)
         elif self.x5c:
             if self.x5t:  # verify the cert
                 pass
@@ -362,10 +365,15 @@ class ECKey(Key):
             self.y = base64_to_long(self.y)
         except TypeError:
             raise DeSerializationNotPossible()
+        except ValueError as err:
+            raise DeSerializationNotPossible("%s" % err)
 
         self.curve = NISTEllipticCurve.by_name(self.crv)
         if self.d:
-            self.d = base64_to_long(self.d)
+            try:
+                self.d = base64_to_long(self.d)
+            except ValueError as err:
+                raise DeSerializationNotPossible(str(err))
         self.deser = True
         self.ser = False
 
@@ -375,12 +383,18 @@ class ECKey(Key):
     def get_key(self, private=True):
         if private:
             if self.ser:
-                return base64_to_long(self.d)
+                try:
+                    return base64_to_long(self.d)
+                except ValueError as err:
+                    raise DeSerializationNotPossible(str(err))
             else:
                 return self.d
         else:
             if self.ser:
-                return base64_to_long(self.x), base64_to_long(self.y)
+                try:
+                    return base64_to_long(self.x), base64_to_long(self.y)
+                except ValueError as err:
+                    raise DeSerializationNotPossible(str(err))
             else:
                 return self.x, self.y
 
