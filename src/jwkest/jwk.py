@@ -71,6 +71,8 @@ def b64_set_to_long(s):
 
 
 def base64_to_long(data):
+    if isinstance(data, unicode):
+        data = str(data)
     # urlsafe_b64decode will happily convert b64encoded data
     _d = base64.urlsafe_b64decode(data + '==')
     # verify that it's base64url encoded and not just base64
@@ -218,7 +220,7 @@ class Key():
         self.x5c = x5c or []
         self.x5t = x5t
         self.x5u = x5u
-        self.inactive = False
+        self.inactive_since = 0
 
     def to_dict(self):
         if not self.serialized():
@@ -422,7 +424,6 @@ class ECKey(Key):
             self.serialize()
         else:
             self.deserialize()
-
 
 
 ALG2KEYLEN = {
