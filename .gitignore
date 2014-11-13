@@ -6,4 +6,5 @@ build
 dist
 tests/debug_*.py
 .tox
+.idea
 
