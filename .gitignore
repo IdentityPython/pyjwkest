@@ -5,3 +5,5 @@ certs
 build
 dist
 tests/debug_*.py
+.tox
+
