@@ -155,7 +155,7 @@ SIGNER_ALGS = {
 
     u'PS256': PSSSigner(SHA256),
     u'PS384': PSSSigner(SHA384),
-    #u'PS512': PSSSigner(SHA512),
+    u'PS521': PSSSigner(SHA512),
 
     u'none': None
 }
@@ -386,7 +386,7 @@ class JWS(JWx):
             raise UnknownAlgorithm(_alg)
 
         _input = b".".join([enc_head, enc_payload])
-        sig = _signer.sign(_input, key.get_key(private=True))
+        sig = _signer.sign(_input, key.get_key(alg=_alg, private=True))
         return b".".join([enc_head, enc_payload, b64e(sig)])
 
     def verify_compact(self, jws, keys=None):
@@ -398,6 +398,7 @@ class JWS(JWx):
             if self["alg"] == "none":
                 self.msg = self._decode(_payload)
                 return self.msg
+        _alg = self["alg"]
 
         if keys:
             _keys = self._pick_keys(keys)
@@ -409,7 +410,7 @@ class JWS(JWx):
         for key in _keys:
             try:
                 verifier.verify(_header + '.' + _payload, b64d(str(_sig)),
-                                key.get_key(private=False))
+                                key.get_key(alg=_alg, private=False))
             except BadSignature:
                 pass
             else:

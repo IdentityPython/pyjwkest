@@ -477,11 +477,11 @@ class JWE_EC(JWe):
             apv = b64d(kwargs["apv"])
         except KeyError:
             apv = b64d(Random.get_random_bytes(16))
+
         # Generate an ephemeral key pair
         curve = NISTEllipticCurve.by_name(key.crv)
         if "epk" in kwargs:
-            epk = ECKey(key=kwargs["epk"], private=False)
-            eprivk = ECKey(kwargs["epk"], private=True)
+            eprivk = ECKey(kwargs["epk"])
         else:
             (eprivk, epk) = curve.key_pair()
             # Derive the KEK and encrypt
@@ -579,7 +579,7 @@ class JWE(JWx):
             kwargs["iv"] = iv
 
         for key in keys:
-            _key = key.encryption_key(_alg)
+            _key = key.get_key(alg=_alg, private=True)
 
             if key.kid:
                 kwargs["kid"] = key.kid
@@ -614,7 +614,7 @@ class JWE(JWx):
             raise NoSuitableEncryptionKey(self.alg)
 
         for key in keys:
-            _key = key.encryption_key(_alg)
+            _key = key.get_key(alg=_alg, private=False)
             try:
                 msg = decrypter.decrypt(str(token), _key)
             except (KeyError, DecryptionFailed):

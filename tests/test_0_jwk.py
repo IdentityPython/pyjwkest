@@ -4,7 +4,9 @@ from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import _RSAobj
 import struct
 from cryptlib.ecc import P256
-from jwkest.jwk import dump_jwk, ECKey, byte_arr
+from jwkest.jwk import dump_jwk
+from jwkest.jwk import ECKey
+from jwkest.jwk import byte_arr
 from jwkest.jwk import pem_cert2rsa
 from jwkest.jwk import RSAKey
 from jwkest.jwk import base64_to_long
@@ -50,25 +52,24 @@ def test_pem_cert2rsa():
 
 def test_extract_rsa_from_cert_2():
     _ckey = pem_cert2rsa(CERT)
-    _jwk = RSAKey(key=_ckey)
-    _jwk.serialize()
+    _key = RSAKey()
+    _key.load_key(_ckey)
 
-    print _jwk
+    print _key
 
-    _n = base64_to_long(str(_jwk.n))
-
-    assert _ckey.n == _n
+    assert _ckey.n == _key.get_key().n
 
 
 def test_kspec():
     _ckey = pem_cert2rsa(CERT)
-    _jwk = RSAKey(key=_ckey)
-    _jwk.serialize()
+    _key = RSAKey()
+    _key.load_key(_ckey)
 
-    print _jwk
-    assert _jwk.kty == "RSA"
-    assert _jwk.e == JWK["keys"][0]["e"]
-    assert _jwk.n == JWK["keys"][0]["n"]
+    print _key
+    jwk = _key.serialize()
+    assert jwk["kty"] == "RSA"
+    assert jwk["e"] == JWK["keys"][0]["e"]
+    assert jwk["n"] == JWK["keys"][0]["n"]
 
 
 def test_loads_0():
@@ -81,10 +82,8 @@ def test_loads_0():
     _ckey = pem_cert2rsa(CERT)
 
     print key
-    _n = base64_to_long(str(key.n))
-    assert _n == _ckey.n
-    _e = base64_to_long(str(key.e))
-    assert _e == _ckey.e
+    assert key.n == _ckey.n
+    assert key.e == _ckey.e
 
 
 def test_loads_1():
@@ -160,19 +159,22 @@ ECKEY = {
 
 def test_import_export_eckey():
     _key = ECKey(**ECKEY)
-    _key.deserialize()
-
-    _key.serialize()
-    exp_key = _key.to_dict()
+    exp_key = _key.serialize()
     assert _eq(exp_key.keys(), ["y", "x", "crv", "kty"])
 
 
 def test_create_eckey():
     priv, pub = P256.key_pair()
     ec = ECKey(x=pub[0], y=pub[1], d=priv, crv="P-256")
-    ec.serialize()
-    exp_key = ec.to_dict()
+    exp_key = ec.serialize()
     assert _eq(exp_key.keys(), ["y", "x", "crv", "kty"])
 
+
+def test_verify_2():
+    _key = RSAKey()
+    _key.load_key(pem_cert2rsa(CERT))
+    assert _key.verify()
+
+
 if __name__ == "__main__":
-    test_urlsafe_base64decode()
+    test_verify_2()
