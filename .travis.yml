@@ -7,7 +7,9 @@ env:
 
 before_install:
   - sudo apt-get update -qq
+  - sudo apt-get install -y libgmp-dev
   - sudo apt-get install -y libmpfr-dev
+  - sudo apt-get install -y libmpc-dev
 
 install:
   - pip install tox
