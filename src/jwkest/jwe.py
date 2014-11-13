@@ -579,7 +579,7 @@ class JWE(JWx):
             kwargs["iv"] = iv
 
         for key in keys:
-            _key = key.get_key(alg=_alg, private=True)
+            _key = key.encryption_key(alg=_alg, private=True)
 
             if key.kid:
                 kwargs["kid"] = key.kid
@@ -614,7 +614,7 @@ class JWE(JWx):
             raise NoSuitableEncryptionKey(self.alg)
 
         for key in keys:
-            _key = key.get_key(alg=_alg, private=False)
+            _key = key.encryption_key(alg=_alg, private=False)
             try:
                 msg = decrypter.decrypt(str(token), _key)
             except (KeyError, DecryptionFailed):

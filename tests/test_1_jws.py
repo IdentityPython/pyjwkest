@@ -60,7 +60,7 @@ def test_hmac_256():
 
 def test_hmac_384():
     payload = "Please take a moment to register today"
-    keys = [SYMKey(mtrl="My hollow echo", alg="HS384")]
+    keys = [SYMKey(key="My hollow echo", alg="HS384")]
     _jws = JWS(payload, alg="HS384")
     _jwt = _jws.sign_compact(keys)
 
@@ -72,7 +72,7 @@ def test_hmac_384():
 
 def test_hmac_512():
     payload = "Please take a moment to register today"
-    keys = [SYMKey(mtrl="My hollow echo", alg="HS512")]
+    keys = [SYMKey(key="My hollow echo", alg="HS512")]
     _jws = JWS(payload, alg="HS512")
     _jwt = _jws.sign_compact(keys)
 
@@ -179,7 +179,7 @@ def test_jws_1():
     _jws = JWS(msg, cty="JWT", alg="HS256", jwk=json.dumps(jwk.to_dict()))
     res = _jws.sign_compact()
 
-    _jws2 = JWS()
+    _jws2 = JWS(alg="HS256")
     _jws2.verify_compact(res)
     assert _jws2.msg == msg
 
@@ -270,4 +270,4 @@ def test_signer_ps512():
 
 
 if __name__ == "__main__":
-    test_signer_es256()
+    test_a_1_3b()

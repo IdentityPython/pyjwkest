@@ -238,6 +238,8 @@ class Key():
             res["use"] = self.use
         if self.kid:
             res["kid"] = self.kid
+        if self.alg:
+            res["alg"] = self.alg
         return res
 
     def __str__(self):
@@ -298,6 +300,9 @@ class RSAKey(Key):
         self.di = di
         self.qi = qi
 
+        if not self.key and self.n and self.e:
+            self.deserialize()
+
     def deserialize(self):
         if self.n and self.e:
             try:
@@ -352,6 +357,12 @@ class RSAKey(Key):
         self.key = key
         self._split()
         return self
+
+    def encryption_key(self, **kwargs):
+        if not self.key:
+            self.deserialize()
+
+        return self.key
 
 
 class ECKey(Key):
@@ -420,6 +431,14 @@ class ECKey(Key):
         self.d, (self.x, self.y) = key.key_pair()
         return self
 
+    def decryption_key(self):
+        return self.get_key(private=True)
+
+    def encryption_key(self, private=False, **kwargs):
+        # both for encryption and decryption.
+        return self.get_key(private=private)
+
+
 ALG2KEYLEN = {
     "A128KW": 16,
     "A192KW": 24,
@@ -438,60 +457,37 @@ class SYMKey(Key):
                  x5c=None, x5t="", x5u="", k="", mtrl=""):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.k = k
-        self.key = key
-        self.mtrl = mtrl
-        self._keylen = 0
-        if not self.key:
-            if self.k:
-                self.deserialize()
-            elif self.mtrl and self.alg:
-                self.key = self.create_key(self.alg)
-        else:
-            self._keylen = len(self.key) / 2
+        if not self.key and self.k:
+           self.key = b64d(str(self.k))
 
     def deserialize(self):
-        if self.key:
-            pass
-        elif self.k:
-            self.key = b64d(str(self.k))
-            self._keylen = len(self.key) / 2
-        elif self.mtrl and self.alg:
-            self.key = self.create_key(self.alg)
-
-    def create_key(self, alg=""):
-        tsize = ALG2KEYLEN[alg]
-        _keylen = len(self.mtrl)
-
-        if _keylen <= 32:
-            # SHA256
-            _key = sha256_digest(self.mtrl)[:tsize]
-        elif _keylen <= 48:
-            # SHA384
-            _key = sha384_digest(self.mtrl)[:tsize]
-        elif _keylen <= 64:
-            # SHA512
-            _key = sha512_digest(self.mtrl)[:tsize]
-        else:
-            raise JWKException("No support for symmetric keys > 512 bits")
-
-        self._keylen = tsize
-
-        return _key
+        self.key = b64d(str(self.k))
 
     def serialize(self):
         res = self.common()
         res["k"] = b64e(str(self.key))
         return res
 
-    def get_key(self, alg="", **kwargs):
+    def encryption_key(self, alg, **kwargs):
         if not self.key:
             self.deserialize()
 
-        if self._keylen == ALG2KEYLEN[alg]:
-            return self.key
-        else:
-            return None
+        tsize = ALG2KEYLEN[alg]
+        _keylen = len(self.key)
 
+        if _keylen <= 32:
+            # SHA256
+            _enc_key = sha256_digest(self.key)[:tsize]
+        elif _keylen <= 48:
+            # SHA384
+            _enc_key = sha384_digest(self.key)[:tsize]
+        elif _keylen <= 64:
+            # SHA512
+            _enc_key = sha512_digest(self.key)[:tsize]
+        else:
+            raise JWKException("No support for symmetric keys > 512 bits")
+
+        return _enc_key
 
 # class PKIXKey(Key):
 #     members = ["kty", "alg", "use", "kid", "n", "e"]
@@ -536,7 +532,6 @@ def keyrep(kspec):
         item = ECKey(**kspec)
     else:
         item = Key(**kspec)
-    item.deserialize()
     return item
 
 
