@@ -10,8 +10,10 @@ from jwkest.jwk import RSAKey
 from jwkest.jws import SIGNER_ALGS
 from jwkest.jws import JWS
 
+from path_util import full_path
 
-KEY = "certs/server.key"
+
+KEY = full_path("certs/server.key")
 
 JWK = {"keys": [{'alg': 'RSA',
                  'use': 'foo',
@@ -259,7 +261,7 @@ def test_signer_ps384():
 def test_signer_ps512():
     payload = "Please take a moment to register today"
     # Key has to be big enough  > 512+512+2
-    keys = [RSAKey(key=import_rsa_key_from_file("./size2048.key"))]
+    keys = [RSAKey(key=import_rsa_key_from_file(full_path("./size2048.key")))]
     #keys[0]._keytype = "private"
     _jws = JWS(payload, alg="PS521")
     _jwt = _jws.sign_compact(keys)

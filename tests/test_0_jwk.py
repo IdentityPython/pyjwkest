@@ -12,11 +12,12 @@ from jwkest.jwk import RSAKey
 from jwkest.jwk import base64_to_long
 from jwkest.jwk import load_jwks
 from jwkest.jwk import dump_jwks
+from path_util import full_path
 
 __author__ = 'rohe0002'
 
-CERT = "certs/cert.pem"
-KEY = "certs/server.key"
+CERT = full_path("certs/cert.pem")
+KEY = full_path("certs/server.key")
 
 JWK = {"keys": [
     {'kty': 'RSA', 'use': 'foo', 'e': 'AQAB', 'kid': "abc",

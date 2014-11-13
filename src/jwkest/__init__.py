@@ -178,3 +178,7 @@ def hd2ia(s):
 def dehexlify(bi):
     s = hexlify(bi)
     return [int(s[i] + s[i + 1], 16) for i in range(0, len(s), 2)]
+
+
+def long2hexseq(l):
+    return unhexlify(hex(l)[2:-1])
