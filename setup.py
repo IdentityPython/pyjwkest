@@ -22,6 +22,7 @@ from setuptools.command.test import test as TestCommand
 
 __author__ = 'rohe0002'
 
+
 class PyTest(TestCommand):
 
     def finalize_options(self):
