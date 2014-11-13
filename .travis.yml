@@ -5,14 +5,6 @@ env:
   - TOX_ENV=py27
   - TOX_ENV=py34
 
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y libmpfr4
-  - sudo apt-get install -y libmpc2
-  - sudo apt-get install -y libgmp-dev
-  - sudo apt-get install -y libmpfr-dev
-  - sudo apt-get install -y libmpc-dev
-
 install:
   - pip install tox
   - pip install coveralls
