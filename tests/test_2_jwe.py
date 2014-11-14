@@ -2,7 +2,7 @@ import hashlib
 from Crypto.PublicKey import RSA
 from cryptlib.aes_gcm import AES_GCM
 from jwkest.jwk import RSAKey, byte_arr
-from aes_key_wrap_crypto import aes_wrap_key
+from cryptlib.aes_key_wrap import aes_wrap_key
 
 __author__ = 'rohe0002'
 
