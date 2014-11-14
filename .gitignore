@@ -4,3 +4,4 @@ _files
 build
 dist
 tests/debug_*.py
+.idea
