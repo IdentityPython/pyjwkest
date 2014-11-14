@@ -6,9 +6,9 @@ env:
   - TOX_ENV=py34
 
 install:
-  - pip install tox
-  - pip install coveralls
   - pip install -U pytest
+  - pip install -U tox
+  - pip install -U coveralls
 
 script:
   - tox -e $TOX_ENV

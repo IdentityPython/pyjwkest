@@ -7,5 +7,6 @@ sys.path.append('./src')
 sys.path.append('./tests')
 
 if __name__ == '__main__':
-    pytest.main(['tests'])
+    errno = pytest.main(['tests'])
+    sys.exit(errno)
 
