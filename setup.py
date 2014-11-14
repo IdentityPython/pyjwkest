@@ -48,7 +48,7 @@ setup(
     classifiers=["Development Status :: 4 - Beta",
             "License :: OSI Approved :: Apache Software License",
             "Topic :: Software Development :: Libraries :: Python Modules"],
-    install_requires=["pycrypto", "requests"],
+    install_requires=["pycrypto >= 2.2", "requests"],
     tests_require=['pytest'],
     zip_safe=False,
     cmdclass={'test': PyTest},
