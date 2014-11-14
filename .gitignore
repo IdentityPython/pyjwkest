@@ -1,7 +1,6 @@
 *.pyc
 *.egg-info
 _files
-certs
 build
 dist
 tests/debug_*.py
