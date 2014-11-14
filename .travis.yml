@@ -8,6 +8,7 @@ env:
 install:
   - pip install tox
   - pip install coveralls
+  - pip install -U pytest
 
 script:
   - tox -e $TOX_ENV
