@@ -1,17 +1,23 @@
+import base64
 import json
 from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import _RSAobj
-from jwkest.jwk import dump_jwk, ECKey
+import struct
+from cryptlib.ecc import P256
+from jwkest.jwk import dump_jwk
+from jwkest.jwk import ECKey
+from jwkest.jwk import byte_arr
 from jwkest.jwk import pem_cert2rsa
 from jwkest.jwk import RSAKey
 from jwkest.jwk import base64_to_long
 from jwkest.jwk import load_jwks
 from jwkest.jwk import dump_jwks
+from path_util import full_path
 
 __author__ = 'rohe0002'
 
-CERT = "certs/cert.pem"
-KEY = "certs/server.key"
+CERT = full_path("certs/cert.pem")
+KEY = full_path("certs/server.key")
 
 JWK = {"keys": [
     {'kty': 'RSA', 'use': 'foo', 'e': 'AQAB', 'kid': "abc",
@@ -23,6 +29,23 @@ def _eq(l1, l2):
     return set(l1) == set(l2)
 
 
+def test_urlsafe_base64decode():
+    l = base64_to_long(JWK["keys"][0]["n"])
+    # convert it to base64
+    bys = byte_arr(l)
+    data = struct.pack('%sB' % len(bys), *bys)
+    if not len(data):
+        data = '\x00'
+    s0 = base64.b64encode(data)
+    # try to convert it back to long, should throw an exception
+    try:
+        l = base64_to_long(s0)
+    except ValueError:
+        pass
+    else:
+        assert False
+
+
 def test_pem_cert2rsa():
     _ckey = pem_cert2rsa(CERT)
     assert isinstance(_ckey, _RSAobj)
@@ -30,25 +53,24 @@ def test_pem_cert2rsa():
 
 def test_extract_rsa_from_cert_2():
     _ckey = pem_cert2rsa(CERT)
-    _jwk = RSAKey(key=_ckey)
-    _jwk.serialize()
+    _key = RSAKey()
+    _key.load_key(_ckey)
 
-    print _jwk
+    print _key
 
-    _n = base64_to_long(str(_jwk.n))
-
-    assert _ckey.n == _n
+    assert _ckey.n == _key.get_key().n
 
 
 def test_kspec():
     _ckey = pem_cert2rsa(CERT)
-    _jwk = RSAKey(key=_ckey)
-    _jwk.serialize()
+    _key = RSAKey()
+    _key.load_key(_ckey)
 
-    print _jwk
-    assert _jwk.kty == "RSA"
-    assert _jwk.e == JWK["keys"][0]["e"]
-    assert _jwk.n == JWK["keys"][0]["n"]
+    print _key
+    jwk = _key.serialize()
+    assert jwk["kty"] == "RSA"
+    assert jwk["e"] == JWK["keys"][0]["e"]
+    assert jwk["n"] == JWK["keys"][0]["n"]
 
 
 def test_loads_0():
@@ -61,10 +83,8 @@ def test_loads_0():
     _ckey = pem_cert2rsa(CERT)
 
     print key
-    _n = base64_to_long(str(key.n))
-    assert _n == _ckey.n
-    _e = base64_to_long(str(key.e))
-    assert _e == _ckey.e
+    assert key.n == _ckey.n
+    assert key.e == _ckey.e
 
 
 def test_loads_1():
@@ -140,12 +160,22 @@ ECKEY = {
 
 def test_import_export_eckey():
     _key = ECKey(**ECKEY)
-    _key.deserialize()
+    exp_key = _key.serialize()
+    assert _eq(exp_key.keys(), ["y", "x", "crv", "kty"])
 
-    _key.serialize()
-    exp_key = _key.to_dict()
-    assert _eq(exp_key.keys(), ["y", "x", "crv", "kty", "d"])
+
+def test_create_eckey():
+    priv, pub = P256.key_pair()
+    ec = ECKey(x=pub[0], y=pub[1], d=priv, crv="P-256")
+    exp_key = ec.serialize()
+    assert _eq(exp_key.keys(), ["y", "x", "crv", "kty"])
+
+
+def test_verify_2():
+    _key = RSAKey()
+    _key.load_key(pem_cert2rsa(CERT))
+    assert _key.verify()
 
 
 if __name__ == "__main__":
-    test_import_export_eckey()
+    test_verify_2()

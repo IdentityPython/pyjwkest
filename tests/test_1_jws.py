@@ -10,8 +10,10 @@ from jwkest.jwk import RSAKey
 from jwkest.jws import SIGNER_ALGS
 from jwkest.jws import JWS
 
+from path_util import full_path
 
-KEY = "certs/server.key"
+
+KEY = full_path("certs/server.key")
 
 JWK = {"keys": [{'alg': 'RSA',
                  'use': 'foo',
@@ -22,6 +24,7 @@ JWK = {"keys": [{'alg': 'RSA',
                      '0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6J'
                      'tu82nB5k8')}]}
 
+# 64*8 = 256 bits
 HMAC_KEY = [3, 35, 53, 75, 43, 15, 165, 188, 131, 126, 6, 101, 119, 123, 166,
             143, 90, 179, 40, 230, 240, 84, 201, 40, 169, 15, 132, 178, 210, 80,
             46, 191, 211, 251, 90, 146, 210, 6, 71, 239, 150, 138, 180, 195,
@@ -59,8 +62,8 @@ def test_hmac_256():
 
 def test_hmac_384():
     payload = "Please take a moment to register today"
-    keys = [SYMKey(key="My hollow echo")]
-    _jws = JWS(payload, alg="HS256")
+    keys = [SYMKey(key="My hollow echo", alg="HS384")]
+    _jws = JWS(payload, alg="HS384")
     _jwt = _jws.sign_compact(keys)
 
     _rj = JWS()
@@ -71,8 +74,8 @@ def test_hmac_384():
 
 def test_hmac_512():
     payload = "Please take a moment to register today"
-    keys = [SYMKey(key="My hollow echo")]
-    _jws = JWS(payload, alg="HS256")
+    keys = [SYMKey(key="My hollow echo", alg="HS512")]
+    _jws = JWS(payload, alg="HS512")
     _jwt = _jws.sign_compact(keys)
 
     _rj = JWS()
@@ -175,11 +178,10 @@ def test_a_1_3b():
 def test_jws_1():
     msg = {"iss": "joe", "exp": 1300819380, "http://example.com/is_root": True}
     jwk = SYMKey(key=jwkest.intarr2bin(HMAC_KEY))
-    jwk.serialize()
     _jws = JWS(msg, cty="JWT", alg="HS256", jwk=json.dumps(jwk.to_dict()))
     res = _jws.sign_compact()
 
-    _jws2 = JWS()
+    _jws2 = JWS(alg="HS256")
     _jws2.verify_compact(res)
     assert _jws2.msg == msg
 
@@ -190,7 +192,6 @@ def test_signer_es256():
                  x="AekpBQ8ST8a8VcfVOTNl353vSrDCLLJXmPk06wTjxrrjcBpXp5EOnYG_NjFZ6OvLFV1jSfS9tsz4qUxcWceqwQGk",
                  y="ADSmRA43Z1DSNx_RvcLI87cdL07l6jQyyBXMoxVg_l2Th-x3S1WDhjDly79ajL4Kkd0AZMaZmh9ubmf63e3kyMj2",
                  d="AY5pb7A0UFiB3RELSD64fTLOSV_jazdF7fLYyuTw8lOfRhWg6Y6rUrPAxerEzgdRhajnu0ferB0d53vM9mE15j2C")
-    _key.deserialize()
     keys = [_key]
     #keys[0]._keytype = "private"
     _jws = JWS(payload, alg="ES256")
@@ -207,7 +208,6 @@ def test_signer_es384():
                  x="AekpBQ8ST8a8VcfVOTNl353vSrDCLLJXmPk06wTjxrrjcBpXp5EOnYG_NjFZ6OvLFV1jSfS9tsz4qUxcWceqwQGk",
                  y="ADSmRA43Z1DSNx_RvcLI87cdL07l6jQyyBXMoxVg_l2Th-x3S1WDhjDly79ajL4Kkd0AZMaZmh9ubmf63e3kyMj2",
                  d="AY5pb7A0UFiB3RELSD64fTLOSV_jazdF7fLYyuTw8lOfRhWg6Y6rUrPAxerEzgdRhajnu0ferB0d53vM9mE15j2C")
-    _key.deserialize()
     keys = [_key]
     #keys[0]._keytype = "private"
     _jws = JWS(payload, alg="ES384")
@@ -224,7 +224,6 @@ def test_signer_es512():
                  x="AekpBQ8ST8a8VcfVOTNl353vSrDCLLJXmPk06wTjxrrjcBpXp5EOnYG_NjFZ6OvLFV1jSfS9tsz4qUxcWceqwQGk",
                  y="ADSmRA43Z1DSNx_RvcLI87cdL07l6jQyyBXMoxVg_l2Th-x3S1WDhjDly79ajL4Kkd0AZMaZmh9ubmf63e3kyMj2",
                  d="AY5pb7A0UFiB3RELSD64fTLOSV_jazdF7fLYyuTw8lOfRhWg6Y6rUrPAxerEzgdRhajnu0ferB0d53vM9mE15j2C")
-    _key.deserialize()
     keys = [_key]
     #keys[0]._keytype = "private"
     _jws = JWS(payload, alg="ES512")
@@ -262,9 +261,9 @@ def test_signer_ps384():
 def test_signer_ps512():
     payload = "Please take a moment to register today"
     # Key has to be big enough  > 512+512+2
-    keys = [RSAKey(key=import_rsa_key_from_file("./size2048.key"))]
+    keys = [RSAKey(key=import_rsa_key_from_file(full_path("./size2048.key")))]
     #keys[0]._keytype = "private"
-    _jws = JWS(payload, alg="PS512")
+    _jws = JWS(payload, alg="PS521")
     _jwt = _jws.sign_compact(keys)
 
     _rj = JWS()
@@ -273,4 +272,4 @@ def test_signer_ps512():
 
 
 if __name__ == "__main__":
-    test_signer_ps256()
+    test_a_1_3b()

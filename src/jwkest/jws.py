@@ -155,14 +155,14 @@ SIGNER_ALGS = {
 
     u'PS256': PSSSigner(SHA256),
     u'PS384': PSSSigner(SHA384),
-    #u'PS512': PSSSigner(SHA512),
+    u'PS521': PSSSigner(SHA512),
 
     u'none': None
 }
 
 
 def alg2keytype(alg):
-    if not alg or alg == "none":
+    if not alg or alg.lower() == "none":
         return "none"
     elif alg.startswith("RS") or alg.startswith("PS"):
         return "RSA"
@@ -293,6 +293,9 @@ class JWx(object):
 
         return {}
 
+    def alg2keytype(self, alg):
+        return alg2keytype(alg)
+
     def _pick_keys(self, keys, use="", alg=""):
         """
         The assumption is that upper layer has made certain you only get
@@ -301,9 +304,12 @@ class JWx(object):
         :param keys: A list of KEY instances
         :return: A list of KEY instances that fulfill the requirements
         """
-        _k = alg2keytype(self["alg"])
+        if not alg:
+            alg = self["alg"]
+
+        _k = self.alg2keytype(alg)
         if _k is None:
-            logger.error("Unknown arlgorithm '%s'" % self["alg"])
+            logger.error("Unknown arlgorithm '%s'" % alg)
             return []
 
         _kty = [_k.lower(), _k.upper()]
@@ -349,9 +355,9 @@ class JWS(JWx):
         _alg = self["alg"]
 
         if keys:
-            keys = self._pick_keys(keys, use="sig")
+            keys = self._pick_keys(keys, use="sig", alg=_alg)
         else:
-            keys = self._pick_keys(self._get_keys())
+            keys = self._pick_keys(self._get_keys(), use="sig", alg=_alg)
 
         xargs = {}
 
@@ -380,7 +386,7 @@ class JWS(JWx):
             raise UnknownAlgorithm(_alg)
 
         _input = b".".join([enc_head, enc_payload])
-        sig = _signer.sign(_input, key.get_key(private=True))
+        sig = _signer.sign(_input, key.get_key(alg=_alg, private=True))
         return b".".join([enc_head, enc_payload, b64e(sig)])
 
     def verify_compact(self, jws, keys=None):
@@ -392,6 +398,7 @@ class JWS(JWx):
             if self["alg"] == "none":
                 self.msg = self._decode(_payload)
                 return self.msg
+        _alg = self["alg"]
 
         if keys:
             _keys = self._pick_keys(keys)
@@ -403,7 +410,7 @@ class JWS(JWx):
         for key in _keys:
             try:
                 verifier.verify(_header + '.' + _payload, b64d(str(_sig)),
-                                key.get_key(private=False))
+                                key.get_key(alg=_alg, private=False))
             except BadSignature:
                 pass
             else:

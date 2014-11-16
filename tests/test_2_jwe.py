@@ -1,15 +1,15 @@
 import hashlib
 from Crypto.PublicKey import RSA
-from jwkest.jwk import RSAKey
-from aes_key_wrap_crypto import aes_wrap_key
+from cryptlib.aes_gcm import AES_GCM
+from jwkest.jwk import RSAKey, byte_arr
+from cryptlib.aes_key_wrap import aes_wrap_key
 
 __author__ = 'rohe0002'
 
-from jwkest import b64e
+from jwkest import b64e, intarr2long, long2hexseq
 from jwkest.jwe import JWE_RSA
 from jwkest.jwe import JWe
 from jwkest.jwe import JWE
-from jwkest.gcm import gcm_encrypt
 
 
 def intarr2str(arr):
@@ -32,7 +32,7 @@ def test_jwe_09_a1():
     assert b64_header == "eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZHQ00ifQ"
 
     # A.1.3
-    cek = intarr2str([177, 161, 244, 128, 84, 143, 225, 115, 63, 180, 3, 255,
+    cek = intarr2long([177, 161, 244, 128, 84, 143, 225, 115, 63, 180, 3, 255,
                       107, 154, 212, 246, 138, 7, 110, 91, 112, 46, 34, 105, 47,
                       130, 203, 46, 122, 234, 64, 252])
 
@@ -59,11 +59,12 @@ def test_jwe_09_a1():
 
     b64_ejek = "ApfOLCaDbqs_JXPYy2I937v_xmrzj-Iss1mG6NAHmeJViM6j2l0MHvfseIdHVyU2BIoGVu9ohvkkWiRq5DL2jYZTPA9TAdwq3FUIVyoH-Pedf6elHIVFi2KGDEspYMtQARMMSBcS7pslx6flh1Cfh3GBKysztVMEhZ_maFkm4PYVCsJsvq6Ct3fg2CJPOs0X1DHuxZKoIGIqcbeK4XEO5a0h5TAuJObKdfO0dKwfNSSbpu5sFrpRFwV2FTTYoqF4zI46N9-_hMIznlEpftRXhScEJuZ9HG8C8CHB1WRZ_J48PleqdhF4o7fB5J1wFqUXBtbtuGJ_A2Xe6AEhrlzCOw"
 
-    iv = intarr2str([227, 197, 117, 252, 2, 219, 233, 68, 180, 225, 77, 219])
+    iv = intarr2long([227, 197, 117, 252, 2, 219, 233, 68, 180, 225, 77, 219])
 
     aadp = b64_header + b'.' + b64_ejek
-    
-    ctxt, tag = gcm_encrypt(cek, iv, msg, aadp)
+
+    gcm = AES_GCM(cek)
+    ctxt, tag = gcm.encrypt(iv, msg, aadp)
 
     _va = [ord(c) for c in ctxt]
     assert _va == [229, 236, 166, 241, 53, 191, 115, 196, 174, 43, 73, 109, 39,
@@ -71,9 +72,12 @@ def test_jwe_09_a1():
                    186, 80, 111, 104, 50, 142, 47, 167, 59, 61, 181, 127, 196,
                    21, 40, 82, 242, 32, 123, 143, 168, 226, 73, 216, 176, 144,
                    138, 247, 106, 60, 16, 205, 160, 109, 64, 63, 192]
-    assert [ord(c) for c in tag] == [130, 17, 32, 198, 120, 167, 144, 113, 0,
-                                     50, 158, 49, 102, 208, 118, 152]
 
+    assert byte_arr(tag) == [130, 17, 32, 198, 120, 167, 144, 113, 0,
+                             50, 158, 49, 102, 208, 118, 152]
+
+    tag = long2hexseq(tag)
+    iv = long2hexseq(iv)
     res = b".".join([b64_header, b64_ejek, b64e(iv), b64e(ctxt), b64e(tag)])
 
     assert res == "".join([
@@ -190,4 +194,4 @@ def test_encrypt_decrypt_rsa_cbc():
 
 
 if __name__ == "__main__":
-    test_rsa_encrypt_decrypt_rsa_oaep_gcm()
+    test_jwe_09_a1()
