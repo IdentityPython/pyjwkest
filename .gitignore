@@ -2,3 +2,9 @@
 *.egg-info
 _files
 certs
+
+.idea
+.vagrant
+Vagrantfile
+build
+dist
