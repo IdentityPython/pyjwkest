@@ -7,5 +7,12 @@ env:
 install:
   - pip install -U tox
 
+python:
+  - "2.7"
+
+install:
+ - sudo apt-get -qq install libgmp-dev
+ - pip install -e .
+
 script:
-  - tox -e $TOX_ENV
+ - tox -e $TOX_ENV
