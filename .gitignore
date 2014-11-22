@@ -1,7 +1,11 @@
 *.pyc
 *.egg-info
 _files
+certs
+.vagrant
+Vagrantfile
 build
 dist
 tests/debug_*.py
+.tox
 .idea
