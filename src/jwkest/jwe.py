@@ -582,13 +582,15 @@ class JWE(JWx):
             _key = key.encryption_key(alg=_alg, private=True)
 
             if key.kid:
-                kwargs["kid"] = key.kid
+                encrypter["kid"] = key.kid
 
             try:
                 token = encrypter.encrypt(_key, **kwargs)
             except Exception as err:
                 pass
             else:
+                logger.debug(
+                    "Encrypted message using key with kid=%s" % key.kid)
                 return token
 
         raise NoSuitableEncryptionKey()
@@ -620,6 +622,8 @@ class JWE(JWx):
             except (KeyError, DecryptionFailed):
                 pass
             else:
+                logger.debug(
+                    "Decrypted message using key with kid=%s" % key.kid)
                 return msg
 
         raise DecryptionFailed()
