@@ -204,7 +204,7 @@ class JWx(object):
 
     def __init__(self, msg=None, **kwargs):
         self.msg = msg
-        self._dict = {}
+        self._dict = {"kid": ""}
         if kwargs:
             for key in self.args:
                 try:
@@ -258,7 +258,8 @@ class JWx(object):
                 _header[param] = _extra[param]
             except KeyError:
                 try:
-                    _header[param] = self._dict[param]
+                    if self._dict[param]:
+                        _header[param] = self._dict[param]
                 except KeyError:
                     pass
 
@@ -307,6 +308,9 @@ class JWx(object):
         if not alg:
             alg = self["alg"]
 
+        if alg == "none":
+            return []
+
         _k = self.alg2keytype(alg)
         if _k is None:
             logger.error("Unknown arlgorithm '%s'" % alg)
@@ -317,12 +321,13 @@ class JWx(object):
 
         pkey = []
         for _key in _keys:
-            try:
-                assert self["kid"] == _key.kid
-            except (KeyError, AttributeError):
-                pass
-            except AssertionError:
-                continue
+            if self["kid"]:
+                try:
+                    assert self["kid"] == _key.kid
+                except (KeyError, AttributeError):
+                    pass
+                except AssertionError:
+                    continue
 
             if use and _key.use and _key.use != use:
                 continue
@@ -387,6 +392,7 @@ class JWS(JWx):
 
         _input = b".".join([enc_head, enc_payload])
         sig = _signer.sign(_input, key.get_key(alg=_alg, private=True))
+        logger.debug("Signed message using key with kid=%s" % key.kid)
         return b".".join([enc_head, enc_payload, b64e(sig)])
 
     def verify_compact(self, jws, keys=None):
@@ -414,6 +420,7 @@ class JWS(JWx):
             except BadSignature:
                 pass
             else:
+                logger.debug("Verified message using key with kid=%s" % key.kid)
                 self.msg = self._decode(_payload)
                 return self.msg
 
