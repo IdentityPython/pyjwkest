@@ -38,7 +38,7 @@ class PyTest(TestCommand):
 
 setup(
     name="pyjwkest",
-    version="0.5.0",
+    version="0.5.1beta",
     description="Python implementation of JWT, JWE, JWS and JWK",
     author="Roland Hedberg",
     author_email="roland.hedberg@adm.umu.se",
