@@ -415,14 +415,17 @@ class JWS(JWx):
 
         for key in _keys:
             try:
-                verifier.verify(_header + '.' + _payload, b64d(str(_sig)),
-                                key.get_key(alg=_alg, private=False))
+                res = verifier.verify(_header + '.' + _payload,
+                                      b64d(str(_sig)),
+                                      key.get_key(alg=_alg, private=False))
             except BadSignature:
                 pass
             else:
-                logger.debug("Verified message using key with kid=%s" % key.kid)
-                self.msg = self._decode(_payload)
-                return self.msg
+                if res:
+                    logger.debug(
+                        "Verified message using key with kid=%s" % key.kid)
+                    self.msg = self._decode(_payload)
+                    return self.msg
 
         raise BadSignature()
 
