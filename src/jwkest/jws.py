@@ -137,7 +137,11 @@ class PSSSigner(Signer):
     def verify(self, msg, sig, key):
         h = self.digest.new(msg)
         verifier = PKCS1_PSS.new(key)
-        return verifier.verify(h, sig)
+        res = verifier.verify(h, sig)
+        if not res:
+            raise BadSignature()
+        else:
+            return
 
 
 SIGNER_ALGS = {
@@ -415,17 +419,15 @@ class JWS(JWx):
 
         for key in _keys:
             try:
-                res = verifier.verify(_header + '.' + _payload,
-                                      b64d(str(_sig)),
-                                      key.get_key(alg=_alg, private=False))
+                verifier.verify(_header + '.' + _payload, b64d(str(_sig)),
+                                key.get_key(alg=_alg, private=False))
             except BadSignature:
                 pass
             else:
-                if res:
-                    logger.debug(
-                        "Verified message using key with kid=%s" % key.kid)
-                    self.msg = self._decode(_payload)
-                    return self.msg
+                logger.debug(
+                    "Verified message using key with kid=%s" % key.kid)
+                self.msg = self._decode(_payload)
+                return self.msg
 
         raise BadSignature()
 

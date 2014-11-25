@@ -246,6 +246,23 @@ def test_signer_ps256():
     assert info == payload
 
 
+def test_signer_ps256_fail():
+    payload = "Please take a moment to register today"
+    keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
+    #keys[0]._keytype = "private"
+    _jws = JWS(payload, alg="PS256")
+    _jwt = _jws.sign_compact(keys)[:-1] + "a"
+
+    _rj = JWS()
+    try:
+        _rj.verify_compact(_jwt, keys)
+    except jwkest.BadSignature:
+        pass
+    else:
+        assert False
+
+
+
 def test_signer_ps384():
     payload = "Please take a moment to register today"
     keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
@@ -272,4 +289,4 @@ def test_signer_ps512():
 
 
 if __name__ == "__main__":
-    test_a_1_3b()
+    test_signer_ps256()
