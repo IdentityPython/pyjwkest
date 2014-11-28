@@ -4,7 +4,7 @@ from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import _RSAobj
 import struct
 from cryptlib.ecc import P256
-from jwkest.jwk import dump_jwk
+from jwkest.jwk import dump_jwk, base64url_to_long
 from jwkest.jwk import ECKey
 from jwkest.jwk import byte_arr
 from jwkest.jwk import pem_cert2rsa
@@ -37,14 +37,16 @@ def test_urlsafe_base64decode():
     if not len(data):
         data = '\x00'
     s0 = base64.b64encode(data)
-    # try to convert it back to long, should throw an exception
+    # try to convert it back to long, should throw an exception if the strict
+    # function is used
     try:
-        l = base64_to_long(s0)
+        l = base64url_to_long(s0)
     except ValueError:
         pass
     else:
         assert False
-
+    # Not else
+    l = base64_to_long(s0)
 
 def test_pem_cert2rsa():
     _ckey = pem_cert2rsa(CERT)
