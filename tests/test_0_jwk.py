@@ -48,6 +48,7 @@ def test_urlsafe_base64decode():
     # Not else
     l = base64_to_long(s0)
 
+
 def test_pem_cert2rsa():
     _ckey = pem_cert2rsa(CERT)
     assert isinstance(_ckey, _RSAobj)
