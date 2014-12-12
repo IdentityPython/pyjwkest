@@ -95,6 +95,7 @@ def base64url_to_long(data):
         raise ValueError("Not base64url encoded")
     return intarr2long(dehexlify(_d))
 
+
 def dicthash(d):
     return hash(repr(sorted(d.items())))
 
