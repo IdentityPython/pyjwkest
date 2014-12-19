@@ -262,7 +262,6 @@ def test_signer_ps256_fail():
         assert False
 
 
-
 def test_signer_ps384():
     payload = "Please take a moment to register today"
     keys = [RSAKey(key=import_rsa_key_from_file(KEY))]

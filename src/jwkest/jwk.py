@@ -305,7 +305,7 @@ class RSAKey(Key):
 
     def __init__(self, kty="RSA", alg="", use="", kid="", key=None,
                  x5c=None, x5t="", x5u="", n="", e="", d="", p="", q="",
-                 dp="", di="", qi=""):
+                 dp="", dq="", di="", qi=""):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.n = n
         self.e = e
@@ -313,6 +313,7 @@ class RSAKey(Key):
         self.p = p
         self.q = q
         self.dp = dp
+        self.dq = dq
         self.di = di
         self.qi = qi
 
