@@ -66,7 +66,7 @@ class NISTEllipticCurve:
             h >>= 1
         r = s = 0
         while r == 0 or s == 0:
-            if k == None:
+            if k is None:
                 k = (getrandbits(self.bits) % (self.N - 1)) + 1
             kinv = inv(k, self.N)
             kg = mulp(self.a, self.b, self.p, self.G, k)

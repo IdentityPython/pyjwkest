@@ -107,7 +107,10 @@ class RSASigner(Signer):
     def verify(self, msg, sig, key):
         h = self.digest.new(msg)
         verifier = PKCS1_v1_5.new(key)
-        return verifier.verify(h, sig)
+        if verifier.verify(h, sig):
+            return True
+        else:
+            raise BadSignature
 
 
 class DSASigner(Signer):
