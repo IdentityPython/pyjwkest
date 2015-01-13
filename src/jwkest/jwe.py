@@ -16,7 +16,7 @@ from cryptlib.aes_gcm import AES_GCM
 from cryptlib.aes_key_wrap import aes_wrap_key, aes_unwrap_key
 from cryptlib.ecc import NISTEllipticCurve
 
-from jwkest import b64d, JWKESTException
+from jwkest import b64d, JWKESTException, MissingKey
 from jwkest import b64e
 #from jwkest.aes_key_wrap_m2 import aes_wrap_key
 from jwkest.extra import aes_cbc_hmac_encrypt
@@ -357,15 +357,20 @@ class JWE_SYM(JWe):
         ctxt, tag, cek = self.enc_setup(_enc, _msg, auth_data, cek, iv=iv)
         return self.pack(b64_header, jek, iv, ctxt, tag)
 
-    def decrypt(self, token, key):
+    def decrypt(self, token, key=None, cek=None):
+        if not key and not cek:
+            raise MissingKey("On of key or cek must be specified")
+
         b64_head, b64_jek, b64_iv, b64_ctxt, b64_tag = token.split(b".")
 
         self.parse_header(b64_head)
         iv = b64d(str(b64_iv))
-        jek = b64d(str(b64_jek))
 
-        # The iv for this function must be 64 bit
-        cek = aes_unwrap_key(key, jek)
+        if not cek:
+            jek = b64d(str(b64_jek))
+            # The iv for this function must be 64 bit
+            cek = aes_unwrap_key(key, jek)
+
         _ctxt = b64d(str(b64_ctxt))
         _tag = b64d(str(b64_tag))
         auth_data = b64_head
