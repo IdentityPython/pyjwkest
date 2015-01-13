@@ -16,7 +16,7 @@ from cryptlib.aes_gcm import AES_GCM
 from cryptlib.aes_key_wrap import aes_wrap_key, aes_unwrap_key
 from cryptlib.ecc import NISTEllipticCurve
 
-from jwkest import b64d
+from jwkest import b64d, JWKESTException
 from jwkest import b64e
 #from jwkest.aes_key_wrap_m2 import aes_wrap_key
 from jwkest.extra import aes_cbc_hmac_encrypt
@@ -33,7 +33,7 @@ ENC = 1
 DEC = 0
 
 
-class JWEException(Exception):
+class JWEException(JWKESTException):
     pass
 
 

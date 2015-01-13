@@ -21,8 +21,12 @@ JWT_CLAIMS = {"iss": str, "sub": str, "aud": str, "exp": int, "nbf": int,
 JWT_HEADERS = ["typ", "cty"]
 
 
+class JWKESTException(Exception):
+    pass
+
+
 # XXX Should this be a subclass of ValueError?
-class Invalid(Exception):
+class Invalid(JWKESTException):
     """The JWT is invalid."""
 
 
@@ -54,7 +58,7 @@ class BadType(Invalid):
     """The JWT has an unexpected "typ" value."""
 
 
-class MissingKey(Exception):
+class MissingKey(JWKESTException):
     """ No usable key """
 
 

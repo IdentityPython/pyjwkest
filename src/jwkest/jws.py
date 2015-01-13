@@ -25,7 +25,7 @@ from jwkest.jwk import sha512_digest
 from jwkest.jwk import keyrep
 from jwkest.jwk import load_jwks_from_url
 
-from jwkest import b64e
+from jwkest import b64e, JWKESTException
 from jwkest import b64d
 from jwkest import safe_str_cmp
 from jwkest import BadSignature
@@ -34,15 +34,19 @@ from jwkest import UnknownAlgorithm
 logger = logging.getLogger(__name__)
 
 
-class NoSuitableSigningKeys(Exception):
+class JWSException(JWKESTException):
     pass
 
 
-class FormatError(Exception):
+class NoSuitableSigningKeys(JWSException):
     pass
 
 
-class WrongTypeOfKey(Exception):
+class FormatError(JWSException):
+    pass
+
+
+class WrongTypeOfKey(JWSException):
     pass
 
 
@@ -73,11 +77,11 @@ class Signer(object):
     """Abstract base class for signing algorithms."""
     def sign(self, msg, key):
         """Sign ``msg`` with ``key`` and return the signature."""
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def verify(self, msg, sig, key):
         """Return True if ``sig`` is a valid signature for ``msg``."""
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 class HMACSigner(Signer):
@@ -110,7 +114,7 @@ class RSASigner(Signer):
         if verifier.verify(h, sig):
             return True
         else:
-            raise BadSignature
+            raise BadSignature()
 
 
 class DSASigner(Signer):

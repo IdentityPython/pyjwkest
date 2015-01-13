@@ -14,7 +14,7 @@ from Crypto.Util.asn1 import DerSequence
 from requests import request
 from cryptlib.ecc import NISTEllipticCurve
 
-from jwkest import intarr2long
+from jwkest import intarr2long, JWKESTException
 from jwkest import b64d
 from jwkest import b64e
 from jwkest import dehexlify
@@ -27,7 +27,7 @@ PREFIX = "-----BEGIN CERTIFICATE-----"
 POSTFIX = "-----END CERTIFICATE-----"
 
 
-class JWKException(Exception):
+class JWKException(JWKESTException):
     pass
 
 
