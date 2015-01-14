@@ -203,5 +203,19 @@ def test_cmp_rsa_ec():
     else:
         assert False
 
+
+def test_cmp_neq_ec():
+    priv, pub = P256.key_pair()
+    _key1 = ECKey(x=pub[0], y=pub[1], d=priv, crv="P-256")
+    _key2 = ECKey(**ECKEY)
+
+    try:
+        assert _key1 == _key2
+    except AssertionError:
+        pass
+    else:
+        assert False
+
+
 if __name__ == "__main__":
-    test_cmp_rsa_ec()
+    test_cmp_neq_ec()

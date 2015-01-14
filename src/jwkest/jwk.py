@@ -300,8 +300,8 @@ class Key():
             assert isinstance(other, Key)
             assert self.__dict__.keys() == other.__dict__.keys()
 
-            for key, val in self.__dict__.items():
-                assert getattr(other, key) == val
+            for key in self.public_members:
+                assert getattr(other, key) == getattr(self, key)
         except AssertionError:
             return False
         else:
