@@ -295,6 +295,18 @@ class Key():
 
         return True
 
+    def __eq__(self, other):
+        try:
+            assert isinstance(other, Key)
+            assert self.__dict__.keys() == other.__dict__.keys()
+
+            for key, val in self.__dict__.items():
+                assert getattr(other, key) == val
+        except AssertionError:
+            return False
+        else:
+            return True
+
 
 class RSAKey(Key):
     members = Key.members

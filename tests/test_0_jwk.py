@@ -180,5 +180,28 @@ def test_verify_2():
     assert _key.verify()
 
 
+def test_cmp_rsa():
+    _key1 = RSAKey()
+    _key1.load_key(pem_cert2rsa(CERT))
+
+    _key2 = RSAKey()
+    _key2.load_key(pem_cert2rsa(CERT))
+
+    assert _key1 == _key2
+
+
+def test_cmp_rsa_ec():
+    _key1 = RSAKey()
+    _key1.load_key(pem_cert2rsa(CERT))
+
+    _key2 = ECKey(**ECKEY)
+
+    try:
+        assert _key1 == _key2
+    except AssertionError:
+        pass
+    else:
+        assert False
+
 if __name__ == "__main__":
-    test_verify_2()
+    test_cmp_rsa_ec()
