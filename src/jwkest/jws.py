@@ -25,8 +25,9 @@ from jwkest.jwk import sha512_digest
 from jwkest.jwk import keyrep
 from jwkest.jwk import load_jwks_from_url
 
-from jwkest import b64e, JWKESTException
+from jwkest import b64e
 from jwkest import b64d
+from jwkest import JWKESTException
 from jwkest import safe_str_cmp
 from jwkest import BadSignature
 from jwkest import UnknownAlgorithm
