@@ -97,7 +97,7 @@ class HMACSigner(Signer):
     def verify(self, msg, sig, key):
         if not safe_str_cmp(self.sign(msg, key), sig):
             raise BadSignature(repr(sig))
-        return
+        return True
 
 
 class RSASigner(Signer):
@@ -149,7 +149,7 @@ class PSSSigner(Signer):
         if not res:
             raise BadSignature()
         else:
-            return
+            return True
 
 
 SIGNER_ALGS = {
