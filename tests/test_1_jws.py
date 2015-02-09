@@ -1,4 +1,5 @@
 import json
+from cryptlib.ecc import P256, P384, P521
 
 import jwkest
 from jwkest import jws
@@ -188,12 +189,8 @@ def test_jws_1():
 
 def test_signer_es256():
     payload = "Please take a moment to register today"
-    _key = ECKey(crv="P-521",
-                 x="AekpBQ8ST8a8VcfVOTNl353vSrDCLLJXmPk06wTjxrrjcBpXp5EOnYG_NjFZ6OvLFV1jSfS9tsz4qUxcWceqwQGk",
-                 y="ADSmRA43Z1DSNx_RvcLI87cdL07l6jQyyBXMoxVg_l2Th-x3S1WDhjDly79ajL4Kkd0AZMaZmh9ubmf63e3kyMj2",
-                 d="AY5pb7A0UFiB3RELSD64fTLOSV_jazdF7fLYyuTw8lOfRhWg6Y6rUrPAxerEzgdRhajnu0ferB0d53vM9mE15j2C")
+    _key = ECKey().load_key(P256)
     keys = [_key]
-    #keys[0]._keytype = "private"
     _jws = JWS(payload, alg="ES256")
     _jwt = _jws.sign_compact(keys)
 
@@ -204,12 +201,8 @@ def test_signer_es256():
 
 def test_signer_es384():
     payload = "Please take a moment to register today"
-    _key = ECKey(crv="P-521",
-                 x="AekpBQ8ST8a8VcfVOTNl353vSrDCLLJXmPk06wTjxrrjcBpXp5EOnYG_NjFZ6OvLFV1jSfS9tsz4qUxcWceqwQGk",
-                 y="ADSmRA43Z1DSNx_RvcLI87cdL07l6jQyyBXMoxVg_l2Th-x3S1WDhjDly79ajL4Kkd0AZMaZmh9ubmf63e3kyMj2",
-                 d="AY5pb7A0UFiB3RELSD64fTLOSV_jazdF7fLYyuTw8lOfRhWg6Y6rUrPAxerEzgdRhajnu0ferB0d53vM9mE15j2C")
+    _key = ECKey().load_key(P384)
     keys = [_key]
-    #keys[0]._keytype = "private"
     _jws = JWS(payload, alg="ES384")
     _jwt = _jws.sign_compact(keys)
 
@@ -220,10 +213,7 @@ def test_signer_es384():
 
 def test_signer_es512():
     payload = "Please take a moment to register today"
-    _key = ECKey(crv="P-521",
-                 x="AekpBQ8ST8a8VcfVOTNl353vSrDCLLJXmPk06wTjxrrjcBpXp5EOnYG_NjFZ6OvLFV1jSfS9tsz4qUxcWceqwQGk",
-                 y="ADSmRA43Z1DSNx_RvcLI87cdL07l6jQyyBXMoxVg_l2Th-x3S1WDhjDly79ajL4Kkd0AZMaZmh9ubmf63e3kyMj2",
-                 d="AY5pb7A0UFiB3RELSD64fTLOSV_jazdF7fLYyuTw8lOfRhWg6Y6rUrPAxerEzgdRhajnu0ferB0d53vM9mE15j2C")
+    _key = ECKey().load_key(P521)
     keys = [_key]
     #keys[0]._keytype = "private"
     _jws = JWS(payload, alg="ES512")
@@ -288,4 +278,4 @@ def test_signer_ps512():
 
 
 if __name__ == "__main__":
-    test_signer_ps256()
+    test_signer_es256()
