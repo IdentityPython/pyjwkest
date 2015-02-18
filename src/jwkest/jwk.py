@@ -636,7 +636,7 @@ def dump_jwks(keyspecs):
     return json.dumps({"keys": res})
 
 
-def load_jwks_from_url(url, spec2key=None):
+def load_jwks_from_url(url, verify=True):
     """
     Get and transform a JWKS into keys
 
@@ -645,7 +645,7 @@ def load_jwks_from_url(url, spec2key=None):
     :return: List of 2-tuples (keytype, key)
     """
 
-    r = request("GET", url, allow_redirects=True)
+    r = request("GET", url, allow_redirects=True, verify=verify)
     if r.status_code == 200:
         return load_jwks(r.text)
     else:
