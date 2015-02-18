@@ -57,6 +57,10 @@ class NoSuitableEncryptionKey(JWEException):
     pass
 
 
+class NoSuitableDecryptionKey(JWEException):
+    pass
+
+
 class DecryptionFailed(JWEException):
     pass
 
@@ -618,7 +622,7 @@ class JWE(JWx):
             keys = self._pick_keys(self._get_keys())
 
         if not keys:
-            raise NoSuitableEncryptionKey(self.alg)
+            raise NoSuitableDecryptionKey(self.alg)
 
         for key in keys:
             _key = key.encryption_key(alg=_alg, private=False)
