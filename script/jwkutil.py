@@ -65,16 +65,14 @@ if __name__ == "__main__":
         keys.append(keyrep(kspec))
 
     if args.jwks:
-        keys.extend(load_jwks(open(args.jwk).read()))
+        txt = open(args.jwks).read()
+        keys.extend(load_jwks(txt))
 
     if not keys:
         exit(-1)
 
     if args.msg_file:
-        if args.msg_file == "A.2.1":
-            message = open("A.2.1").read().replace("\n","\r\n")
-        else:
-            message = open(args.msg_file).read().strip("\n")
+        message = open(args.msg_file).read().strip("\n")
     elif args.message == "-":
         message = sys.stdin.read()
     else:
