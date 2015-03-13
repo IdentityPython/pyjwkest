@@ -25,7 +25,7 @@ from jwkest.jwk import sha512_digest
 from jwkest.jwk import keyrep
 from jwkest.jwk import load_jwks_from_url
 
-from jwkest import b64e
+from jwkest import b64e, MissingKey
 from jwkest import b64d
 from jwkest import JWKESTException
 from jwkest import safe_str_cmp
@@ -424,6 +424,9 @@ class JWS(JWx):
             _keys = self._pick_keys(self._get_keys())
 
         verifier = SIGNER_ALGS[self["alg"]]
+
+        if not _keys:
+            raise MissingKey("No suitable verification keys found")
 
         for key in _keys:
             try:

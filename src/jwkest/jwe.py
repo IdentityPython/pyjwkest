@@ -635,4 +635,5 @@ class JWE(JWx):
                     "Decrypted message using key with kid=%s" % key.kid)
                 return msg
 
-        raise DecryptionFailed()
+        raise DecryptionFailed(
+            "No available key that could decrypt the message")
