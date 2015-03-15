@@ -221,6 +221,9 @@ def x509_rsa_load(txt):
 
 
 class Key():
+    """
+    Basic JSON Web key class
+    """
     members = ["kty", "alg", "use", "kid", "x5c", "x5t", "x5u"]
     longs = []
     public_members = ["kty", "alg", "use", "kid", "x5c", "x5t", "x5u"]
@@ -262,12 +265,16 @@ class Key():
         return str(self.to_dict())
 
     def deserialize(self):
-        """ Assumes that the parameters where set from a JWK object
+        """
+        Starting with information gathered from the on-the-wire representation
+        initiate an appropriate key.
         """
         pass
 
     def serialize(self):
-        """ Converts attributes into a representation that is exportable
+        """
+        map key characteristics into attribute values that can be used
+        to create an on-the-wire represntation of the key
         """
         pass
 
@@ -275,7 +282,11 @@ class Key():
         return self.key
 
     def verify(self):
-        """ This is supposed to be run before the info is deserialized """
+        """
+        Verify that the information gathered from the on-the-wire
+        representation is of the right types.
+        This is supposed to be run before the info is deserialized.
+        """
         for param in self.longs:
             item = getattr(self, param)
             if not item or isinstance(item, long):
@@ -309,6 +320,9 @@ class Key():
 
 
 class RSAKey(Key):
+    """
+    JSON Web key representation of a RSA key
+    """
     members = Key.members
     members.extend(["n", "e", "d", "p", "q"])
     longs = ["n", "e", "d", "p", "q"]
@@ -378,16 +392,30 @@ class RSAKey(Key):
             pass
 
     def load(self, filename):
+        """
+        Load the key from a file.
+
+        :param filename: File name
+        """
         self.key = rsa_load(filename)
         self._split()
         return self
 
     def load_key(self, key):
+        """
+        Use this RSA key
+
+        :param key: An RSA key instance
+        """
         self.key = key
         self._split()
         return self
 
     def encryption_key(self, **kwargs):
+        """
+        Make sure there is a key instance present that can be used for
+        encrypting/signing.
+        """
         if not self.key:
             self.deserialize()
 
@@ -395,6 +423,9 @@ class RSAKey(Key):
 
 
 class ECKey(Key):
+    """
+    JSON Web key representation of a Elliptic curve key
+    """
     members = ["kty", "alg", "use", "kid", "crv", "x", "y", "d"]
     longs = ['x', 'y', 'd']
     public_members = ["kty", "alg", "use", "kid", "crv", "x", "y"]
@@ -415,6 +446,10 @@ class ECKey(Key):
             self.deserialize()
 
     def deserialize(self):
+        """
+        Starting with information gathered from the on-the-wire representation
+        of an elliptic curve key initiate an Elliptic Curve.
+        """
         try:
             if isinstance(self.x, basestring):
                 self.x = base64_to_long(self.x)
@@ -579,8 +614,8 @@ def load_jwks(txt):
             "kid":"1"},
 
             {"kty":"RSA",
-            "mod": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFb....."
-            "xpo":"AQAB",
+            "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFb....."
+            "e":"AQAB",
             "kid":"2011-04-29"}
         ]
     }
