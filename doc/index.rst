@@ -11,8 +11,13 @@ Software to do the JOSE stuff, that is Javascript Object Signing and Encryption.
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
+   install
+   keys
+   signing
+   encrypt
+   examples
 
 
 Indices and tables
