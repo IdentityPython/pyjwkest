@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-import json
 import os
 import argparse
-from jwkest.jwk import RSAKey, rsa_load, dump_jwks
+from jwkest.jwk import RSAKey
+from jwkest.jwk import rsa_load
+from jwkest.jwk import dump_jwks
 
 __author__ = 'rolandh'
 
@@ -15,17 +16,10 @@ parser.add_argument('-k', dest="key", help="Key file")
 
 args = parser.parse_args()
 
-key = rsa_load(args.key)
-rsa_key = RSAKey(key=key)
-rsa_key.serialize()
-
-# This will create JWK from the public RSA key
-jwk_spec = json.dumps(rsa_key.to_dict(), "enc")
+rsa_key = RSAKey(key=rsa_load(args.key))
 
 keyfile = os.path.join(args.path, args.name)
 
-_out = dump_jwks([{"key":key, "use":"enc"}])
-
 f = open(keyfile + ".jwk", "w")
-f.write(_out)
+f.write(dump_jwks([rsa_key]))
 f.close()
