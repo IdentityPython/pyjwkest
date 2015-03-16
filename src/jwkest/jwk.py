@@ -345,6 +345,8 @@ class RSAKey(Key):
 
         if not self.key and self.n and self.e:
             self.deserialize()
+        elif self.key and not (self.n and self.e):
+            self._split()
 
     def deserialize(self):
         if self.n and self.e:
@@ -658,15 +660,15 @@ def dump_jwk(key, use="", kid=""):
     return _dict
 
 
-def dump_jwks(keyspecs):
+def dump_jwks(keys):
     """
 
-    :param keyspecs: list of dictionaries describing keys
+    :param keys: list of Key instances
     :return:
     """
     res = []
-    for keyspec in keyspecs:
-        res.append(dump_jwk(**keyspec))
+    for key in keys:
+        res.append(dump_jwk(key))
 
     return json.dumps({"keys": res})
 
