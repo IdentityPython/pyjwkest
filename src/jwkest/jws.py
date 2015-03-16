@@ -369,7 +369,13 @@ class JWS(JWx):
         :return:
         """
 
-        _alg = self["alg"]
+        try:
+            _alg = self["alg"]
+        except KeyError:
+            self["alg"] = _alg = "none"
+        else:
+            if not _alg:
+                self["alg"] = _alg = "none"
 
         if keys:
             keys = self._pick_keys(keys, use="sig", alg=_alg)
