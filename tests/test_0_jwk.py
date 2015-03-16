@@ -124,7 +124,7 @@ def test_dumps():
 
 def test_dump_jwk():
     _ckey = pem_cert2rsa(CERT)
-    jwk = dump_jwks([{"key": _ckey}])
+    jwk = dump_jwks([_ckey])
     print jwk
     _wk = json.loads(jwk)
     assert _wk.keys() == ["keys"]
@@ -134,7 +134,7 @@ def test_dump_jwk():
 
 def test_load_jwk():
     _ckey = pem_cert2rsa(CERT)
-    jwk = dump_jwks([{"key": _ckey}])
+    jwk = dump_jwks([_ckey])
     wk = load_jwks(jwk)
     print wk
     assert len(wk) == 1
