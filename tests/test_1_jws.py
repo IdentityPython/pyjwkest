@@ -277,5 +277,20 @@ def test_signer_ps512():
     assert info == payload
 
 
+def test_no_alg_and_alg_none_same():
+    payload = "Please take a moment to register today"
+    _jws = JWS(payload, alg="none")
+
+    # Create a JWS (signed JWT)
+    _jwt0 = _jws.sign_compact([])
+
+    # The class instance that sets up the signing operation
+    _jws = JWS(payload)
+
+    # Create a JWS (signed JWT)
+    _jwt1 = _jws.sign_compact([])
+
+    assert _jwt0 == _jwt1
+
 if __name__ == "__main__":
     test_signer_ps256_fail()

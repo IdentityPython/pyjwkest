@@ -1,6 +1,32 @@
 A couple of hopefully usable examples
 =====================================
 
+Exporting a key
+***************
+
+
+    from Crypto.PublicKey import RSA
+    from jwkest.jwk import RSAKey
+
+    # Mint a new RSA key
+    _rsakey = RSA.generate(2048)
+
+    # Wrap it in a JWK class
+    _rsajwk = RSAKey(kid="rsa1", key=_rsakey)
+
+    # print a JWK representation of the public key
+    print _rsajwk
+
+
+Import a key
+************
+
+
+
+
+Signing a document
+******************
+
 Signing a JSON object using a newly minted RSA key::
 
     from Crypto.PublicKey import RSA
@@ -22,4 +48,5 @@ Signing a JSON object using a newly minted RSA key::
 
     # Create a JWS (signed JWT) using the provided key
     print _jws.sign_compact([_rsajwk])
+
 

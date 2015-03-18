@@ -214,9 +214,11 @@ class JWx(object):
     :return: A class instance
     """
 
-    def __init__(self, msg=None, **kwargs):
+    def __init__(self, msg=None, with_digest=False, **kwargs):
         self.msg = msg
         self._dict = {"kid": ""}
+        self.with_digest = with_digest
+
         if kwargs:
             for key in self.args:
                 try:
@@ -282,7 +284,9 @@ class JWx(object):
         return _header
 
     def _encoded_header(self, extra=None):
-        return b64e(json.dumps(self._header(extra), separators=(",", ":")))
+        _header = json.dumps(self._header(extra), separators=(",", ":"))
+        logger.debug("Header: {}".format(_header))
+        return b64e(_header)
 
     def parse_header(self, encheader):
         for attr, val in json.loads(b64d(str(encheader))).items():

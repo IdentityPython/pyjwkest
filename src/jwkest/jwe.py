@@ -80,8 +80,8 @@ KEYLEN = {
 class Encrypter(object):
     """Abstract base class for encryption algorithms."""
 
-    def __init__(self):
-        pass
+    def __init__(self, with_digest=False):
+        self.with_digest = with_digest
 
     def encrypt(self, msg, key):
         """Encrypt ``msg`` with ``key`` and return the encrypted message."""
@@ -94,35 +94,42 @@ class Encrypter(object):
 
 class RSAEncrypter(Encrypter):
 
-    @staticmethod
-    def encrypt(msg, key, padding="pkcs1_padding"):
+    def encrypt(self, msg, key, padding="pkcs1_padding"):
         if padding == "pkcs1_padding":
             cipher = PKCS1_v1_5.new(key)
-            h = SHA.new(msg)
-            msg += h.digest()
+            if self.with_digest:
+                h = SHA.new(msg)
+                # add a SHA digest to the message
+                msg += h.digest()
         elif padding == "pkcs1_oaep_padding":
             cipher = PKCS1_OAEP.new(key)
         else:
             raise Exception("Unsupported padding")
         return cipher.encrypt(msg)
 
-    @staticmethod
-    def decrypt(msg, key, padding="pkcs1_padding"):
-        dsize = SHA.digest_size
+    def decrypt(self, ciphertext, key, padding="pkcs1_padding"):
         if padding == "pkcs1_padding":
             cipher = PKCS1_v1_5.new(key)
-            sentinel = Random.new().read(32+dsize)
-            text = cipher.decrypt(msg, sentinel)
-            _digest = text[-dsize:]
-            _msg = text[:-dsize]
-            digest = SHA.new(_msg).digest()
-            if digest == _digest:
-                text = _msg
+            if self.with_digest:
+                dsize = SHA.digest_size
             else:
-                raise DecryptionFailed()
+                dsize = 0
+            sentinel = Random.new().read(32+dsize)
+            text = cipher.decrypt(ciphertext, sentinel)
+            if dsize:
+                _digest = text[-dsize:]
+                _msg = text[:-dsize]
+                digest = SHA.new(_msg).digest()
+                if digest == _digest:
+                    text = _msg
+                else:
+                    raise DecryptionFailed()
+            else:
+                if text == sentinel:
+                    raise DecryptionFailed()
         elif padding == "pkcs1_oaep_padding":
             cipher = PKCS1_OAEP.new(key)
-            text = cipher.decrypt(msg)
+            text = cipher.decrypt(ciphertext)
         else:
             raise Exception("Unsupported padding")
 
@@ -411,7 +418,10 @@ class JWE_RSA(JWe):
 
         cek, iv = self._generate_key_and_iv(self["enc"], cek, iv)
 
-        _encrypt = RSAEncrypter().encrypt
+        logger.debug("cek: %s, iv: %s" % ([ord(c) for c in cek],
+                                          [ord(c) for c in iv]))
+
+        _encrypt = RSAEncrypter(self.with_digest).encrypt
 
         _alg = self["alg"]
         if _alg == "RSA-OAEP":
@@ -441,7 +451,7 @@ class JWE_RSA(JWe):
         self.parse_header(b64_head)
         iv = b64d(str(b64_iv))
 
-        _decrypt = RSAEncrypter().decrypt
+        _decrypt = RSAEncrypter(self.with_digest).decrypt
         jek = b64d(str(b64_jek))
 
         _alg = self["alg"]

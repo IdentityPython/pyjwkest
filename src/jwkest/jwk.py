@@ -318,6 +318,9 @@ class Key():
         else:
             return True
 
+    def keys(self):
+        return self.to_dict().keys()
+
 
 class RSAKey(Key):
     """
@@ -601,7 +604,7 @@ def keyrep(kspec):
     return item
 
 
-def load_jwks(txt):
+def jwks_load(txt):
     """
     Load and create keys from a JWKS representation
 
@@ -633,34 +636,29 @@ def load_jwks(txt):
     return res
 
 
-def dump_jwk(key, use="", kid=""):
+def jwk_wrap(key, use="", kid=""):
     """
-    Dump to JWK dictionary representation
+    Instantiated a Key instance with the given key
 
-    :param key: The keys to dump
+    :param key: The keys to wrap
     :param use: What the key are expected to be use for
-    :return: The JWK string representation or None
+    :param kid: A key id
+    :return: The Key instance
     """
     if isinstance(key, _RSAobj):
-        kspec = RSAKey().load_key(key)
+        kspec = RSAKey(use=use, kid=kid).load_key(key)
     elif isinstance(key, basestring):
-        kspec = SYMKey(key=key)
+        kspec = SYMKey(key=key, use=use, kid=kid)
     elif isinstance(key, NISTEllipticCurve):
-        kspec = ECKey().load_key(key)
+        kspec = ECKey(use=use, kid=kid).load_key(key)
     else:
         raise Exception("Unknown key type:key="+str(type(key)))
 
-    _dict = kspec.serialize()
-
-    if use:
-        _dict["use"] = use
-    if kid:
-        _dict["kid"] = kid
-
-    return _dict
+    kspec.serialize()
+    return kspec
 
 
-def dump_jwks(keys):
+def jwks_dump(keys):
     """
 
     :param keys: list of Key instances
@@ -668,7 +666,7 @@ def dump_jwks(keys):
     """
     res = []
     for key in keys:
-        res.append(dump_jwk(key))
+        res.append(key.serialize())
 
     return json.dumps({"keys": res})
 
@@ -684,6 +682,6 @@ def load_jwks_from_url(url, verify=True):
 
     r = request("GET", url, allow_redirects=True, verify=verify)
     if r.status_code == 200:
-        return load_jwks(r.text)
+        return jwks_load(r.text)
     else:
         raise Exception("HTTP Get error: %s" % r.status_code)

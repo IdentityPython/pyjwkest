@@ -4,14 +4,15 @@ from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import _RSAobj
 import struct
 from cryptlib.ecc import P256
-from jwkest.jwk import dump_jwk, base64url_to_long
+from jwkest.jwk import jwk_wrap
+from jwkest.jwk import base64url_to_long
 from jwkest.jwk import ECKey
 from jwkest.jwk import byte_arr
 from jwkest.jwk import pem_cert2rsa
 from jwkest.jwk import RSAKey
 from jwkest.jwk import base64_to_long
-from jwkest.jwk import load_jwks
-from jwkest.jwk import dump_jwks
+from jwkest.jwk import jwks_load
+from jwkest.jwk import jwks_dump
 from path_util import full_path
 
 __author__ = 'rohe0002'
@@ -77,7 +78,7 @@ def test_kspec():
 
 
 def test_loads_0():
-    keys = load_jwks(json.dumps(JWK))
+    keys = jwks_load(json.dumps(JWK))
     assert len(keys) == 1
     key = keys[0]
     assert key.kid == "abc"
@@ -109,7 +110,7 @@ def test_loads_1():
         ]
     }
 
-    keys = load_jwks(json.dumps(jwk))
+    keys = jwks_load(json.dumps(jwk))
     print keys
     assert len(keys) == 2
     kids = [k.kid for k in keys]
@@ -118,13 +119,13 @@ def test_loads_1():
 
 def test_dumps():
     _ckey = pem_cert2rsa(CERT)
-    jwk = dump_jwk(_ckey)
+    jwk = jwk_wrap(_ckey).serialize()
     assert _eq(jwk.keys(), ["kty", "e", "n"])
 
 
 def test_dump_jwk():
-    _ckey = pem_cert2rsa(CERT)
-    jwk = dump_jwks([_ckey])
+    _ckey = jwk_wrap(pem_cert2rsa(CERT))
+    jwk = jwks_dump([_ckey])
     print jwk
     _wk = json.loads(jwk)
     assert _wk.keys() == ["keys"]
@@ -133,9 +134,9 @@ def test_dump_jwk():
 
 
 def test_load_jwk():
-    _ckey = pem_cert2rsa(CERT)
-    jwk = dump_jwks([_ckey])
-    wk = load_jwks(jwk)
+    _ckey = jwk_wrap(pem_cert2rsa(CERT))
+    jwk = jwks_dump([_ckey])
+    wk = jwks_load(jwk)
     print wk
     assert len(wk) == 1
     key = wk[0]
@@ -146,11 +147,11 @@ def test_load_jwk():
 def test_import_rsa_key():
     _ckey = RSA.importKey(open(KEY, 'r').read())
     assert isinstance(_ckey, _RSAobj)
-    jwk = dump_jwk(_ckey)
-    print jwk
-    assert _eq(jwk.keys(), ["kty", "e", "n"])
-    assert jwk["n"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
-    assert jwk['e'] == 'AQAB'
+    djwk = jwk_wrap(_ckey).to_dict()
+    print djwk
+    assert _eq(djwk.keys(), ["kty", "e", "n"])
+    assert djwk["n"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
+    assert djwk['e'] == 'AQAB'
 
 
 ECKEY = {
