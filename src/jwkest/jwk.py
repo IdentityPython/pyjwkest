@@ -43,6 +43,10 @@ class DeSerializationNotPossible(JWKException):
     pass
 
 
+class HeaderError(JWKESTException):
+    pass
+
+
 def byte_arr(long_int):
     _bytes = []
     while long_int:
@@ -297,13 +301,18 @@ class Key():
                 setattr(self, param, item)
 
             try:
-                _ = base64_to_long(item)
+                _ = base64url_to_long(item)
             except Exception:
                 return False
             else:
                 if [e for e in ['+', '/', '='] if e in item]:
                     return False
 
+        if self.kid:
+            try:
+                assert isinstance(self.kid, basestring)
+            except AssertionError:
+                raise HeaderError("kid of wrong value type")
         return True
 
     def __eq__(self, other):

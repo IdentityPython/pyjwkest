@@ -18,7 +18,7 @@ from cryptlib.ecc import P256
 from cryptlib.ecc import P384
 from cryptlib.ecc import P521
 
-from jwkest.jwk import load_x509_cert
+from jwkest.jwk import load_x509_cert, HeaderError
 from jwkest.jwk import sha256_digest
 from jwkest.jwk import sha384_digest
 from jwkest.jwk import sha512_digest
@@ -281,6 +281,13 @@ class JWx(object):
             _header["jwk"] = self["jwk"].to_dict()
         elif "jwk" in _extra:
             _header["jwk"] = extra["jwk"].to_dict()
+
+        if "kid" in self:
+            try:
+                assert isinstance(self["kid"], basestring)
+            except AssertionError:
+                raise HeaderError("kid of wrong value type")
+
         return _header
 
     def _encoded_header(self, extra=None):
@@ -294,6 +301,12 @@ class JWx(object):
                 self["jwk"] = keyrep(val)
             else:
                 self[attr] = val
+
+        if "kid" in self:
+            try:
+                assert isinstance(self["kid"], basestring)
+            except AssertionError:
+                raise HeaderError("kid of wrong value type")
 
     def _get_keys(self):
         if "jwk" in self:
@@ -365,6 +378,38 @@ class JWx(object):
 
 class JWS(JWx):
 
+    def alg_keys(self, keys, use):
+        try:
+            _alg = self["alg"]
+        except KeyError:
+            self["alg"] = _alg = "none"
+        else:
+            if not _alg:
+                self["alg"] = _alg = "none"
+
+        if keys:
+            keys = self._pick_keys(keys, use=use, alg=_alg)
+        else:
+            keys = self._pick_keys(self._get_keys(), use=use, alg=_alg)
+
+        xargs = {}
+
+        if keys:
+            key = keys[0]
+            if key.kid:
+                xargs = {"kid": key.kid}
+        elif not _alg or _alg.lower() == "none":
+            key = None
+        else:
+            if "kid" in self:
+                raise NoSuitableSigningKeys(
+                    "No key for algorithm: %s and kid: %s" % (_alg,
+                                                              self["kid"]))
+            else:
+                raise NoSuitableSigningKeys("No key for algorithm: %s" % _alg)
+
+        return key, xargs
+
     def sign_compact(self, keys=None):
         """
         Produce a JWS using the JWS Compact Serialization
@@ -395,7 +440,12 @@ class JWS(JWx):
         elif not _alg or _alg.lower() == "none":
             key = None
         else:
-            raise NoSuitableSigningKeys(_alg)
+            if "kid" in self:
+                raise NoSuitableSigningKeys(
+                    "No key for algorithm: %s with kid: %s" % (_alg,
+                                                              self["kid"]))
+            else:
+                raise NoSuitableSigningKeys("No key for algorithm: %s" % _alg)
 
         enc_head = self._encoded_header(xargs)
         enc_payload = self._encoded_payload()
@@ -434,7 +484,12 @@ class JWS(JWx):
         verifier = SIGNER_ALGS[self["alg"]]
 
         if not _keys:
-            raise MissingKey("No suitable verification keys found")
+            if "kid" in self:
+                raise NoSuitableSigningKeys(
+                    "No key for algorithm: %s with kid: %s" % (_alg,
+                                                              self["kid"]))
+            else:
+                raise NoSuitableSigningKeys("No key for algorithm: %s" % _alg)
 
         for key in _keys:
             try:

@@ -97,9 +97,8 @@ class RSAEncrypter(Encrypter):
     def encrypt(self, msg, key, padding="pkcs1_padding"):
         if padding == "pkcs1_padding":
             cipher = PKCS1_v1_5.new(key)
-            if self.with_digest:
+            if self.with_digest:  # add a SHA digest to the message
                 h = SHA.new(msg)
-                # add a SHA digest to the message
                 msg += h.digest()
         elif padding == "pkcs1_oaep_padding":
             cipher = PKCS1_OAEP.new(key)

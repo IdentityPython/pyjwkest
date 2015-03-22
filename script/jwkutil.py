@@ -90,10 +90,10 @@ if __name__ == "__main__":
     _kid = args.kid
     keys = []
     if args.rsa_file:
-        keys = [RSAKey(key=import_rsa_key_from_file(args.rsa_file),
-                       kid=_kid)]
-    elif args.hmac_key:
-        keys = [SYMKey(key=args.hmac_key, kid=_kid)]
+        keys.append(RSAKey(key=import_rsa_key_from_file(args.rsa_file),
+                           kid=_kid))
+    if args.hmac_key:
+        keys.append(SYMKey(key=args.hmac_key))
 
     if args.jwk:
         kspec = json.loads(open(args.jwk).read())
