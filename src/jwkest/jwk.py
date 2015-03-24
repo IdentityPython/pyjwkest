@@ -617,22 +617,23 @@ def jwks_load(txt):
     """
     Load and create keys from a JWKS representation
 
-    Expects something on this form
-    {"keys":
-        [
-            {"kty":"EC",
-             "crv":"P-256",
-             "x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
-            "y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
-            "use":"enc",
-            "kid":"1"},
+    Expects something on this form::
 
-            {"kty":"RSA",
-            "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFb....."
-            "e":"AQAB",
-            "kid":"2011-04-29"}
-        ]
-    }
+        {"keys":
+            [
+                {"kty":"EC",
+                 "crv":"P-256",
+                 "x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
+                "y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
+                "use":"enc",
+                "kid":"1"},
+
+                {"kty":"RSA",
+                "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFb....."
+                "e":"AQAB",
+                "kid":"2011-04-29"}
+            ]
+        }
 
     :param txt: The JWKS string representation
     :return: list of 2-tuples containing key, type
@@ -685,8 +686,8 @@ def load_jwks_from_url(url, verify=True):
     Get and transform a JWKS into keys
 
     :param url: Where the JWKS can be found
-    :param spec2key: A dictionary over keys already seen
-    :return: List of 2-tuples (keytype, key)
+    :param verify: SSL cert verification
+    :return: list of keys
     """
 
     r = request("GET", url, allow_redirects=True, verify=verify)
