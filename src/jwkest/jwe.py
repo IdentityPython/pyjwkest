@@ -646,3 +646,29 @@ class JWE(JWx):
 
         raise DecryptionFailed(
             "No available key that could decrypt the message")
+
+    def is_jwe(self, part):
+        self.parse_header(part)
+
+        try:
+            assert "alg" in self and "enc" in self
+        except AssertionError:
+            return False
+        else:
+            for typ in ["alg", "enc"]:
+                try:
+                    assert self[typ] in SUPPORTED[typ]
+                except AssertionError:
+                    logger.debug("Not supported %s algorithm: %s" % (typ,
+                                                                     self[typ]))
+                    return False
+        return True
+
+
+def factory(jwx):
+    p = jwx.split(".")
+    _jw = JWE()
+    if _jw.is_jwe(p[0]):
+        return _jw
+    else:
+        return None
