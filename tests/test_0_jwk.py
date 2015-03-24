@@ -17,8 +17,8 @@ from path_util import full_path
 
 __author__ = 'rohe0002'
 
-CERT = full_path("certs/cert.pem")
-KEY = full_path("certs/server.key")
+CERT = full_path("cert.pem")
+KEY = full_path("server.key")
 
 JWK = {"keys": [
     {'kty': 'RSA', 'use': 'foo', 'e': 'AQAB', 'kid': "abc",
