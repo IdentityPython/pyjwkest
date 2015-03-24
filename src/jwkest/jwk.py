@@ -531,7 +531,7 @@ class SYMKey(Key):
     members = ["kty", "alg", "use", "kid", "k"]
     public_members = members[:]
 
-    def __init__(self, kty="oct", alg="", use="", kid="", key=None,
+    def __init__(self, kty="OCT", alg="", use="", kid="", key=None,
                  x5c=None, x5t="", x5u="", k="", mtrl=""):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.k = k
@@ -592,7 +592,7 @@ def keyitems2keyreps(keyitems):
     for key_type, _keys in keyitems.items():
         if key_type.upper() == "RSA":
             keys.extend([RSAKey(key=k) for k in _keys])
-        elif key_type.upper() == "oct":
+        elif key_type.upper() == "OCT":
             keys.extend([SYMKey(key=k) for k in _keys])
         elif key_type.upper() == "EC":
             keys.extend([ECKey(key=k) for k in _keys])
@@ -604,7 +604,7 @@ def keyitems2keyreps(keyitems):
 def keyrep(kspec):
     if kspec["kty"] == "RSA":
         item = RSAKey(**kspec)
-    elif kspec["kty"] == "oct":
+    elif kspec["kty"] == "OCT":
         item = SYMKey(**kspec)
     elif kspec["kty"] == "EC":
         item = ECKey(**kspec)
