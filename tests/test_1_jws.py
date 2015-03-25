@@ -14,7 +14,7 @@ from jwkest.jws import JWS
 from path_util import full_path
 
 
-KEY = full_path("certs/server.key")
+KEY = full_path("server.key")
 
 JWK = {"keys": [{'alg': 'RSA',
                  'use': 'foo',

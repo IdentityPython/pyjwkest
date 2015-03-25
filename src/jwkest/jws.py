@@ -51,6 +51,10 @@ class WrongTypeOfKey(JWSException):
     pass
 
 
+class UnknownSignerAlg(JWSException):
+    pass
+
+
 def left_hash(msg, func="HS256"):
     """ 128 bits == 16 bytes """
     if func == 'HS256':
@@ -153,23 +157,23 @@ class PSSSigner(Signer):
 
 
 SIGNER_ALGS = {
-    u'HS256': HMACSigner(SHA256),
-    u'HS384': HMACSigner(SHA384),
-    u'HS512': HMACSigner(SHA512),
+    'HS256': HMACSigner(SHA256),
+    'HS384': HMACSigner(SHA384),
+    'HS512': HMACSigner(SHA512),
 
-    u'RS256': RSASigner(SHA256),
-    u'RS384': RSASigner(SHA384),
-    u'RS512': RSASigner(SHA512),
+    'RS256': RSASigner(SHA256),
+    'RS384': RSASigner(SHA384),
+    'RS512': RSASigner(SHA512),
 
-    u'ES256': DSASigner(SHA256, P256),
-    u'ES384': DSASigner(SHA384, P384),
-    u'ES512': DSASigner(SHA512, P521),
+    'ES256': DSASigner(SHA256, P256),
+    'ES384': DSASigner(SHA384, P384),
+    'ES512': DSASigner(SHA512, P521),
 
-    u'PS256': PSSSigner(SHA256),
-    u'PS384': PSSSigner(SHA384),
-    u'PS521': PSSSigner(SHA512),
+    'PS256': PSSSigner(SHA256),
+    'PS384': PSSSigner(SHA384),
+    'PS521': PSSSigner(SHA512),
 
-    u'none': None
+    'none': None
 }
 
 
@@ -179,7 +183,7 @@ def alg2keytype(alg):
     elif alg.startswith("RS") or alg.startswith("PS"):
         return "RSA"
     elif alg.startswith("HS") or alg.startswith("A"):
-        return "OCT"
+        return "oct"
     elif alg.startswith("ES"):
         return "EC"
     else:
@@ -216,7 +220,7 @@ class JWx(object):
 
     def __init__(self, msg=None, with_digest=False, **kwargs):
         self.msg = msg
-        self._dict = {"kid": ""}
+        self._dict = {}
         self.with_digest = with_digest
 
         if kwargs:
@@ -256,7 +260,7 @@ class JWx(object):
             raise AttributeError(item)
 
     def keys(self):
-        return self._dict.keys()
+        return list(self._dict.keys())
 
     def _encoded_payload(self):
         if isinstance(self.msg, basestring):
@@ -296,17 +300,18 @@ class JWx(object):
         return b64e(_header)
 
     def parse_header(self, encheader):
-        for attr, val in json.loads(b64d(str(encheader))).items():
+        for attr, val in list(json.loads(b64d(str(encheader))).items()):
             if attr == "jwk":
                 self["jwk"] = keyrep(val)
+            elif attr == "kid":
+                try:
+                    assert isinstance(val, basestring)
+                except AssertionError:
+                    raise HeaderError("kid of wrong value type")
+                else:
+                    self[attr] = val
             else:
                 self[attr] = val
-
-        if "kid" in self:
-            try:
-                assert isinstance(self["kid"], basestring)
-            except AssertionError:
-                raise HeaderError("kid of wrong value type")
 
     def _get_keys(self):
         if "jwk" in self:
@@ -350,7 +355,7 @@ class JWx(object):
 
         pkey = []
         for _key in _keys:
-            if self["kid"]:
+            if "kid" in self and self["kid"]:
                 try:
                     assert self["kid"] == _key.kid
                 except (KeyError, AttributeError):
@@ -374,6 +379,9 @@ class JWx(object):
             if self["cty"] == "JWT":
                 _msg = json.loads(_msg)
         return _msg
+
+    def dump_header(self):
+        return dict([(x, self._dict[x]) for x in self.args if x in self._dict])
 
 
 class JWS(JWx):
@@ -560,3 +568,33 @@ class JWS(JWx):
                 assert _claim == _tmp
 
         return _claim
+
+    def is_jws(self, part):
+        """
+
+        :param part:
+        :return:
+        """
+        self.parse_header(part)
+
+        try:
+            assert "alg" in self._dict
+        except AssertionError:
+            return False
+        else:
+            try:
+                assert self._dict["alg"] in SIGNER_ALGS
+            except AssertionError:
+                logger.debug("UnknownSignerAlg: %s" % self._dict["alg"])
+                return False
+            else:
+                return True
+
+
+def factory(jwx):
+    p = jwx.split(".")
+    _jw = JWS()
+    if _jw.is_jws(p[0]):
+        return _jw
+    else:
+        return None
