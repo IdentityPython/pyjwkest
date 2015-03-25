@@ -9,3 +9,4 @@ dist
 tests/debug_*.py
 .tox
 .idea
+doc/_build
