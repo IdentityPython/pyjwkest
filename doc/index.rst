@@ -62,6 +62,8 @@ Algorithm support
     * - ``none``
       - No signature ("Unsecured JWS")
 
+.. _jwe_support:
+
 **JSON Web Encryption (JWE) support**
 
 .. list-table:: JWE Key Management support
