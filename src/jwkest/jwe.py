@@ -223,7 +223,7 @@ def alg2keytype(alg):
     if alg.startswith("RSA"):
         return "RSA"
     elif alg.startswith("A"):
-        return "OCT"
+        return "oct"
     elif alg.startswith("ECDH"):
         return "EC"
     else:
@@ -584,9 +584,9 @@ class JWE(JWx):
             raise NotSupportedAlgorithm
 
         if keys:
-            keys = self._pick_keys(keys)
+            keys = self._pick_keys(keys, use="enc")
         else:
-            keys = self._pick_keys(self._get_keys())
+            keys = self._pick_keys(self._get_keys(), use="enc")
 
         if not keys:
             raise NoSuitableEncryptionKey(_alg)

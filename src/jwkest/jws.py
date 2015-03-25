@@ -183,7 +183,7 @@ def alg2keytype(alg):
     elif alg.startswith("RS") or alg.startswith("PS"):
         return "RSA"
     elif alg.startswith("HS") or alg.startswith("A"):
-        return "OCT"
+        return "oct"
     elif alg.startswith("ES"):
         return "EC"
     else:
