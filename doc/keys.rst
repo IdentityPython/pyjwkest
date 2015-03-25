@@ -10,15 +10,14 @@ Basic key
 
 There are some common properties for all cryptographic keys when
 they are used in the JOSE https://tools.ietf.org/wg/jose/ context.
-These properties are defined in the JSON Web Key (JWK) Format.
+These properties are defined in the `JSON Web Key (JWK) Format`_.
 
 Symmetric keys
 **************
 
 When the key type (as defined by JWK member "kty") is "oct", the
-member "k" is used to represent a symmetric key.
-An example of a symmetric key can be viewed at
-http://self-issued.info/docs/draft-ietf-jose-json-web-key.html#SymmetricExample.
+member "k" is used to represent a symmetric key, see e.g.
+`symmetric key example`_.
 
 A symmetric key instance can be created as::
 
@@ -43,8 +42,8 @@ In addition, the following members are used to represent a private RSA key:
     * "dq" (optional)
     * "qi" (optional)
 
-An example of a private RSA key can be viewed at
-http://self-issued.info/docs/draft-ietf-jose-json-web-key.html#example-privkey-plaintext.
+See `public keys example`_ and `private keys example`_ for examples of
+public/private RSA keys.
 
 An RSA key instance can be created from file::
 
@@ -70,6 +69,8 @@ elliptic curve public key:
     * "y" (required when "crv" is one of "P-256"/"P-384"/"P-521")
 
 In addition, the member "d" must be used to represent an elliptic private key.
+See `public keys example`_ and `private keys example`_ for examples of elliptic
+curve public/private keys.
 
 An elliptic curve key instance can be created as::
 
@@ -111,3 +112,8 @@ A list of keys can be **exported** as::
     :members:
     :undoc-members:
     :show-inheritance:
+
+.. _symmetric key example: https://tools.ietf.org/html/draft-ietf-jose-json-web-key#appendix-A.3
+.. _public keys example: https://tools.ietf.org/html/draft-ietf-jose-json-web-key#appendix-A.1
+.. _private keys example: https://tools.ietf.org/html/draft-ietf-jose-json-web-key#appendix-A.2
+.. _JSON Web Key (JWK) Format: https://tools.ietf.org/html/draft-ietf-jose-json-web-key
