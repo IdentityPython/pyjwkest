@@ -39,6 +39,8 @@ Algorithm support
     * - ``oct``
       - Symmetric
 
+.. _jws_support:
+
 **JSON Web Signature (JWS) support**
 
 .. list-table:: JWS support
