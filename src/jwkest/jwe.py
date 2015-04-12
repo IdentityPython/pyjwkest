@@ -626,9 +626,9 @@ class JWE(JWx):
             raise NotSupportedAlgorithm
 
         if keys:
-            keys = self._pick_keys(keys)
+            keys = self._pick_keys(keys, use="enc")
         else:
-            keys = self._pick_keys(self._get_keys())
+            keys = self._pick_keys(self._get_keys(), use="enc")
 
         if not keys:
             raise NoSuitableDecryptionKey(self.alg)

@@ -43,9 +43,9 @@ def sign(msg, key, alg):
     return _jws.sign_compact(key)
 
 
-def verify(msg, keys):
+def verify(msg, keys, allow_none=False, sigalg=None):
     _jws = JWS()
-    return _jws.verify_compact(msg, keys)
+    return _jws.verify_compact(msg, keys, allow_none, sigalg)
 
 
 def encrypt(msg, keys, alg, enc):

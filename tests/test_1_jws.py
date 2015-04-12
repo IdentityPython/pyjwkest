@@ -42,7 +42,7 @@ def test_1():
     _jwt = _jws.sign_compact()
 
     _jr = JWS()
-    _jr.verify_compact(_jwt)
+    _jr.verify_compact(_jwt, allow_none=True)
     print _jr
     assert _jr.alg == u'none'
     assert _jr.msg == {"iss": "joe",

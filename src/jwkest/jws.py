@@ -55,6 +55,10 @@ class UnknownSignerAlg(JWSException):
     pass
 
 
+class SignerAlgError(JWSException):
+    pass
+
+
 def left_hash(msg, func="HS256"):
     """ 128 bits == 16 bytes """
     if func == 'HS256':
@@ -66,7 +70,7 @@ def left_hash(msg, func="HS256"):
 
 
 def mpint(b):
-    b = b"\x00" + b
+    b += b"\x00"
     return struct.pack(">L", len(b)) + b
 
 
@@ -96,7 +100,7 @@ class HMACSigner(Signer):
     def sign(self, msg, key):
         h = HMAC.new(key, msg, digestmod=self.digest)
         return h.digest()
-        #return hmac.new(key, msg, digestmod=self.digest).digest()
+        # return hmac.new(key, msg, digestmod=self.digest).digest()
 
     def verify(self, msg, sig, key):
         if not safe_str_cmp(self.sign(msg, key), sig):
@@ -323,7 +327,7 @@ class JWx(object):
             try:
                 return {"rsa": [load_x509_cert(self["x5u"], {})]}
             except Exception:
-                #ca_chain = load_x509_cert_chain(self["x5u"])
+                # ca_chain = load_x509_cert_chain(self["x5u"])
                 pass
 
         return {}
@@ -451,7 +455,7 @@ class JWS(JWx):
             if "kid" in self:
                 raise NoSuitableSigningKeys(
                     "No key for algorithm: %s with kid: %s" % (_alg,
-                                                              self["kid"]))
+                                                               self["kid"]))
             else:
                 raise NoSuitableSigningKeys("No key for algorithm: %s" % _alg)
 
@@ -473,15 +477,32 @@ class JWS(JWx):
         logger.debug("Signed message using key with kid=%s" % key.kid)
         return b".".join([enc_head, enc_payload, b64e(sig)])
 
-    def verify_compact(self, jws, keys=None):
+    def verify_compact(self, jws, keys=None, allow_none=False, sigalg=None):
+        """
+        Verify a JWT signature
+
+        :param jws:
+        :param keys:
+        :param allow_none: If signature algorithm 'none' is allowed
+        :param sigalg: Expected sigalg
+        :return:
+        """
         _header, _payload, _sig = jws.split(".")
 
         self.parse_header(_header)
 
         if "alg" in self:
             if self["alg"] == "none":
-                self.msg = self._decode(_payload)
-                return self.msg
+                if allow_none:
+                    self.msg = self._decode(_payload)
+                    return self.msg
+                else:
+                    raise SignerAlgError("none not allowed")
+
+        if sigalg and sigalg != self["alg"]:
+            raise SignerAlgError("Expected {} got {}".format(sigalg,
+                                                             self["alg"]))
+
         _alg = self["alg"]
 
         if keys:
@@ -489,13 +510,13 @@ class JWS(JWx):
         else:
             _keys = self._pick_keys(self._get_keys())
 
-        verifier = SIGNER_ALGS[self["alg"]]
+        verifier = SIGNER_ALGS[_alg]
 
         if not _keys:
             if "kid" in self:
                 raise NoSuitableSigningKeys(
                     "No key for algorithm: %s with kid: %s" % (_alg,
-                                                              self["kid"]))
+                                                               self["kid"]))
             else:
                 raise NoSuitableSigningKeys("No key for algorithm: %s" % _alg)
 
@@ -538,7 +559,7 @@ class JWS(JWx):
 
         return res
 
-    def verify_json(self, jws, keys=None):
+    def verify_json(self, jws, keys=None, allow_none=False, sigalg=None):
         """
 
         :param jws:
@@ -561,7 +582,7 @@ class JWS(JWx):
         _claim = None
         for _sign in _signs:
             token = b".".join([_sign["header"], _payload, _sign["signature"]])
-            _tmp = self.verify_compact(token, keys)
+            _tmp = self.verify_compact(token, keys, allow_none, sigalg)
             if _claim is None:
                 _claim = _tmp
             else:

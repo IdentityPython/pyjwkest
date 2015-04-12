@@ -187,7 +187,7 @@ def load_x509_cert(url, spec2key):
             return [("rsa", _key)]
         else:
             raise Exception("HTTP Get error: %s" % r.status_code)
-    except Exception, err:  # not a RSA key
+    except Exception as err:  # not a RSA key
         logger.warning("Can't load key: %s" % err)
         return []
 
