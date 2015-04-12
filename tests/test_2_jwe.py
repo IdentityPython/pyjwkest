@@ -1,3 +1,4 @@
+from __future__ import print_function
 import hashlib
 from Crypto.PublicKey import RSA
 from cryptlib.aes_gcm import AES_GCM
@@ -143,7 +144,7 @@ def test_jwe_09_a3():
     _jwe = JWe()
     ctxt, tag, key = _jwe.enc_setup("A128CBC-HS256", msg, aadp, cek, iv=iv)
 
-    print str2intarr(ctxt)
+    print(str2intarr(ctxt))
 
     assert str2intarr(ctxt) == [
         40, 57, 83, 181, 119, 33, 133, 148, 198, 185, 243, 24, 152, 230, 6,

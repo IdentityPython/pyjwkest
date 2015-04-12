@@ -1,3 +1,4 @@
+from __future__ import print_function
 import base64
 import json
 from Crypto.PublicKey import RSA
@@ -60,7 +61,7 @@ def test_extract_rsa_from_cert_2():
     _key = RSAKey()
     _key.load_key(_ckey)
 
-    print _key
+    print(_key)
 
     assert _ckey.n == _key.get_key().n
 
@@ -70,7 +71,7 @@ def test_kspec():
     _key = RSAKey()
     _key.load_key(_ckey)
 
-    print _key
+    print(_key)
     jwk = _key.serialize()
     assert jwk["kty"] == "RSA"
     assert jwk["e"] == JWK["keys"][0]["e"]
@@ -86,7 +87,7 @@ def test_loads_0():
 
     _ckey = pem_cert2rsa(CERT)
 
-    print key
+    print(key)
     assert key.n == _ckey.n
     assert key.e == _ckey.e
 
@@ -111,7 +112,7 @@ def test_loads_1():
     }
 
     keys = jwks_load(json.dumps(jwk))
-    print keys
+    print(keys)
     assert len(keys) == 2
     kids = [k.kid for k in keys]
     assert _eq(kids, ["1", "2"])
@@ -126,7 +127,7 @@ def test_dumps():
 def test_dump_jwk():
     _ckey = jwk_wrap(pem_cert2rsa(CERT))
     jwk = jwks_dump([_ckey])
-    print jwk
+    print(jwk)
     _wk = json.loads(jwk)
     assert _wk.keys() == ["keys"]
     assert len(_wk["keys"]) == 1
@@ -137,7 +138,7 @@ def test_load_jwk():
     _ckey = jwk_wrap(pem_cert2rsa(CERT))
     jwk = jwks_dump([_ckey])
     wk = jwks_load(jwk)
-    print wk
+    print(wk)
     assert len(wk) == 1
     key = wk[0]
     assert key.kty == "RSA"
@@ -148,7 +149,7 @@ def test_import_rsa_key():
     _ckey = RSA.importKey(open(KEY, 'r').read())
     assert isinstance(_ckey, _RSAobj)
     djwk = jwk_wrap(_ckey).to_dict()
-    print djwk
+    print(djwk)
     assert _eq(djwk.keys(), ["kty", "e", "n"])
     assert djwk["n"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
     assert djwk['e'] == 'AQAB'

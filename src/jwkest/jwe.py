@@ -13,16 +13,19 @@ from Crypto.Cipher import PKCS1_v1_5
 from Crypto.Cipher import PKCS1_OAEP
 
 from cryptlib.aes_gcm import AES_GCM
-from cryptlib.aes_key_wrap import aes_wrap_key, aes_unwrap_key
+from cryptlib.aes_key_wrap import aes_wrap_key
+from cryptlib.aes_key_wrap import aes_unwrap_key
 from cryptlib.ecc import NISTEllipticCurve
 
-from jwkest import b64d, JWKESTException, MissingKey
+from jwkest import b64d
 from jwkest import b64e
-#from jwkest.aes_key_wrap_m2 import aes_wrap_key
+from jwkest import JWKESTException
+from jwkest import MissingKey
 from jwkest.extra import aes_cbc_hmac_encrypt
 from jwkest.extra import ecdh_derive_key
 from jwkest.extra import aes_cbc_hmac_decrypt
-from jwkest.jwk import intarr2str, ECKey
+from jwkest.jwk import intarr2str
+from jwkest.jwk import ECKey
 from jwkest.jws import JWx
 
 logger = logging.getLogger(__name__)
@@ -155,16 +158,10 @@ def _hash_input(cmk, enc, label, rond=1, length=128, hashsize=256,
                 epu="", epv=""):
     r = [0, 0, 0, rond]
     r.extend(cmk)
-    #- AlgorithmID
-    #the output bit size as a 32 bit big endian number
     r.extend([0, 0, 0, length])
-    # the bytes of the UTF-8 representation of the "enc" value
     r.extend([ord(c) for c in enc])
-    #- PartyUInfo
     r.extend(party_value(epu))
-    #- PartyVInfo
     r.extend(party_value(epv))
-    #- SuppPubInfo
     r.extend(label)
     return r
 
@@ -287,7 +284,6 @@ class JWe(JWx):
             tag = long_to_bytes(tag)
         elif enc_alg in ["A128CBC-HS256", "A192CBC-HS384", "A256CBC-HS512"]:
             assert enc_alg in SUPPORTED["enc"]
-            #ealg, hashf = enc.split("-")
             ctxt, tag = aes_cbc_hmac_encrypt(key, iv, auth_data, msg)
         else:
             raise NotSupportedAlgorithm(enc_alg)
@@ -502,11 +498,9 @@ class JWE_EC(JWe):
             eprivk = ECKey(kwargs["epk"])
         else:
             (eprivk, epk) = curve.key_pair()
-            # Derive the KEK and encrypt
         params = {
             "apu": b64e(apu),
             "apv": b64e(apv),
-            #"epk": exportKey(epk, "EC", curve)
         }
         
         cek, iv = self._generate_key_and_iv(self.enc)

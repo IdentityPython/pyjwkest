@@ -1,3 +1,4 @@
+from __future__ import print_function
 import json
 from cryptlib.ecc import P256, P384, P521
 
@@ -43,7 +44,7 @@ def test_1():
 
     _jr = JWS()
     _jr.verify_compact(_jwt, allow_none=True)
-    print _jr
+    print(_jr)
     assert _jr.alg == u'none'
     assert _jr.msg == {"iss": "joe",
                        "exp": 1300819380,
