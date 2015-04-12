@@ -4,12 +4,11 @@
 # Most notably Jeff Lindsay, Ryan Kelly
 
 import base64
-from binascii import unhexlify, hexlify
+from binascii import unhexlify
+from binascii import hexlify
 import json
 import logging
 import re
-
-from itertools import izip
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +119,7 @@ def safe_str_cmp(a, b):
     if len(a) != len(b):
         return False
     r = 0
-    for c, d in izip(a, b):
+    for c, d in zip(a, b):
         r |= ord(c) ^ ord(d)
     return r == 0
 
