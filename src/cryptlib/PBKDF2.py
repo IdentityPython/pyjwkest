@@ -132,7 +132,7 @@ class PBKDF2(object):
         i = self.__blockNum
         while size < bytes:
             i += 1
-            if i > 0xffffffffL or i < 1:
+            if i > 0xffffffff or i < 1:
                 # We could return "" here, but 
                 raise OverflowError("derived key too long")
             block = self.__f(i)
@@ -146,7 +146,7 @@ class PBKDF2(object):
     
     def __f(self, i):
         # i must fit within 32 bits
-        assert 1 <= i <= 0xffffffffL
+        assert 1 <= i <= 0xffffffff
         U = self.__prf(self.__passphrase, self.__salt + pack("!L", i))
         result = U
         for j in xrange(2, 1+self.__iterations):

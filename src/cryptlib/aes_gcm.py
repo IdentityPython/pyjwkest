@@ -21,6 +21,7 @@
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
 """
+from __future__ import print_function
 
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
@@ -210,16 +211,16 @@ if __name__ == '__main__':
                  b'\x3d\x58\xe0\x91'
     auth_tag = 0x5bc94fbc3221a5db94fae95ae7121a47
 
-    print 'plaintext:', hex(bytes_to_long(plaintext))
+    print('plaintext:', hex(bytes_to_long(plaintext)))
 
     my_gcm = AES_GCM(master_key)
     encrypted, new_tag = my_gcm.encrypt(init_value, plaintext, auth_data)
-    print 'encrypted:', hex(bytes_to_long(encrypted))
-    print 'auth tag: ', hex(new_tag)
+    print('encrypted:', hex(bytes_to_long(encrypted)))
+    print('auth tag: ', hex(new_tag))
 
     try:
         decrypted = my_gcm.decrypt(init_value, encrypted, new_tag + 1,
                                    auth_data)
     except InvalidTagException:
         decrypted = my_gcm.decrypt(init_value, encrypted, new_tag, auth_data)
-        print 'decrypted:', hex(bytes_to_long(decrypted))
+        print('decrypted:', hex(bytes_to_long(decrypted)))
