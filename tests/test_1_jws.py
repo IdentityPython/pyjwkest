@@ -1,7 +1,6 @@
 from __future__ import print_function
 import json
 from cryptlib.ecc import P256, P384, P521
-from base64 import b64encode
 
 import jwkest
 from jwkest import jws
@@ -57,7 +56,6 @@ def test_hmac_256():
     keys = [SYMKey(key=jwkest.intarr2bin(HMAC_KEY))]
     _jws = JWS(payload, alg="HS256")
     _jwt = _jws.sign_compact(keys)
-
     info = JWS().verify_compact(_jwt, keys)
 
     assert info == payload
@@ -302,12 +300,12 @@ def test_sign_json_hs256():
     _sig = {
         'alg': 'HS256'
     }
-    _jwt = _jws.sign_json(per_signature_head=[_sig], keys=keys)
+    _jwt = _jws.sign_json(per_signature_head=[_sig], keys=keys, alg='HS256')
     _jwt_sig = "%s.%s.%s" % ( _jwt['signatures'][0]['header'],
-                              b64encode(_jwt['payload']).rstrip('='),
+                              b64e(_jwt['payload']),
                               _jwt['signatures'][0]['signature'] )
 
-    info = JWS().verify_compact(_jwt_sig, keys)
+    info = _jws.verify_compact(_jwt_sig, keys)
 
     assert info == payload
 
