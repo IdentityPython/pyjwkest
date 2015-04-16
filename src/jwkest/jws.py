@@ -551,7 +551,7 @@ class JWS(JWx):
         for _kwa in per_signature_header:
             _kwa.update(kwargs)
             _jws = JWS(self.msg, **_kwa)
-            header, payload, signature = _jws.sign_compact().split(".")
+            header, payload, signature = _jws.sign_compact(keys=kwargs.get('keys', [])).split(".")
             res["signatures"].append({"header": header,
                                       "signature": signature})
 
