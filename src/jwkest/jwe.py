@@ -1,9 +1,13 @@
+# from future import standard_library
+# standard_library.install_aliases()
+from builtins import object
 # JSON Web Encryption
 
 import struct
-import cStringIO
+import io
 import logging
 import zlib
+import six
 
 from Crypto import Random
 from Crypto.Hash import SHA
@@ -12,21 +16,21 @@ from Crypto.Util.number import long_to_bytes
 from Crypto.Cipher import PKCS1_v1_5
 from Crypto.Cipher import PKCS1_OAEP
 
-from cryptlib.aes_gcm import AES_GCM
-from cryptlib.aes_key_wrap import aes_wrap_key
-from cryptlib.aes_key_wrap import aes_unwrap_key
-from cryptlib.ecc import NISTEllipticCurve
-
 from jwkest import b64d
 from jwkest import b64e
 from jwkest import JWKESTException
 from jwkest import MissingKey
+from jwkest.aes_gcm import AES_GCM
+from jwkest.aes_key_wrap import aes_wrap_key
+from jwkest.aes_key_wrap import aes_unwrap_key
+from jwkest.ecc import NISTEllipticCurve
 from jwkest.extra import aes_cbc_hmac_encrypt
 from jwkest.extra import ecdh_derive_key
 from jwkest.extra import aes_cbc_hmac_decrypt
 from jwkest.jwk import intarr2str
 from jwkest.jwk import ECKey
 from jwkest.jws import JWx
+from jwkest.jwt import JWT, b64encode_item
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +69,10 @@ class NoSuitableDecryptionKey(JWEException):
 
 
 class DecryptionFailed(JWEException):
+    pass
+
+
+class WrongEncryptionAlgorithm(JWEException):
     pass
 
 # ---------------------------------------------------------------------------
@@ -179,8 +187,8 @@ def cipher_filter(cipher, inf, outf):
 
 
 def aes_enc(key, txt):
-    pbuf = cStringIO.StringIO(txt)
-    cbuf = cStringIO.StringIO()
+    pbuf = io.StringIO(txt)
+    cbuf = io.StringIO()
     ciphertext = cipher_filter(key, pbuf, cbuf)
     pbuf.close()
     cbuf.close()
@@ -188,8 +196,8 @@ def aes_enc(key, txt):
 
 
 def aes_dec(key, ciptxt):
-    pbuf = cStringIO.StringIO()
-    cbuf = cStringIO.StringIO(ciptxt)
+    pbuf = io.StringIO()
+    cbuf = io.StringIO(ciptxt)
     plaintext = cipher_filter(key, cbuf, pbuf)
     pbuf.close()
     cbuf.close()
@@ -239,6 +247,59 @@ ENCALGLEN2 = {
     "A192CBC-HS384": 48,
     "A256CBC-HS512": 64,
 }
+
+
+class JWEnc(JWT):
+    def b64_protected_header(self):
+        return self.b64part[0]
+
+    def b64_encrypted_key(self):
+        return self.b64part[1]
+
+    def b64_initialization_vector(self):
+        return self.b64part[2]
+
+    def b64_ciphertext(self):
+        return self.b64part[3]
+
+    def b64_authentication_tag(self):
+        return self.b64part[4]
+
+    def protected_header(self):
+        return self.part[0]
+
+    def encrypted_key(self):
+        return self.part[1]
+
+    def initialization_vector(self):
+        return self.part[2]
+
+    def ciphertext(self):
+        return self.part[3]
+
+    def authentication_tag(self):
+        return self.part[4]
+
+    def b64_encode_header(self):
+        return b64encode_item(self.headers)
+
+    def is_jwe(self):
+        if "typ" in self.headers and self.headers["typ"].lower() == "jwe":
+            return True
+
+        try:
+            assert "alg" in self.headers and "enc" in self.headers
+        except AssertionError:
+            return False
+        else:
+            for typ in ["alg", "enc"]:
+                try:
+                    assert self.headers[typ] in SUPPORTED[typ]
+                except AssertionError:
+                    logger.debug("Not supported %s algorithm: %s" % (
+                        typ, self.headers[typ]))
+                    return False
+        return True
 
 
 class JWe(JWx):
@@ -297,7 +358,7 @@ class JWe(JWx):
         :param enc: The JWE "enc" value specifying the encryption algorithm
         :param key: Key (CEK)
         :param iv : Initialization vector
-        :param auth_data: Additional authenticated data
+        :param auth_data: Additional authenticated data (AAD)
         :param ctxt : Ciphertext
         :param tag: Authentication tag
         :return: plain text message or None if decryption failed
@@ -315,13 +376,6 @@ class JWe(JWx):
         else:
             raise Exception("Unsupported encryption algorithm %s" % enc)
 
-    @staticmethod
-    def pack(b64_header, jek, iv, ctxt, tag):
-        res = b'.'.join([b64_header, b64e(jek), b64e(iv), b64e(ctxt),
-                         b64e(tag)])
-
-        return res
-
 
 class JWE_SYM(JWe):
     args = JWe.args[:]
@@ -338,17 +392,17 @@ class JWE_SYM(JWe):
         """
         _msg = self.msg
 
-        _args = {}
+        _args = self._dict
         try:
             _args["kid"] = kwargs["kid"]
         except KeyError:
             pass
 
-        b64_header = self._encoded_header(_args)
+        jwe = JWEnc(**_args)
 
         # If no iv and cek are given generate them
         cek, iv = self._generate_key_and_iv(self["enc"], cek, iv)
-        if isinstance(key, basestring):
+        if isinstance(key, six.string_types):
             kek = key
         else:
             kek = intarr2str(key)
@@ -356,32 +410,28 @@ class JWE_SYM(JWe):
         # The iv for this function must be 64 bit
         # Which is certainly different from the one above
         jek = aes_wrap_key(kek, cek)
-        auth_data = b64_header
 
         _enc = self["enc"]
 
-        ctxt, tag, cek = self.enc_setup(_enc, _msg, auth_data, cek, iv=iv)
-        return self.pack(b64_header, jek, iv, ctxt, tag)
+        ctxt, tag, cek = self.enc_setup(_enc, _msg, jwe.b64_encode_header(),
+                                        cek, iv=iv)
+        return jwe.pack(parts=[jek, iv, ctxt, tag])
 
     def decrypt(self, token, key=None, cek=None):
         if not key and not cek:
             raise MissingKey("On of key or cek must be specified")
 
-        b64_head, b64_jek, b64_iv, b64_ctxt, b64_tag = token.split(b".")
-
-        self.parse_header(b64_head)
-        iv = b64d(str(b64_iv))
+        jwe = JWEnc().unpack(token)
 
         if not cek:
-            jek = b64d(str(b64_jek))
+            jek = jwe.encrypted_key()
             # The iv for this function must be 64 bit
             cek = aes_unwrap_key(key, jek)
 
-        _ctxt = b64d(str(b64_ctxt))
-        _tag = b64d(str(b64_tag))
-        auth_data = b64_head
-
-        msg = self._decrypt(self["enc"], cek, _ctxt, auth_data, iv, _tag)
+        msg = self._decrypt(
+            jwe.headers["enc"], cek, jwe.ciphertext(),
+            jwe.b64_protected_header(),
+            jwe.initialization_vector(), jwe.authentication_tag())
 
         if "zip" in self and self["zip"] == "DEF":
             msg = zlib.decompress(msg)
@@ -411,10 +461,10 @@ class JWE_RSA(JWe):
             else:
                 raise ParameterError("Zip has unknown value: %s" % self["zip"])
 
-        cek, iv = self._generate_key_and_iv(self["enc"], cek, iv)
+        _enc = self["enc"]
+        cek, iv = self._generate_key_and_iv(_enc, cek, iv)
 
-        logger.debug("cek: %s, iv: %s" % ([ord(c) for c in cek],
-                                          [ord(c) for c in iv]))
+        logger.debug("cek: %s, iv: %s" % ([c for c in cek], [c for c in iv]))
 
         _encrypt = RSAEncrypter(self.with_digest).encrypt
 
@@ -426,13 +476,12 @@ class JWE_RSA(JWe):
         else:
             raise NotSupportedAlgorithm(_alg)
 
-        enc_header = self._encoded_header()
-        auth_data = enc_header
+        jwe = JWEnc(**self.headers())
 
-        _enc = self["enc"]
+        enc_header = jwe.b64_encode_header()
 
-        ctxt, tag, key = self.enc_setup(_enc, _msg, auth_data, cek, iv)
-        return self.pack(enc_header, jwe_enc_key, iv, ctxt, tag)
+        ctxt, tag, key = self.enc_setup(_enc, _msg, enc_header, cek, iv)
+        return jwe.pack(parts=[jwe_enc_key, iv, ctxt, tag])
 
     def decrypt(self, token, key):
         """ Decrypts a JWT
@@ -441,15 +490,13 @@ class JWE_RSA(JWe):
         :param key: A key to use for decrypting
         :return: The decrypted message
         """
-        b64_head, b64_jek, b64_iv, b64_ctxt, b64_tag = token.split(b".")
-
-        self.parse_header(b64_head)
-        iv = b64d(str(b64_iv))
+        jwe = JWEnc().unpack(token)
+        self.jwt = jwe.encrypted_key()
+        jek = jwe.encrypted_key()
 
         _decrypt = RSAEncrypter(self.with_digest).decrypt
-        jek = b64d(str(b64_jek))
 
-        _alg = self["alg"]
+        _alg = jwe.headers["alg"]
         if _alg == "RSA-OAEP":
             cek = _decrypt(jek, key, 'pkcs1_oaep_padding')
         elif _alg == "RSA1_5":
@@ -457,22 +504,20 @@ class JWE_RSA(JWe):
         else:
             raise NotSupportedAlgorithm(_alg)
 
-        enc = self["enc"]
+        enc = jwe.headers["enc"]
         try:
             assert enc in SUPPORTED["enc"]
         except AssertionError:
             raise NotSupportedAlgorithm(enc)
 
-        auth_data = b64_head
-
-        _ctxt = b64d(str(b64_ctxt))
-        _tag = b64d(str(b64_tag))
-
-        msg, flag = self._decrypt(enc, cek, _ctxt, auth_data, iv, _tag)
+        msg, flag = self._decrypt(enc, cek, jwe.ciphertext(), 
+                                  jwe.b64_protected_header(),
+                                  jwe.initialization_vector(), 
+                                  jwe.authentication_tag())
         if flag is False:
             raise DecryptionFailed()
 
-        if "zip" in self and self["zip"] == "DEF":
+        if "zip" in jwe.headers and jwe.headers["zip"] == "DEF":
             msg = zlib.decompress(msg)
 
         return msg
@@ -607,11 +652,15 @@ class JWE(JWx):
 
         raise NoSuitableEncryptionKey()
 
-    def decrypt(self, token, keys=None):
-        header, ek, eiv, ctxt, tag = token.split(b".")
-        self.parse_header(header)
+    def decrypt(self, token, keys=None, alg=None):
+        jwe = JWEnc().unpack(token)
+        #header, ek, eiv, ctxt, tag = token.split(b".")
+        #self.parse_header(header)
 
-        _alg = self["alg"]
+        _alg = jwe.headers["alg"]
+        if alg and alg != _alg:
+            raise WrongEncryptionAlgorithm()
+        
         if _alg in ["RSA-OAEP", "RSA1_5"]:
             decrypter = JWE_RSA(**self._dict)
         elif _alg.startswith("A") and _alg.endswith("KW"):
@@ -620,17 +669,17 @@ class JWE(JWx):
             raise NotSupportedAlgorithm
 
         if keys:
-            keys = self._pick_keys(keys, use="enc")
+            keys = self._pick_keys(keys, use="enc", alg=_alg)
         else:
-            keys = self._pick_keys(self._get_keys(), use="enc")
+            keys = self._pick_keys(self._get_keys(), use="enc", alg=_alg)
 
         if not keys:
-            raise NoSuitableDecryptionKey(self.alg)
+            raise NoSuitableDecryptionKey(_alg)
 
         for key in keys:
             _key = key.encryption_key(alg=_alg, private=False)
             try:
-                msg = decrypter.decrypt(str(token), _key)
+                msg = decrypter.decrypt(bytes(token), _key)
             except (KeyError, DecryptionFailed):
                 pass
             else:
@@ -641,22 +690,6 @@ class JWE(JWx):
         raise DecryptionFailed(
             "No available key that could decrypt the message")
 
-    def is_jwe(self, part):
-        self.parse_header(part)
-
-        try:
-            assert "alg" in self and "enc" in self
-        except AssertionError:
-            return False
-        else:
-            for typ in ["alg", "enc"]:
-                try:
-                    assert self[typ] in SUPPORTED[typ]
-                except AssertionError:
-                    logger.debug("Not supported %s algorithm: %s" % (typ,
-                                                                     self[typ]))
-                    return False
-        return True
 
 
 def factory(jwx):
