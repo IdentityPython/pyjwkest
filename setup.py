@@ -50,7 +50,7 @@ setup(
                  "License :: OSI Approved :: Apache Software License",
                  "Topic :: Software Development :: Libraries :: Python "
                  "Modules"],
-    install_requires=["pycrypto >= 2.6.1", "requests", "six", "python-future"],
+    install_requires=["pycrypto >= 2.6.1", "requests", "six", "future"],
     tests_require=['pytest'],
     zip_safe=False,
     cmdclass={'test': PyTest},
