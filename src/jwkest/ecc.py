@@ -22,11 +22,11 @@ class NISTEllipticCurve(object):
 
     @staticmethod
     def by_name(name):
-        if name == "P-256":
+        if name == "P-256" or name == b'P-256':
             return NISTEllipticCurve(256)
-        if name == "P-384":
+        if name == "P-384" or name == b'P-384':
             return NISTEllipticCurve(384)
-        if name == "P-521":
+        if name == "P-521" or name == b'P-521':
             return NISTEllipticCurve(521)
         else:
             raise Exception("Unknown curve {}".format(name))

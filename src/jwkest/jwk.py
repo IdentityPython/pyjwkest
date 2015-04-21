@@ -192,10 +192,27 @@ class Key(object):
     def __init__(self, kty="", alg="", use="", kid="", key=None, x5c=None,
                  x5t="", x5u=""):
         self.key = key
-        self.kty = kty
-        self.alg = alg
-        self.use = use
-        self.kid = kid
+
+        if isinstance(kty, six.string_types):
+            self.kty = kty
+        else:
+            self.kty = kty.decode("utf8")
+
+        if isinstance(alg, six.string_types):
+            self.alg = alg
+        else:
+            self.alg = alg.decode("utf8")
+
+        if isinstance(use, six.string_types):
+            self.use = use
+        else:
+            self.use = use.decode("utf8")
+
+        if isinstance(kid, six.string_types):
+            self.kid = kid
+        else:
+            self.kid = kid.decode("utf8")
+
         self.x5c = x5c or []
         self.x5t = x5t
         self.x5u = x5u
@@ -253,7 +270,7 @@ class Key(object):
             if not item or isinstance(item, six.integer_types):
                 continue
 
-            if isinstance(item, str):
+            if isinstance(item, bytes):
                 item = str(item)
                 setattr(self, param, item)
 
@@ -431,9 +448,9 @@ class ECKey(Key):
         of an elliptic curve key initiate an Elliptic Curve.
         """
         try:
-            if isinstance(self.x, six.string_types):
+            if not isinstance(self.x, six.integer_types):
                 self.x = deser(self.x)
-            if isinstance(self.y, six.string_types):
+            if not isinstance(self.y, six.integer_types):
                 self.y = deser(self.y)
         except TypeError:
             raise DeSerializationNotPossible()

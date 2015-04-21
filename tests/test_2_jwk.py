@@ -90,8 +90,8 @@ def test_loads_0():
     keys.load_dict(JWK)
     assert len(keys) == 1
     key = keys["rsa"][0]
-    assert key.kid == b'abc'
-    assert key.kty == b'RSA'
+    assert key.kid == 'abc'
+    assert key.kty == 'RSA'
 
     _ckey = pem_cert2rsa(CERT)
 
@@ -123,7 +123,7 @@ def test_loads_1():
     keys.load_dict(jwk)
     print(keys)
     assert len(keys) == 2
-    assert _eq(keys.kids(), [b'1', b'2'])
+    assert _eq(keys.kids(), ['1', '2'])
 
 
 def test_dumps():
@@ -154,7 +154,7 @@ def test_load_jwk():
     print(keylist1)
     assert len(keylist1) == 1
     key = keylist1["rsa"][0]
-    assert key.kty == b'RSA'
+    assert key.kty == 'RSA'
     assert isinstance(key.key, _RSAobj)
 
 
@@ -263,10 +263,10 @@ def test_keys():
     assert len(keyl) == 3
     print(keyl.keys())
     print(keyl.dump_jwks())
-    assert _eq(keyl.keys(), ["RSA", "oct", "EC"])
-    assert len(keyl["rsa"]) == 1
-    assert len(keyl["oct"]) == 1
-    assert len(keyl["ec"]) == 1
+    assert _eq(keyl.keys(), ['RSA', 'oct', 'EC'])
+    assert len(keyl['rsa']) == 1
+    assert len(keyl['oct']) == 1
+    assert len(keyl['ec']) == 1
 
 if __name__ == "__main__":
-    test_keys()
+    test_loads_0()
