@@ -7,7 +7,6 @@ env:
 install:
  - pip install -U tox
  - sudo apt-get -qq install libgmp-dev
- - pip install -e .
-
+ 
 script:
  - tox -e $TOX_ENV
