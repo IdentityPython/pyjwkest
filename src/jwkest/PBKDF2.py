@@ -70,10 +70,15 @@
 
 __version__ = "1.2"
 
+from builtins import chr
+from builtins import zip
+from builtins import range
+from builtins import object
+
+import string
 from struct import pack
 from binascii import b2a_hex
 from random import randint
-import string
 
 try:
     # Use PyCrypto (if available)
@@ -149,7 +154,7 @@ class PBKDF2(object):
         assert 1 <= i <= 0xffffffff
         U = self.__prf(self.__passphrase, self.__salt + pack("!L", i))
         result = U
-        for j in xrange(2, 1+self.__iterations):
+        for j in range(2, 1+self.__iterations):
             U = self.__prf(self.__passphrase, U)
             result = strxor(result, U)
         return result
@@ -166,17 +171,17 @@ class PBKDF2(object):
         
         # passphrase and salt must be str or unicode (in the latter
         # case, we convert to UTF-8)
-        if isinstance(passphrase, unicode):
+        if isinstance(passphrase, str):
             passphrase = passphrase.encode("UTF-8")
         if not isinstance(passphrase, str):
             raise TypeError("passphrase must be str or unicode")
-        if isinstance(salt, unicode):
+        if isinstance(salt, str):
             salt = salt.encode("UTF-8")
         if not isinstance(salt, str):
             raise TypeError("salt must be str or unicode")
 
         # iterations must be an integer >= 1
-        if not isinstance(iterations, (int, long)):
+        if not isinstance(iterations, (int, int)):
             raise TypeError("iterations must be an integer")
         if iterations < 1:
             raise ValueError("iterations must be at least 1")
@@ -218,13 +223,13 @@ def crypt(word, salt=None, iterations=None):
         salt = _makesalt()
 
     # salt must be a string or the us-ascii subset of unicode
-    if isinstance(salt, unicode):
+    if isinstance(salt, str):
         salt = salt.encode("us-ascii")
     if not isinstance(salt, str):
         raise TypeError("salt must be a string")
 
     # word must be a string or unicode (in the latter case, we convert to UTF-8)
-    if isinstance(word, unicode):
+    if isinstance(word, str):
         word = word.encode("UTF-8")
     if not isinstance(word, str):
         raise TypeError("word must be a string or unicode")

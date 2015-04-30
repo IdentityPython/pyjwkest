@@ -39,18 +39,18 @@ class PyTest(TestCommand):
 
 setup(
     name="pyjwkest",
-    version="0.6.2",
+    version="1.0.0",
     description="Python implementation of JWT, JWE, JWS and JWK",
     author="Roland Hedberg",
     author_email="roland.hedberg@adm.umu.se",
     license="Apache 2.0",
-    packages=["jwkest", "cryptlib"],
+    packages=["jwkest"],
     package_dir={"": "src"},
     classifiers=["Development Status :: 4 - Beta",
                  "License :: OSI Approved :: Apache Software License",
                  "Topic :: Software Development :: Libraries :: Python "
                  "Modules"],
-    install_requires=["pycrypto >= 2.6.1", "requests"],
+    install_requires=["pycrypto >= 2.6.1", "requests", "six", "future"],
     tests_require=['pytest'],
     zip_safe=False,
     cmdclass={'test': PyTest},

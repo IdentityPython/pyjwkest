@@ -2,27 +2,31 @@
 
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
+from builtins import object
+#from past.utils import old_div
 from Crypto.Util.number import long_to_bytes, bytes_to_long
-from cryptlib.elliptic import inv, mulp, sign_bit, y_from_x, muladdp
-from cryptlib.curves import get_curve
+from jwkest.elliptic import inv, mulp, sign_bit, y_from_x, muladdp
+from jwkest.curves import get_curve
 from random import getrandbits
 from math import ceil
 
 
 # Make the EC interface more OO
-class NISTEllipticCurve:
+class NISTEllipticCurve(object):
     def __init__(self, bits):
         # (bits, prime, order, p, q, point)
         (self.bits, self.p, self.N, self.a, self.b, self.G) = get_curve(bits)
+#        self.bytes = int(ceil(div(self.bits, 8.0)))
         self.bytes = int(ceil(self.bits / 8.0))
 
     @staticmethod
     def by_name(name):
-        if name == "P-256":
+        if name == "P-256" or name == b'P-256':
             return NISTEllipticCurve(256)
-        if name == "P-384":
+        if name == "P-384" or name == b'P-384':
             return NISTEllipticCurve(384)
-        if name == "P-521":
+        if name == "P-521" or name == b'P-521':
             return NISTEllipticCurve(521)
         else:
             raise Exception("Unknown curve {}".format(name))

@@ -1,3 +1,6 @@
+from __future__ import division
+from builtins import bytes
+#from past.utils import old_div
 from math import ceil
 from struct import pack, unpack
 from Crypto.Cipher import AES
@@ -107,7 +110,7 @@ def aes_cbc_hmac_decrypt(key, iv, aad, ct, tag):
 
     # Verify A || IV || E || AL
     al = pack("!Q", 8*len(aad))
-    if isinstance(aad, unicode):
+    if isinstance(aad, str):
         aad = aad.encode("utf-8")
     mac_input = aad + iv + ct + al
     h = HMAC.new(ka, digestmod=dgst)

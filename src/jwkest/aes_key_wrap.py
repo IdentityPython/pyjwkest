@@ -15,7 +15,9 @@ the same name.)
 Performance should be reasonable, since the heavy lifting is all done in
 PyCrypto's AES.
 """
-
+from __future__ import division
+from builtins import hex
+from builtins import range
 import struct
 from Crypto.Cipher import AES
 
@@ -23,7 +25,7 @@ QUAD = struct.Struct('>Q')
 
 
 def aes_unwrap_key_and_iv(kek, wrapped):
-    n = len(wrapped) / 8 - 1
+    n = (len(wrapped) // 8) - 1
     #NOTE: R[0] is never accessed, left in for consistency with RFC indices
     r = [None] + [wrapped[i * 8:i * 8 + 8] for i in range(1, n + 1)]
     a = QUAD.unpack(wrapped[:8])[0]
@@ -57,19 +59,16 @@ def aes_unwrap_key_withpad(kek, wrapped):
 
 
 def aes_wrap_key(kek, plaintext, iv=0xa6a6a6a6a6a6a6a6):
-    n = len(plaintext) / 8
+    n = len(plaintext) // 8
     r = [None] + [plaintext[i * 8:i * 8 + 8] for i in range(0, n)]
     a = iv
     encrypt = AES.new(kek).encrypt
     for j in range(6):
-        #import binascii
-        #print hex(a), binascii.hexlify(r[1]), binascii.hexlify(r[2])
-
         for i in range(1, n + 1):
             b = encrypt(QUAD.pack(a) + r[i])
             a = QUAD.unpack(b[:8])[0] ^ (n * j + i)
             r[i] = b[8:]
-    return QUAD.pack(a) + "".join(r[1:])
+    return QUAD.pack(a) + b''.join(r[1:])
 
 
 def aes_wrap_key_withpad(kek, plaintext):

@@ -22,6 +22,12 @@
     DEALINGS IN THE SOFTWARE.
 """
 from __future__ import print_function
+from __future__ import division
+from builtins import str
+from builtins import hex
+from builtins import range
+from builtins import object
+#from past.utils import old_div
 
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
@@ -55,7 +61,7 @@ class InvalidTagException(Exception):
 
 
 # Galois/Counter Mode with AES-128 and 96-bit IV
-class AES_GCM:
+class AES_GCM(object):
     def __init__(self, master_key):
         self.prev_init_value = None
         self._master_key = ""
@@ -107,7 +113,7 @@ class AES_GCM:
 
         tag = 0
         assert len(data) % 16 == 0
-        for i in range(len(data) / 16):
+        for i in range(int(len(data) / 16)):
             tag ^= bytes_to_long(data[i * 16: (i + 1) * 16])
             tag = self.__times_auth_key(tag)
             # print 'X\t', hex(tag)

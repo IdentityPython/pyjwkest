@@ -1,23 +1,33 @@
 import base64
 import hashlib
 import re
-import struct
 import logging
 import json
+import sys
+import six
 
 from binascii import a2b_base64
 
 from Crypto.PublicKey import RSA
-from Crypto.PublicKey.RSA import importKey, _RSAobj
+from Crypto.PublicKey.RSA import importKey
+from Crypto.PublicKey.RSA import _RSAobj
 from Crypto.Util.asn1 import DerSequence
 
 from requests import request
-from cryptlib.ecc import NISTEllipticCurve
 
-from jwkest import intarr2long, JWKESTException
+from jwkest import base64url_to_long
+from jwkest import base64_to_long
+from jwkest import long_to_base64
+from jwkest import JWKESTException
 from jwkest import b64d
 from jwkest import b64e
-from jwkest import dehexlify
+from jwkest.ecc import NISTEllipticCurve
+from jwkest.jwt import b2s_conv
+
+if sys.version > '3':
+    long = int
+else:
+    from __builtin__ import long
 
 __author__ = 'rohe0002'
 
@@ -45,59 +55,6 @@ class DeSerializationNotPossible(JWKException):
 
 class HeaderError(JWKESTException):
     pass
-
-
-def byte_arr(long_int):
-    _bytes = []
-    while long_int:
-        long_int, r = divmod(long_int, 256)
-        _bytes.insert(0, r)
-    return _bytes
-
-
-def long_to_base64(n):
-    bys = byte_arr(n)
-    data = struct.pack('%sB' % len(bys), *bys)
-    if not len(data):
-        data = '\x00'
-    s = base64.urlsafe_b64encode(data).rstrip('=')
-    return s
-
-
-def b64_set_to_long(s):
-    data = base64.urlsafe_b64decode(s + '==')
-    n = struct.unpack('>Q', '\x00' * (8 - len(data)) + data)
-    return n[0]
-
-
-def base64_to_long(data):
-    if isinstance(data, unicode):
-        data = str(data)
-    # urlsafe_b64decode will happily convert b64encoded data
-    _d = base64.urlsafe_b64decode(data + '==')
-    return intarr2long(dehexlify(_d))
-
-
-def b64url_set_to_long(s):
-    data = base64.urlsafe_b64decode(s + '==')
-    # verify that it's base64url encoded and not just base64
-    # that is no '+' and '/' characters and not trailing "="s.
-    if [e for e in ['+', '/', '='] if e in s]:
-        raise ValueError("Not base64url encoded")
-    n = struct.unpack('>Q', '\x00' * (8 - len(data)) + data)
-    return n[0]
-
-
-def base64url_to_long(data):
-    if isinstance(data, unicode):
-        data = str(data)
-    # urlsafe_b64decode will happily convert b64encoded data
-    _d = base64.urlsafe_b64decode(data + '==')
-    # verify that it's base64url encoded and not just base64
-    # that is no '+' and '/' characters and not trailing "="s.
-    if [e for e in ['+', '/', '='] if e in data]:
-        raise ValueError("Not base64url encoded")
-    return intarr2long(dehexlify(_d))
 
 
 def dicthash(d):
@@ -208,7 +165,7 @@ def rsa_eq(key1, key2):
 
 def key_eq(key1, key2):
     if type(key1) == type(key2):
-        if isinstance(key1, basestring):
+        if isinstance(key1, str):
             return key1 == key2
         elif isinstance(key1, RSA):
             return rsa_eq(key1, key2)
@@ -224,7 +181,7 @@ def x509_rsa_load(txt):
     return [("rsa", import_rsa_key(txt))]
 
 
-class Key():
+class Key(object):
     """
     Basic JSON Web key class
     """
@@ -235,10 +192,27 @@ class Key():
     def __init__(self, kty="", alg="", use="", kid="", key=None, x5c=None,
                  x5t="", x5u=""):
         self.key = key
-        self.kty = kty
-        self.alg = alg
-        self.use = use
-        self.kid = kid
+
+        if isinstance(kty, six.string_types):
+            self.kty = kty
+        else:
+            self.kty = kty.decode("utf8")
+
+        if isinstance(alg, six.string_types):
+            self.alg = alg
+        else:
+            self.alg = alg.decode("utf8")
+
+        if isinstance(use, six.string_types):
+            self.use = use
+        else:
+            self.use = use.decode("utf8")
+
+        if isinstance(kid, six.string_types):
+            self.kid = kid
+        else:
+            self.kid = kid.decode("utf8")
+
         self.x5c = x5c or []
         self.x5t = x5t
         self.x5u = x5u
@@ -293,10 +267,10 @@ class Key():
         """
         for param in self.longs:
             item = getattr(self, param)
-            if not item or isinstance(item, long):
+            if not item or isinstance(item, six.integer_types):
                 continue
 
-            if isinstance(item, unicode):
+            if isinstance(item, bytes):
                 item = str(item)
                 setattr(self, param, item)
 
@@ -310,7 +284,7 @@ class Key():
 
         if self.kid:
             try:
-                assert isinstance(self.kid, basestring)
+                assert isinstance(self.kid, six.string_types)
             except AssertionError:
                 raise HeaderError("kid of wrong value type")
         return True
@@ -318,7 +292,7 @@ class Key():
     def __eq__(self, other):
         try:
             assert isinstance(other, Key)
-            assert self.__dict__.keys() == other.__dict__.keys()
+            assert list(self.__dict__.keys()) == list(other.__dict__.keys())
 
             for key in self.public_members:
                 assert getattr(other, key) == getattr(self, key)
@@ -328,7 +302,16 @@ class Key():
             return True
 
     def keys(self):
-        return self.to_dict().keys()
+        return list(self.to_dict().keys())
+
+
+def deser(val):
+    if isinstance(val, str):
+        _val = val.encode("utf-8")
+    else:
+        _val = val
+
+    return base64_to_long(_val)
 
 
 class RSAKey(Key):
@@ -363,10 +346,10 @@ class RSAKey(Key):
     def deserialize(self):
         if self.n and self.e:
             try:
-                self.e = base64_to_long(str(self.e))
-                self.n = base64_to_long(str(self.n))
+                self.e = long(deser(self.e))
+                self.n = deser(self.n)
                 if self.d:
-                    self.d = base64_to_long(str(self.d))
+                    self.d = deser(self.d)
                     self.key = RSA.construct((self.n, self.e, self.d))
                 else:
                     self.key = RSA.construct((self.n, self.e))
@@ -465,10 +448,10 @@ class ECKey(Key):
         of an elliptic curve key initiate an Elliptic Curve.
         """
         try:
-            if isinstance(self.x, basestring):
-                self.x = base64_to_long(self.x)
-            if isinstance(self.y, basestring):
-                self.y = base64_to_long(self.y)
+            if not isinstance(self.x, six.integer_types):
+                self.x = deser(self.x)
+            if not isinstance(self.y, six.integer_types):
+                self.y = deser(self.y)
         except TypeError:
             raise DeSerializationNotPossible()
         except ValueError as err:
@@ -477,8 +460,8 @@ class ECKey(Key):
         self.curve = NISTEllipticCurve.by_name(self.crv)
         if self.d:
             try:
-                if isinstance(self.d, basestring):
-                    self.d = base64_to_long(self.d)
+                if isinstance(self.d, str):
+                    self.d = deser(self.d)
             except ValueError as err:
                 raise DeSerializationNotPossible(str(err))
 
@@ -536,14 +519,16 @@ class SYMKey(Key):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
         self.k = k
         if not self.key and self.k:
-           self.key = b64d(str(self.k))
+            if isinstance(self.k, str):
+                self.k = self.k.encode("utf-8")
+            self.key = b64d(bytes(self.k))
 
     def deserialize(self):
-        self.key = b64d(str(self.k))
+        self.key = b64d(bytes(self.k))
 
     def serialize(self):
         res = self.common()
-        res["k"] = b64e(str(self.key))
+        res["k"] = b64e(bytes(self.key))
         return res
 
     def encryption_key(self, alg, **kwargs):
@@ -567,29 +552,12 @@ class SYMKey(Key):
 
         return _enc_key
 
-# class PKIXKey(Key):
-#     members = ["kty", "alg", "use", "kid", "n", "e"]
-#
-#     def __init__(self, kty="RSA", alg="", use="", kid="", key=None,
-#                  x5c=None, x5t="", x5u=""):
-#         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
-#         self.key = key
-#
-#     def dc(self):
-#         if self.x5c:
-#             cert = "\n".join([PREFIX, str(self.x5c[0]), POSTFIX])
-#             self.key = import_rsa_key(cert)
-#         elif self.key:
-#             self.x5c = []
-#         else:  # do nothing
-#             pass
-
 # -----------------------------------------------------------------------------
 
 
 def keyitems2keyreps(keyitems):
     keys = []
-    for key_type, _keys in keyitems.items():
+    for key_type, _keys in list(keyitems.items()):
         if key_type.upper() == "RSA":
             keys.extend([RSAKey(key=k) for k in _keys])
         elif key_type.lower() == "oct":
@@ -601,49 +569,34 @@ def keyitems2keyreps(keyitems):
     return keys
 
 
-def keyrep(kspec):
-    if kspec["kty"] == "RSA":
-        item = RSAKey(**kspec)
-    elif kspec["kty"] == "oct":
-        item = SYMKey(**kspec)
-    elif kspec["kty"] == "EC":
-        item = ECKey(**kspec)
+def keyrep(kspec, enc="utf-8"):
+    """
+    Instantiate a Key given a set of key/word arguments
+
+    :param kspec: Key specification, arguments to the Key initialization
+    :param enc: The encoding of the strings. If it's JSON which is the default
+     the encoding is utf-8.
+    :return: Key instance
+    """
+    if enc:
+        _kwargs = {}
+        for key, val in kspec.items():
+            if isinstance(val, str):
+                _kwargs[key] = val.encode(enc)
+            else:
+                _kwargs[key] = val
     else:
-        item = Key(**kspec)
+        _kwargs = kspec
+
+    if kspec["kty"] == "RSA":
+        item = RSAKey(**_kwargs)
+    elif kspec["kty"] == "oct":
+        item = SYMKey(**_kwargs)
+    elif kspec["kty"] == "EC":
+        item = ECKey(**_kwargs)
+    else:
+        item = Key(**_kwargs)
     return item
-
-
-def jwks_load(txt):
-    """
-    Load and create keys from a JWKS representation
-
-    Expects something on this form::
-
-        {"keys":
-            [
-                {"kty":"EC",
-                 "crv":"P-256",
-                 "x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
-                "y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
-                "use":"enc",
-                "kid":"1"},
-
-                {"kty":"RSA",
-                "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFb....."
-                "e":"AQAB",
-                "kid":"2011-04-29"}
-            ]
-        }
-
-    :param txt: The JWKS string representation
-    :return: list of 2-tuples containing key, type
-    """
-    spec = json.loads(txt)
-    res = []
-    for kspec in spec["keys"]:
-        res.append(keyrep(kspec))
-
-    return res
 
 
 def jwk_wrap(key, use="", kid=""):
@@ -657,7 +610,7 @@ def jwk_wrap(key, use="", kid=""):
     """
     if isinstance(key, _RSAobj):
         kspec = RSAKey(use=use, kid=kid).load_key(key)
-    elif isinstance(key, basestring):
+    elif isinstance(key, str):
         kspec = SYMKey(key=key, use=use, kid=kid)
     elif isinstance(key, NISTEllipticCurve):
         kspec = ECKey(use=use, kid=kid).load_key(key)
@@ -668,30 +621,116 @@ def jwk_wrap(key, use="", kid=""):
     return kspec
 
 
-def jwks_dump(keys):
-    """
+class KEYS(object):
+    def __init__(self):
+        self._keys = []
 
-    :param keys: list of Key instances
-    :return:
-    """
-    res = []
-    for key in keys:
-        res.append(key.serialize())
+    def load_dict(self, dikt):
+        for kspec in dikt["keys"]:
+            self._keys.append(keyrep(kspec))
 
-    return json.dumps({"keys": res})
+    def load_jwks(self, jwks):
+        """
+        Load and create keys from a JWKS JSON representation
 
+        Expects something on this form::
 
-def load_jwks_from_url(url, verify=True):
-    """
-    Get and transform a JWKS into keys
+            {"keys":
+                [
+                    {"kty":"EC",
+                     "crv":"P-256",
+                     "x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",
+                    "y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",
+                    "use":"enc",
+                    "kid":"1"},
 
-    :param url: Where the JWKS can be found
-    :param verify: SSL cert verification
-    :return: list of keys
-    """
+                    {"kty":"RSA",
+                    "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFb....."
+                    "e":"AQAB",
+                    "kid":"2011-04-29"}
+                ]
+            }
 
-    r = request("GET", url, allow_redirects=True, verify=verify)
-    if r.status_code == 200:
-        return jwks_load(r.text)
-    else:
-        raise Exception("HTTP Get error: %s" % r.status_code)
+        :param jwks: The JWKS JSON string representation
+        :return: list of 2-tuples containing key, type
+        """
+        return self.load_dict(json.loads(jwks))
+
+    def dump_jwks(self):
+        """
+        :return: A JWKS representation of the held keys
+        """
+        res = []
+        for key in self._keys:
+            res.append(b2s_conv(key.serialize()))
+
+        return json.dumps({"keys": res})
+
+    def load_from_url(self, url, verify=True):
+        """
+        Get and transform a JWKS into keys
+
+        :param url: Where the JWKS can be found
+        :param verify: SSL cert verification
+        :return: list of keys
+        """
+
+        r = request("GET", url, allow_redirects=True, verify=verify)
+        if r.status_code == 200:
+            return self.load_jwks(r.text)
+        else:
+            raise Exception("HTTP Get error: %s" % r.status_code)
+
+    def __getitem__(self, item):
+        """
+        Get all keys of a specific key type
+
+        :param kty: Key type
+        :return: list of keys
+        """
+        kty = item.lower()
+        return [k for k in self._keys if k.kty.lower() == kty]
+
+    def __iter__(self):
+        for k in self._keys:
+            yield k
+
+    def __len__(self):
+        return len(self._keys)
+
+    def keys(self):
+        return list(set([k.kty for k in self._keys]))
+
+    def __repr__(self):
+        return self.dump_jwks()
+
+    def __str__(self):
+        return self.__repr__()
+
+    def kids(self):
+        return [k.kid for k in self._keys if k.kid]
+
+    def by_kid(self, kid):
+        return [k for k in self._keys if kid == k.kid]
+
+    def wrap_add(self, keyinst):
+        self._keys.append(jwk_wrap(keyinst))
+
+    def as_dict(self):
+        _res = {}
+        for kty, k in [(k.kty, k) for k in self._keys]:
+            if kty not in ["RSA", "EC", "oct"]:
+                kty = kty.upper()
+                if kty in ["RSA", "EC"]:
+                    pass
+                else:
+                    kty = kty.lower()
+
+            try:
+                _res[kty].append(k)
+            except KeyError:
+                _res[kty] = [k]
+        return _res
+
+    def add(self, item, enc="utf-8"):
+        self._keys.append(keyrep(item, enc))
