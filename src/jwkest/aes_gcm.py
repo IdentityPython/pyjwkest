@@ -23,10 +23,13 @@
 """
 from __future__ import print_function
 from __future__ import division
-from builtins import str
-from builtins import hex
-from builtins import range
-from builtins import object
+try:
+    from builtins import str
+    from builtins import hex
+    from builtins import range
+    from builtins import object
+except ImportError:
+    pass
 #from past.utils import old_div
 
 from Crypto.Cipher import AES

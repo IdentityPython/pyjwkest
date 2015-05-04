@@ -72,8 +72,11 @@ E(GF(n)) takes the form y**2 == x**3 - p*x - q (mod n) for a prime n.
     Hence there is no addp() and doublep().
 """
 from __future__ import division
-from builtins import zip
-from builtins import range
+try:
+    from builtins import zip
+    from builtins import range
+except ImportError:
+    pass
 #from past.utils import old_div
 
 # BASIC MATH -------------------------------------------------------------------
