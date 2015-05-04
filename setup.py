@@ -46,10 +46,12 @@ setup(
     license="Apache 2.0",
     packages=["jwkest"],
     package_dir={"": "src"},
-    classifiers=["Development Status :: 4 - Beta",
-                 "License :: OSI Approved :: Apache Software License",
-                 "Topic :: Software Development :: Libraries :: Python "
-                 "Modules"],
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "License :: OSI Approved :: Apache Software License",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.4"],
     install_requires=["pycrypto >= 2.6.1", "requests", "six", "future"],
     tests_require=['pytest'],
     zip_safe=False,

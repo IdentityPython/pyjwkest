@@ -4,9 +4,12 @@ import logging
 import re
 import struct
 
-from builtins import zip
-from builtins import hex
-from builtins import str
+try:
+    from builtins import zip
+    from builtins import hex
+    from builtins import str
+except ImportError:
+    pass
 
 from binascii import unhexlify
 

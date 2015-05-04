@@ -11,7 +11,7 @@ from jwkest.jwk import SYMKey, KEYS
 from jwkest.jwk import ECKey
 from jwkest.jwk import import_rsa_key_from_file
 from jwkest.jwk import RSAKey
-from jwkest.jws import SIGNER_ALGS
+from jwkest.jws import SIGNER_ALGS, factory
 from jwkest.jws import JWSig
 from jwkest.jws import JWS
 
@@ -317,7 +317,7 @@ def test_signer_ps512():
     _jws = JWS(payload, alg="PS521")
     _jwt = _jws.sign_compact(keys)
 
-    _rj = JWS()
+    _rj = factory(_jwt)
     info = _rj.verify_compact(_jwt, keys)
     assert info == payload
 
@@ -338,4 +338,4 @@ def test_no_alg_and_alg_none_same():
     assert _jwt0 == _jwt1
 
 if __name__ == "__main__":
-    test_hmac_from_keyrep()
+    test_signer_ps512()

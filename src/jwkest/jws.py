@@ -1,6 +1,9 @@
 """JSON Web Token"""
-from builtins import str
-from builtins import object
+try:
+    from builtins import str
+    from builtins import object
+except ImportError:
+    pass
 
 # Most of the code, ideas herein I have borrowed/stolen from other people
 # Most notably Jeff Lindsay, Ryan Kelly and Richard Barnes
@@ -586,32 +589,35 @@ class JWS(JWx):
 
         return _claim
 
-    def is_jws(self, part):
+    def is_jws(self, token):
         """
 
-        :param part:
+        :param token:
         :return:
         """
-        self.parse_header(part)
+        try:
+            jwt = JWSig().unpack(token)
+        except Exception:
+            return False
 
         try:
-            assert "alg" in self._dict
+            assert "alg" in jwt.headers
         except AssertionError:
             return False
         else:
             try:
-                assert self._dict["alg"] in SIGNER_ALGS
+                assert jwt.headers["alg"] in SIGNER_ALGS
             except AssertionError:
-                logger.debug("UnknownSignerAlg: %s" % self._dict["alg"])
+                logger.debug("UnknownSignerAlg: %s" % jwt.headers["alg"])
                 return False
             else:
+                self.jwt = jwt
                 return True
 
 
-def factory(jwx):
-    p = jwx.split(".")
+def factory(token):
     _jw = JWS()
-    if _jw.is_jws(p[0]):
+    if _jw.is_jws(token):
         return _jw
     else:
         return None

@@ -1,7 +1,9 @@
 # from future import standard_library
 # standard_library.install_aliases()
-from builtins import object
-# JSON Web Encryption
+try:
+    from builtins import object
+except ImportError:
+    pass
 
 import struct
 import io
@@ -691,11 +693,9 @@ class JWE(JWx):
             "No available key that could decrypt the message")
 
 
-
-def factory(jwx):
-    p = jwx.split(".")
-    _jw = JWE()
-    if _jw.is_jwe(p[0]):
-        return _jw
+def factory(token):
+    _jwt = JWEnc().unpack(token)
+    if _jwt.is_jwe():
+        return JWE()
     else:
         return None

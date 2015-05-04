@@ -11,7 +11,7 @@ from jwkest import b64e, long2intarr
 from jwkest import intarr2long
 from jwkest import long2hexseq
 from jwkest.jwk import RSAKey
-from jwkest.jwe import JWE_RSA
+from jwkest.jwe import JWE_RSA, factory
 from jwkest.jwe import JWe
 from jwkest.jwe import JWE
 
@@ -206,11 +206,11 @@ def test_encrypt_decrypt_rsa_cbc():
 
     jwt = _jwe0.encrypt([_key])
 
-    _jwe1 = JWE()
+    _jwe1 = factory(jwt)
     msg = _jwe1.decrypt(jwt, [_key])
 
     assert msg == plain
 
 
 if __name__ == "__main__":
-    test_jwe_09_a1()
+    test_encrypt_decrypt_rsa_cbc()
