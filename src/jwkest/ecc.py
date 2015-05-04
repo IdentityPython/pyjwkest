@@ -3,7 +3,10 @@
 from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import division
-from builtins import object
+try:
+    from builtins import object
+except ImportError:
+    pass
 #from past.utils import old_div
 from Crypto.Util.number import long_to_bytes, bytes_to_long
 from jwkest.elliptic import inv, mulp, sign_bit, y_from_x, muladdp

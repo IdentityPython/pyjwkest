@@ -1,5 +1,8 @@
 from __future__ import division
-from builtins import bytes
+try:
+    from builtins import bytes
+except ImportError:
+    pass
 #from past.utils import old_div
 from math import ceil
 from struct import pack, unpack
@@ -170,4 +173,3 @@ def ecdh_derive_key(curve, key, epk, apu, apv, alg, dk_len):
         pack("!I", len(apv)) + apv + \
         pack("!I", dk_len)
     return concat_sha256(Z, dk_len, otherInfo)
-    
