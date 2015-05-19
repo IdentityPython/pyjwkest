@@ -1,4 +1,5 @@
 import json
+import six
 from jwkest import b64d
 from jwkest import b64e
 from jwkest import BadSyntax
@@ -16,7 +17,7 @@ def split_token(token):
 def b2s_conv(item):
     if isinstance(item, bytes):
         return item.decode("utf-8")
-    elif isinstance(item, (str, int, bool)):
+    elif isinstance(item, (six.string_types, int, bool)):
         return item
     elif isinstance(item, list):
         return [b2s_conv(i) for i in item]
