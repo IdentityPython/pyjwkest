@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright (C) 2013 Umea Universitet, Sweden
+# Copyright (C) 2015 Umea Universitet, Sweden
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ class PyTest(TestCommand):
 
 setup(
     name="pyjwkest",
-    version="1.0.1",
+    version="1.0.2",
     description="Python implementation of JWT, JWE, JWS and JWK",
     author="Roland Hedberg",
     author_email="roland.hedberg@adm.umu.se",
