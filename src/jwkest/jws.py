@@ -605,6 +605,9 @@ class JWS(JWx):
         except AssertionError:
             return False
         else:
+            if jwt.headers["alg"] is None:
+                jwt.headers["alg"] = "none"
+
             try:
                 assert jwt.headers["alg"] in SIGNER_ALGS
             except AssertionError:
