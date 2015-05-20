@@ -696,6 +696,8 @@ class JWE(JWx):
 def factory(token):
     _jwt = JWEnc().unpack(token)
     if _jwt.is_jwe():
-        return JWE()
+        _jwe = JWE()
+        _jwe.jwt = _jwt
+        return _jwe
     else:
         return None
