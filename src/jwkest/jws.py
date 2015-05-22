@@ -133,10 +133,13 @@ class RSASigner(Signer):
     def verify(self, msg, sig, key):
         h = self.digest.new(msg)
         verifier = PKCS1_v1_5.new(key)
-        if verifier.verify(h, sig):
-            return True
-        else:
-            raise BadSignature()
+        try:
+            if verifier.verify(h, sig):
+                return True
+            else:
+                raise BadSignature()
+        except ValueError as e:
+            raise BadSignature(str(e))
 
 
 class DSASigner(Signer):
