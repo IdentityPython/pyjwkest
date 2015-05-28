@@ -1,3 +1,9 @@
+from __future__ import division
+try:
+    from builtins import bytes
+except ImportError:
+    pass
+#from past.utils import old_div
 from math import ceil
 from struct import pack, unpack
 from Crypto.Cipher import AES
@@ -107,7 +113,7 @@ def aes_cbc_hmac_decrypt(key, iv, aad, ct, tag):
 
     # Verify A || IV || E || AL
     al = pack("!Q", 8*len(aad))
-    if isinstance(aad, unicode):
+    if isinstance(aad, str):
         aad = aad.encode("utf-8")
     mac_input = aad + iv + ct + al
     h = HMAC.new(ka, digestmod=dgst)
@@ -167,4 +173,3 @@ def ecdh_derive_key(curve, key, epk, apu, apv, alg, dk_len):
         pack("!I", len(apv)) + apv + \
         pack("!I", dk_len)
     return concat_sha256(Z, dk_len, otherInfo)
-    

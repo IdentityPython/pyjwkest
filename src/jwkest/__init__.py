@@ -1,14 +1,17 @@
 """JSON Web Token"""
-
-# Most of the code herein I have borrowed/stolen from other people
-# Most notably Jeff Lindsay, Ryan Kelly
-
 import base64
-from binascii import unhexlify
-from binascii import hexlify
-import json
 import logging
 import re
+import struct
+
+try:
+    from builtins import zip
+    from builtins import hex
+    from builtins import str
+except ImportError:
+    pass
+
+from binascii import unhexlify
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +64,68 @@ class MissingKey(JWKESTException):
     """ No usable key """
 
 
+# ---------------------------------------------------------------------------
+# Helper functions
+
+
+def intarr2bin(arr):
+    return unhexlify(''.join(["%02x" % byte for byte in arr]))
+
+
+def long2hexseq(l):
+    try:
+        return unhexlify(hex(l)[2:])
+    except TypeError:
+        return unhexlify(hex(l)[2:-1])
+
+
+def intarr2long(arr):
+    return int(''.join(["%02x" % byte for byte in arr]), 16)
+
+
+def long2intarr(long_int):
+    _bytes = []
+    while long_int:
+        long_int, r = divmod(long_int, 256)
+        _bytes.insert(0, r)
+    return _bytes
+
+
+def long_to_base64(n):
+    bys = long2intarr(n)
+    data = struct.pack('%sB' % len(bys), *bys)
+    if not len(data):
+        data = '\x00'
+    s = base64.urlsafe_b64encode(data).rstrip(b'=')
+    return s
+
+
+def base64_to_long(data):
+    # if isinstance(data, str):
+    #     data = bytes(data)
+    # urlsafe_b64decode will happily convert b64encoded data
+    _d = base64.urlsafe_b64decode(bytes(data) + b'==')
+    return intarr2long(struct.unpack('%sB' % len(_d), _d))
+
+
+def base64url_to_long(data):
+    """
+    Stricter then base64_to_long since it really checks that it's
+    base64url encoded
+
+    :param data: The base64 string
+    :return:
+    """
+    _d = base64.urlsafe_b64decode(bytes(data) + b'==')
+    # verify that it's base64url encoded and not just base64
+    # that is no '+' and '/' characters and not trailing "="s.
+    if [e for e in [b'+', b'/', b'='] if e in data]:
+        raise ValueError("Not base64url encoded")
+    return intarr2long(struct.unpack('%sB' % len(_d), _d))
+
+
+# =============================================================================
+
 def b64e(b):
     """Base64 encode some bytes.
 
@@ -88,10 +153,13 @@ def add_padding(b):
 def b64d(b):
     """Decode some base64-encoded bytes.
 
-    Raises BadSyntax if the string contains invalid characters or padding."""
+    Raises BadSyntax if the string contains invalid characters or padding.
 
-    if b.endswith("="):  # shouldn't but there you are
-        cb = b.split("=")[0]
+    :param b: bytes
+    """
+
+    if b.endswith(b'='):  # shouldn't but there you are
+        cb = b.split(b'=')[0]
     else:
         cb = b
 
@@ -106,13 +174,6 @@ def b64d(b):
     return base64.urlsafe_b64decode(b)
 
 
-def split_token(token):
-    if not token.count(b"."):
-        raise BadSyntax(token,
-                        "expected token to contain at least one dot")
-    return tuple(token.split(b"."))
-
-
 # 'Stolen' from Werkzeug
 def safe_str_cmp(a, b):
     """Compare two strings in constant time."""
@@ -124,64 +185,11 @@ def safe_str_cmp(a, b):
     return r == 0
 
 
-def unpack(token):
-    """
-    Unpacks a JWT into its parts and base64 decodes the parts individually
-
-    :param token: The JWT
-    :return: A tuple of the header, claim, crypto parts plus the header
-        and claims part before base64 decoding
-    """
-    if isinstance(token, unicode):
-        token = str(token)
-
-    part = split_token(token)
-
-    res = [b64d(p) for p in part]
-
-    res[0] = json.loads(res[0])
-    res.append(part[0])
-    res.append(part[1])
-    return res
-
-
-def pack(payload):
-    """
-    Unsigned JWT
-    """
-    header = {'alg': 'none'}
-
-    header_b64 = b64e(json.dumps(header, separators=(",", ":")))
-    if isinstance(payload, basestring):
-        payload_b64 = b64e(payload)
-    else:
-        payload_b64 = b64e(json.dumps(payload, separators=(",", ":")))
-
-    token = header_b64 + b"." + payload_b64 + b"."
-
-    return token
-
-# ---------------------------------------------------------------------------
-# Helper functions
-
-
-def intarr2bin(arr):
-    return unhexlify(''.join(["%02x" % byte for byte in arr]))
-
-
-def intarr2long(arr):
-    return long(''.join(["%02x" % byte for byte in arr]), 16)
-
-
-def hd2ia(s):
-    #half = len(s)/2
-    return [int(s[i] + s[i + 1], 16) for i in range(0, len(s), 2)]
-
-
-def dehexlify(bi):
-    s = hexlify(bi)
-    return [int(s[i] + s[i + 1], 16) for i in range(0, len(s), 2)]
-
-
-def long2hexseq(l):
-    return unhexlify(hex(l)[2:-1])
+def constant_time_compare(a, b):
+    """Compare two strings in constant time."""
+    if len(a) != len(b):
+        return False
+    r = 0
+    for c, d in zip(a, b):
+        r |= c ^ d
+    return r == 0

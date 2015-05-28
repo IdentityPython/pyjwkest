@@ -1,4 +1,9 @@
 """JSON Web Token"""
+try:
+    from builtins import str
+    from builtins import object
+except ImportError:
+    pass
 
 # Most of the code, ideas herein I have borrowed/stolen from other people
 # Most notably Jeff Lindsay, Ryan Kelly and Richard Barnes
@@ -14,23 +19,28 @@ from Crypto.Hash import HMAC
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Signature import PKCS1_PSS
 from Crypto.Util.number import bytes_to_long
-from cryptlib.ecc import P256
-from cryptlib.ecc import P384
-from cryptlib.ecc import P521
+import sys
 
-from jwkest.jwk import load_x509_cert, HeaderError
+from jwkest import b64d
+from jwkest import b64e
+from jwkest import constant_time_compare
+from jwkest import safe_str_cmp
+from jwkest import JWKESTException
+from jwkest import BadSignature
+from jwkest import UnknownAlgorithm
+from jwkest.ecc import P256
+from jwkest.ecc import P384
+from jwkest.ecc import P521
+
+from jwkest.jwk import load_x509_cert, KEYS
+from jwkest.jwk import HeaderError
 from jwkest.jwk import sha256_digest
 from jwkest.jwk import sha384_digest
 from jwkest.jwk import sha512_digest
 from jwkest.jwk import keyrep
-from jwkest.jwk import load_jwks_from_url
 
-from jwkest import b64e, MissingKey
-from jwkest import b64d
-from jwkest import JWKESTException
-from jwkest import safe_str_cmp
-from jwkest import BadSignature
-from jwkest import UnknownAlgorithm
+from jwkest.jwt import JWT
+from jwkest.jwt import b64encode_item
 
 logger = logging.getLogger(__name__)
 
@@ -103,9 +113,12 @@ class HMACSigner(Signer):
         # return hmac.new(key, msg, digestmod=self.digest).digest()
 
     def verify(self, msg, sig, key):
-        if not safe_str_cmp(self.sign(msg, key), sig):
-            raise BadSignature(repr(sig))
-        return True
+        if sys.version < '3':
+            if safe_str_cmp(self.sign(msg, key), sig):
+                return True
+        elif constant_time_compare(self.sign(msg, key), sig):
+            return True
+        raise BadSignature(repr(sig))
 
 
 class RSASigner(Signer):
@@ -120,10 +133,13 @@ class RSASigner(Signer):
     def verify(self, msg, sig, key):
         h = self.digest.new(msg)
         verifier = PKCS1_v1_5.new(key)
-        if verifier.verify(h, sig):
-            return True
-        else:
-            raise BadSignature()
+        try:
+            if verifier.verify(h, sig):
+                return True
+            else:
+                raise BadSignature()
+        except ValueError as e:
+            raise BadSignature(str(e))
 
 
 class DSASigner(Signer):
@@ -194,6 +210,14 @@ def alg2keytype(alg):
         return None
 
 
+class JWSig(JWT):
+    def sign_input(self):
+        return self.b64part[0] + b'.' + self.b64part[1]
+
+    def signature(self):
+        return self.part[2]
+
+
 class JWx(object):
     args = ["alg", "jku", "jwk", "x5u", "x5t", "x5c", "kid", "typ", "cty",
             "crit"]
@@ -226,6 +250,7 @@ class JWx(object):
         self.msg = msg
         self._dict = {}
         self.with_digest = with_digest
+        self.jwt = None
 
         if kwargs:
             for key in self.args:
@@ -239,7 +264,7 @@ class JWx(object):
                 if key == "jwk":
                     if isinstance(_val, dict):
                         self._dict["jwk"] = keyrep(_val)
-                    elif isinstance(_val, basestring):
+                    elif isinstance(_val, str):
                         self._dict["jwk"] = keyrep(json.loads(_val))
                     else:
                         self._dict["jwk"] = _val
@@ -266,13 +291,7 @@ class JWx(object):
     def keys(self):
         return list(self._dict.keys())
 
-    def _encoded_payload(self):
-        if isinstance(self.msg, basestring):
-            return b64e(self.msg)
-        else:
-            return b64e(json.dumps(self.msg, separators=(",", ":")))
-
-    def _header(self, extra=None):
+    def headers(self, extra=None):
         _extra = extra or {}
         _header = {}
         for param in self.args:
@@ -292,37 +311,19 @@ class JWx(object):
 
         if "kid" in self:
             try:
-                assert isinstance(self["kid"], basestring)
+                assert isinstance(self["kid"], str)
             except AssertionError:
                 raise HeaderError("kid of wrong value type")
 
         return _header
 
-    def _encoded_header(self, extra=None):
-        _header = json.dumps(self._header(extra), separators=(",", ":"))
-        logger.debug("Header: {}".format(_header))
-        return b64e(_header)
-
-    def parse_header(self, encheader):
-        for attr, val in list(json.loads(b64d(str(encheader))).items()):
-            if attr == "jwk":
-                self["jwk"] = keyrep(val)
-            elif attr == "kid":
-                try:
-                    assert isinstance(val, basestring)
-                except AssertionError:
-                    raise HeaderError("kid of wrong value type")
-                else:
-                    self[attr] = val
-            else:
-                self[attr] = val
-
     def _get_keys(self):
         if "jwk" in self:
             return [self["jwk"]]
         elif "jku" in self:
-            keys = load_jwks_from_url(self["jku"], {})
-            return dict(keys)
+            keys = KEYS()
+            keys.load_from_url(self["jku"])
+            return keys.as_dict()
         elif "x5u" in self:
             try:
                 return {"rsa": [load_x509_cert(self["x5u"], {})]}
@@ -354,7 +355,8 @@ class JWx(object):
             logger.error("Unknown arlgorithm '%s'" % alg)
             return []
 
-        _kty = [_k.lower(), _k.upper()]
+        _kty = [_k.lower(), _k.upper(), _k.lower().encode("utf-8"),
+                _k.upper().encode("utf-8")]
         _keys = [k for k in keys if k.kty in _kty]
 
         pkey = []
@@ -378,7 +380,7 @@ class JWx(object):
         return pkey
 
     def _decode(self, payload):
-        _msg = b64d(str(payload))
+        _msg = b64d(bytes(payload))
         if "cty" in self:
             if self["cty"] == "JWT":
                 _msg = json.loads(_msg)
@@ -443,12 +445,12 @@ class JWS(JWx):
         else:
             keys = self._pick_keys(self._get_keys(), use="sig", alg=_alg)
 
-        xargs = {}
+        xargs = {"alg": _alg}
 
         if keys:
             key = keys[0]
             if key.kid:
-                xargs = {"kid": key.kid}
+                xargs["kid"] = key.kid
         elif not _alg or _alg.lower() == "none":
             key = None
         else:
@@ -459,12 +461,9 @@ class JWS(JWx):
             else:
                 raise NoSuitableSigningKeys("No key for algorithm: %s" % _alg)
 
-        enc_head = self._encoded_header(xargs)
-        enc_payload = self._encoded_payload()
-
-        # Signing with alg == "none"
-        if not _alg or _alg.lower() == "none":
-            return enc_head + b"." + enc_payload + b"."
+        jwt = JWSig(**xargs)
+        if _alg == "none":
+            return jwt.pack(parts=[self.msg, ""])
 
         # All other cases
         try:
@@ -472,10 +471,10 @@ class JWS(JWx):
         except KeyError:
             raise UnknownAlgorithm(_alg)
 
-        _input = b".".join([enc_head, enc_payload])
+        _input = b".".join([b64encode_item(xargs), b64encode_item(self.msg)])
         sig = _signer.sign(_input, key.get_key(alg=_alg, private=True))
         logger.debug("Signed message using key with kid=%s" % key.kid)
-        return b".".join([enc_head, enc_payload, b64e(sig)])
+        return jwt.pack(parts=[self.msg, sig])
 
     def verify_compact(self, jws, keys=None, allow_none=False, sigalg=None):
         """
@@ -487,23 +486,26 @@ class JWS(JWx):
         :param sigalg: Expected sigalg
         :return:
         """
-        _header, _payload, _sig = jws.split(".")
+        jwt = JWSig().unpack(jws)
+        self.jwt = jwt
 
-        self.parse_header(_header)
+        if "alg" in self and "alg" in jwt.headers:
+            if self["alg"] != jwt.headers["alg"]:
+                raise SignerAlgError("Wrong signing algorithm")
 
-        if "alg" in self:
-            if self["alg"] == "none":
+        if "alg" in jwt.headers:
+            if jwt.headers["alg"].lower() == "none":
                 if allow_none:
-                    self.msg = self._decode(_payload)
+                    self.msg = jwt.payload()
                     return self.msg
                 else:
                     raise SignerAlgError("none not allowed")
 
-        if sigalg and sigalg != self["alg"]:
-            raise SignerAlgError("Expected {} got {}".format(sigalg,
-                                                             self["alg"]))
+        if sigalg and sigalg != jwt.headers["alg"]:
+            raise SignerAlgError("Expected {} got {}".format(
+                sigalg, jwt.headers["alg"]))
 
-        _alg = self["alg"]
+        self["alg"] = _alg = jwt.headers["alg"]
 
         if keys:
             _keys = self._pick_keys(keys)
@@ -522,7 +524,7 @@ class JWS(JWx):
 
         for key in _keys:
             try:
-                res = verifier.verify(_header + '.' + _payload, b64d(str(_sig)),
+                res = verifier.verify(jwt.sign_input(), jwt.signature(),
                                       key.get_key(alg=_alg, private=False))
             except BadSignature:
                 pass
@@ -530,7 +532,7 @@ class JWS(JWx):
                 if res is True:
                     logger.debug(
                         "Verified message using key with kid=%s" % key.kid)
-                    self.msg = self._decode(_payload)
+                    self.msg = jwt.payload()
                     return self.msg
 
         raise BadSignature()
@@ -590,32 +592,38 @@ class JWS(JWx):
 
         return _claim
 
-    def is_jws(self, part):
+    def is_jws(self, token):
         """
 
-        :param part:
+        :param token:
         :return:
         """
-        self.parse_header(part)
+        try:
+            jwt = JWSig().unpack(token)
+        except Exception:
+            return False
 
         try:
-            assert "alg" in self._dict
+            assert "alg" in jwt.headers
         except AssertionError:
             return False
         else:
+            if jwt.headers["alg"] is None:
+                jwt.headers["alg"] = "none"
+
             try:
-                assert self._dict["alg"] in SIGNER_ALGS
+                assert jwt.headers["alg"] in SIGNER_ALGS
             except AssertionError:
-                logger.debug("UnknownSignerAlg: %s" % self._dict["alg"])
+                logger.debug("UnknownSignerAlg: %s" % jwt.headers["alg"])
                 return False
             else:
+                self.jwt = jwt
                 return True
 
 
-def factory(jwx):
-    p = jwx.split(".")
+def factory(token):
     _jw = JWS()
-    if _jw.is_jws(p[0]):
+    if _jw.is_jws(token):
         return _jw
     else:
         return None

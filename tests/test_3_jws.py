@@ -1,19 +1,27 @@
 from __future__ import print_function
-import json
-from cryptlib.ecc import P256, P384, P521
+from jwkest.ecc import P256
+from jwkest.ecc import P384
+from jwkest.ecc import P521
 
 import jwkest
 from jwkest import jws
 from jwkest import b64e
 
-from jwkest.jwk import SYMKey, ECKey
+from jwkest.jwk import SYMKey, KEYS
+from jwkest.jwk import ECKey
 from jwkest.jwk import import_rsa_key_from_file
 from jwkest.jwk import RSAKey
-from jwkest.jws import SIGNER_ALGS
+from jwkest.jws import SIGNER_ALGS, factory
+from jwkest.jws import JWSig
 from jwkest.jws import JWS
 
-from path_util import full_path
+import os.path
 
+BASEDIR = os.path.abspath(os.path.dirname(__file__))
+
+
+def full_path(local_file):
+    return os.path.join(BASEDIR, local_file)
 
 KEY = full_path("server.key")
 
@@ -34,6 +42,33 @@ HMAC_KEY = [3, 35, 53, 75, 43, 15, 165, 188, 131, 126, 6, 101, 119, 123, 166,
             103, 208, 128, 163]
 
 
+JWKS = {"keys": [
+    {
+        "n": b"zkpUgEgXICI54blf6iWiD2RbMDCOO1jV0VSff1MFFnujM4othfMsad7H1kRo50YM5S_X9TdvrpdOfpz5aBaKFhT6Ziv0nhtcekq1eRl8mjBlvGKCE5XGk-0LFSDwvqgkJoFYInq7bu0a4JEzKs5AyJY75YlGh879k1Uu2Sv3ZZOunfV1O1Orta-NvS-aG_jN5cstVbCGWE20H0vFVrJKNx0Zf-u-aA-syM4uX7wdWgQ-owoEMHge0GmGgzso2lwOYf_4znanLwEuO3p5aabEaFoKNR4K6GjQcjBcYmDEE4CtfRU9AEmhcD1kleiTB9TjPWkgDmT9MXsGxBHf3AKT5w",
+        "e": b"AQAB",
+        "kty": "RSA",
+        "kid": "5-VBFv40P8D4I-7SFz7hMugTbPs",
+        "use": "sig"
+    },
+    {
+        "k": b"YTEyZjBlMDgxMGI4YWU4Y2JjZDFiYTFlZTBjYzljNDU3YWM0ZWNiNzhmNmFlYTNkNTY0NzMzYjE",
+        "kty": "oct",
+        "use": "sig"
+    },
+    {
+        "kty": "EC",
+        "kid": "7snis",
+        "use": "sig",
+        "x": "q0WbWhflRbxyQZKFuQvh2nZvg98ak-twRoO5uo2L7Po",
+        "y": "GOd2jL_6wa0cfnyA0SmEhok9fkYEnAHFKLLM79BZ8_E",
+        "crv": "P-256"
+    }
+]}
+
+
+SIGKEYS = KEYS()
+SIGKEYS.load_dict(JWKS)
+
 def test_1():
     claimset = {"iss": "joe",
                 "exp": 1300819380,
@@ -43,27 +78,25 @@ def test_1():
     _jwt = _jws.sign_compact()
 
     _jr = JWS()
-    _jr.verify_compact(_jwt, allow_none=True)
+    _msg = _jr.verify_compact(_jwt, allow_none=True)
     print(_jr)
-    assert _jr.alg == u'none'
-    assert _jr.msg == {"iss": "joe",
-                       "exp": 1300819380,
-                       "http://example.com/is_root": True}
+    assert _jr.jwt.headers["alg"] == 'none'
+    assert _msg == claimset
 
 
 def test_hmac_256():
-    payload = "Please take a moment to register today"
+    payload = b'Please take a moment to register today'
     keys = [SYMKey(key=jwkest.intarr2bin(HMAC_KEY))]
     _jws = JWS(payload, alg="HS256")
     _jwt = _jws.sign_compact(keys)
     info = JWS().verify_compact(_jwt, keys)
 
-    assert info == payload
+    assert info == payload.decode("utf-8")
 
 
 def test_hmac_384():
     payload = "Please take a moment to register today"
-    keys = [SYMKey(key="My hollow echo", alg="HS384")]
+    keys = [SYMKey(key=b'My hollow echo', alg="HS384")]
     _jws = JWS(payload, alg="HS384")
     _jwt = _jws.sign_compact(keys)
 
@@ -75,7 +108,7 @@ def test_hmac_384():
 
 def test_hmac_512():
     payload = "Please take a moment to register today"
-    keys = [SYMKey(key="My hollow echo", alg="HS512")]
+    keys = [SYMKey(key=b'My hollow echo', alg="HS512")]
     _jws = JWS(payload, alg="HS512")
     _jwt = _jws.sign_compact(keys)
 
@@ -84,14 +117,25 @@ def test_hmac_512():
     assert info == payload
 
 
+def test_hmac_from_keyrep():
+    payload = "Please take a moment to register today"
+    symkeys = [k for k in SIGKEYS if k.kty == "oct"]
+    _jws = JWS(payload, alg="HS512")
+    _jwt = _jws.sign_compact(symkeys)
+
+    _rj = JWS()
+    info = _rj.verify_compact(_jwt, symkeys)
+    assert info == payload
+
+
 def test_left_hash_hs256():
-    hsh = jws.left_hash("Please take a moment to register today")
-    assert hsh == "rCFHVJuxTqRxOsn2IUzgvA"
+    hsh = jws.left_hash(b'Please take a moment to register today')
+    assert hsh == b'rCFHVJuxTqRxOsn2IUzgvA'
 
 
 def test_left_hash_hs512():
-    hsh = jws.left_hash("Please take a moment to register today", "HS512")
-    assert hsh == "_h6feWLt8zbYcOFnaBmekTzMJYEHdVTaXlDgJSWsEeY"
+    hsh = jws.left_hash(b'Please take a moment to register today', "HS512")
+    assert hsh == b'_h6feWLt8zbYcOFnaBmekTzMJYEHdVTaXlDgJSWsEeY'
 
 
 def test_rs256():
@@ -132,26 +176,26 @@ def test_rs512():
 
 
 def test_a_1_1a():
-    header = '{"typ":"JWT",\r\n "alg":"HS256"}'
+    header = b'{"typ":"JWT",\r\n "alg":"HS256"}'
     val = b64e(header)
-    assert val == "eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9"
+    assert val == b"eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9"
 
 
 def test_a_1_1b():
-    payload = '{"iss":"joe",\r\n "exp":1300819380,\r\n "http://example.com/is_root":true}'
+    payload = b'{"iss":"joe",\r\n "exp":1300819380,\r\n "http://example.com/is_root":true}'
     val = b64e(payload)
-    assert val == ("eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9"
-                   "leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ")
+    assert val == (b'eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9'
+                   b'leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ')
 
 
 def test_a_1_1c():
     hmac = jwkest.intarr2bin(HMAC_KEY)
     signer = SIGNER_ALGS["HS256"]
-    header = '{"typ":"JWT",\r\n "alg":"HS256"}'
-    payload = '{"iss":"joe",\r\n "exp":1300819380,\r\n "http://example.com/is_root":true}'
-    sign_input = b64e(header) + '.' + b64e(payload)
+    header = b'{"typ":"JWT",\r\n "alg":"HS256"}'
+    payload = b'{"iss":"joe",\r\n "exp":1300819380,\r\n "http://example.com/is_root":true}'
+    sign_input = b64e(header) + b'.' + b64e(payload)
     sig = signer.sign(sign_input, hmac)
-    assert b64e(sig) == "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+    assert b64e(sig) == b'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk'
 
 
 def test_a_1_3a():
@@ -159,12 +203,12 @@ def test_a_1_3a():
             "HAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnV"
             "lfQ.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
 
-    #keycol = {"hmac": jwkest.intarr2bin(HMAC_KEY)}
-    header, claim, crypto, header_b64, claim_b64 = jwkest.unpack(_jwt)
+    # keycol = {"hmac": jwkest.intarr2bin(HMAC_KEY)}
+    jwt = JWSig().unpack(_jwt)
 
     hmac = jwkest.intarr2bin(HMAC_KEY)
     signer = SIGNER_ALGS["HS256"]
-    signer.verify(header_b64 + '.' + claim_b64, crypto, hmac)
+    signer.verify(jwt.sign_input(), jwt.signature(), hmac)
 
 
 def test_a_1_3b():
@@ -178,12 +222,12 @@ def test_a_1_3b():
 
 def test_jws_1():
     msg = {"iss": "joe", "exp": 1300819380, "http://example.com/is_root": True}
-    jwk = SYMKey(key=jwkest.intarr2bin(HMAC_KEY))
-    _jws = JWS(msg, cty="JWT", alg="HS256", jwk=json.dumps(jwk.to_dict()))
+    key = SYMKey(key=jwkest.intarr2bin(HMAC_KEY))
+    _jws = JWS(msg, cty="JWT", alg="HS256", jwk=key.to_dict())
     res = _jws.sign_compact()
 
     _jws2 = JWS(alg="HS256")
-    _jws2.verify_compact(res)
+    _jws2.verify_compact(res, keys=[key])
     assert _jws2.msg == msg
 
 
@@ -241,7 +285,7 @@ def test_signer_ps256_fail():
     keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
     #keys[0]._keytype = "private"
     _jws = JWS(payload, alg="PS256")
-    _jwt = _jws.sign_compact(keys)[:-5] + "abcde"
+    _jwt = _jws.sign_compact(keys)[:-5] + b'abcde'
 
     _rj = JWS()
     try:
@@ -272,7 +316,7 @@ def test_signer_ps512():
     _jws = JWS(payload, alg="PS521")
     _jwt = _jws.sign_compact(keys)
 
-    _rj = JWS()
+    _rj = factory(_jwt)
     info = _rj.verify_compact(_jwt, keys)
     assert info == payload
 
@@ -310,4 +354,4 @@ def test_sign_json_hs256():
     assert info == payload
 
 if __name__ == "__main__":
-    test_signer_ps256_fail()
+    test_signer_ps512()

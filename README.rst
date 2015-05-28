@@ -10,8 +10,7 @@ Implementation of JWT, JWS, JWE and JWK as defined in:
 Installation
 ============
 
-Pyjwkest is written and tested using Python version 2.7. A Python 3.4 version
-is in the works.
+Pyjwkest is written and tested using Python version 2.7 and 3.4.
 
 You should be able to simply run 'python setup.py install' to install it.
 
