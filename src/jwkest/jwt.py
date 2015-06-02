@@ -50,7 +50,7 @@ class JWT(object):
 
         :param token: The JWT
         """
-        if isinstance(token, str):
+        if isinstance(token, six.string_types):
             token = token.encode("utf-8")
 
         part = split_token(token)

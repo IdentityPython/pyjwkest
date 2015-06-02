@@ -193,6 +193,7 @@ class Key(object):
                  x5t="", x5u=""):
         self.key = key
 
+        # want kty, alg, use and kid to be strings
         if isinstance(kty, six.string_types):
             self.kty = kty
         else:
