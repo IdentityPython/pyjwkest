@@ -1,13 +1,18 @@
 #! /usr/bin/env
-import argparse
 import json
+import random
+import string
 
-from jwkest.jwk import dump_jwk
-from oic.oauth2 import rndstr
+import argparse
+
+from jwkest.jwk import SYMKey
 
 
 __author__ = 'regu0004'
 
+def rndstr(length):
+    _basech = string.ascii_letters + string.digits
+    return "".join([random.choice(_basech) for _ in range(length)])
 
 def main():
     parser = argparse.ArgumentParser(description="Generate a new symmetric key and print it to stdout.")
@@ -17,7 +22,7 @@ def main():
     parser.add_argument("--kid", dest="kid", help="Key id.")
     args = parser.parse_args()
 
-    key = dump_jwk(key=rndstr(args.key_length), kid=args.kid)
+    key = SYMKey(key=rndstr(args.key_length), kid=args.kid).serialize()
     if args.wrap_keyset:
         key_set = {"keys": [key]}
         print(json.dumps(key_set))
