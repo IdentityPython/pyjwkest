@@ -377,7 +377,7 @@ class RSAKey(Key):
             "n": long_to_base64(self.n),
             "e": long_to_base64(self.e)
         })
-        if private:
+        if private and self.d:
             res["d"] = long_to_base64(self.d)
         return res
 

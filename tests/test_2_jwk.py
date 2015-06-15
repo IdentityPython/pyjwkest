@@ -6,7 +6,7 @@ from Crypto.PublicKey.RSA import _RSAobj
 import struct
 from jwkest.ecc import P256
 from jwkest import long2intarr
-from jwkest.jwk import jwk_wrap
+from jwkest.jwk import jwk_wrap, import_rsa_key_from_file, rsa_eq
 from jwkest.jwk import KEYS
 from jwkest.jwk import base64url_to_long
 from jwkest.jwk import ECKey
@@ -166,6 +166,25 @@ def test_import_rsa_key():
     assert _eq(list(djwk.keys()), ["kty", "e", "n"])
     assert djwk["n"] == b'5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
     assert djwk['e'] == b'AQAB'
+
+
+def test_serialize_rsa_pub_key():
+    rsakey = RSAKey(key=import_rsa_key_from_file(full_path("rsa.pub")))
+    assert rsakey.d == ''
+
+    d_rsakey = rsakey.serialize(private=True)
+    restored_key = RSAKey(**d_rsakey)
+
+    assert rsa_eq(restored_key, rsakey)
+
+def test_serialize_rsa_priv_key():
+    rsakey = RSAKey(key=import_rsa_key_from_file(full_path("rsa.key")))
+    assert rsakey.d
+
+    d_rsakey = rsakey.serialize(private=True)
+    restored_key = RSAKey(**d_rsakey)
+
+    assert rsa_eq(restored_key, rsakey)
 
 
 ECKEY = {
