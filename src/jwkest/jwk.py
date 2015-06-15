@@ -250,7 +250,7 @@ class Key(object):
         """
         pass
 
-    def serialize(self):
+    def serialize(self, private=False):
         """
         map key characteristics into attribute values that can be used
         to create an on-the-wire represntation of the key
@@ -527,7 +527,7 @@ class SYMKey(Key):
     def deserialize(self):
         self.key = b64d(bytes(self.k))
 
-    def serialize(self):
+    def serialize(self, private=True):
         res = self.common()
         res["k"] = b64e(bytes(self.key))
         return res
