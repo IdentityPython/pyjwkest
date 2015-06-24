@@ -65,7 +65,7 @@ if __name__ == "__main__":
         rsa_key.serialize()
         keys = [rsa_key]
     else:
-        print >> sys.stderr, "Needs encryption key"
+        print("Needs encryption key")
         exit()
 
     if args.file:
@@ -75,4 +75,4 @@ if __name__ == "__main__":
         msg = args.message
 
     jwe = JWE()
-    print jwe.decrypt(msg, keys)
+    print(jwe.decrypt(msg, keys))

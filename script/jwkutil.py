@@ -8,7 +8,8 @@ __author__ = 'rohe0002'
 
 import argparse
 import requests
-from jwkest.jwk import RSAKey, keyrep, jwks_load
+from jwkest.jwk import RSAKey, KEYS
+from jwkest.jwk import keyrep
 from jwkest.jwk import import_rsa_key_from_file
 from jwkest.jwk import SYMKey
 from jwkest.jws import JWS
@@ -100,8 +101,9 @@ if __name__ == "__main__":
         keys.append(keyrep(kspec))
 
     if args.jwks:
-        txt = open(args.jwks).read()
-        keys.extend(jwks_load(txt))
+        _k = KEYS()
+        _k.load_jwks(open(args.jwks).read())
+        keys.extend(_k._keys)
 
     if not keys:
         exit(-1)
@@ -117,9 +119,9 @@ if __name__ == "__main__":
         _msg = sign(message, keys, args.alg)
         if args.encrypt:
             _msg = encrypt(_msg, keys, args.encalg, args.encenc)
-        print _msg
+        print(_msg)
     elif args.encrypt:
-        print encrypt(message, keys, args.encalg, args.encenc)
+        print(encrypt(message, keys, args.encalg, args.encenc))
     else:
         if args.decrypt:
             _msg = decrypt(message, keys)
@@ -127,7 +129,7 @@ if __name__ == "__main__":
             _msg = message
 
         if args.verify:
-            print verify(_msg, keys)
+            print(verify(_msg, keys))
 
 # -e -J edmund.jwks -f text.json -E "A128CBC-HS256" -A "RSA1_5" -l ju.log
 # -d -r op.key -f edmund.jwe -i a0
