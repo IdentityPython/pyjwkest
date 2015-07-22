@@ -4,9 +4,10 @@ import json
 from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import _RSAobj
 import struct
+import six
 from jwkest.ecc import P256
 from jwkest import long2intarr
-from jwkest.jwk import jwk_wrap, import_rsa_key_from_file, rsa_eq
+from jwkest.jwk import jwk_wrap, import_rsa_key_from_file, rsa_eq, keyrep
 from jwkest.jwk import KEYS
 from jwkest.jwk import base64url_to_long
 from jwkest.jwk import ECKey
@@ -163,7 +164,7 @@ def test_import_rsa_key():
     assert isinstance(_ckey, _RSAobj)
     djwk = jwk_wrap(_ckey).to_dict()
     print(djwk)
-    assert _eq(list(djwk.keys()), ["kty", "e", "n"])
+    assert _eq(list(djwk.keys()), ["kty", "e", "n", "d"])
     assert djwk["n"] == b'5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
     assert djwk['e'] == b'AQAB'
 
@@ -287,5 +288,30 @@ def test_keys():
     assert len(keyl['oct']) == 1
     assert len(keyl['ec']) == 1
 
+def test_private_key_from_jwk():
+    keys = []
+
+    kspec = json.loads(open("jwk_private_key.json").read())
+    keys.append(keyrep(kspec))
+
+    key = keys[0]
+
+    assert isinstance(key.n, six.integer_types)
+    assert isinstance(key.e, six.integer_types)
+    assert isinstance(key.d, six.integer_types)
+    assert isinstance(key.p, six.integer_types)
+    assert isinstance(key.q, six.integer_types)
+    assert isinstance(key.dp, six.integer_types)
+    assert isinstance(key.dq, six.integer_types)
+    assert isinstance(key.qi, six.integer_types)
+
+    _d = key.to_dict()
+    print(_d)
+    print(_d.keys())
+    assert _eq(list(_d.keys()),
+               ['n', 'alg', 'dq', 'e', 'q', 'p', 'dp', 'd', 'ext', 'key_ops',
+                'kty', 'qi'])
+    assert _eq(list(_d.keys()), kspec.keys())
+
 if __name__ == "__main__":
-    test_loads_0()
+    test_private_key_from_jwk()
