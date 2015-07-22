@@ -89,7 +89,6 @@ def test_hmac_256():
     keys = [SYMKey(key=jwkest.intarr2bin(HMAC_KEY))]
     _jws = JWS(payload, alg="HS256")
     _jwt = _jws.sign_compact(keys)
-
     info = JWS().verify_compact(_jwt, keys)
 
     assert info == payload.decode("utf-8")
@@ -336,6 +335,23 @@ def test_no_alg_and_alg_none_same():
     _jwt1 = _jws.sign_compact([])
 
     assert _jwt0 == _jwt1
+
+# This test is only to ensure that keys is properly passed in to sign_compact
+def test_sign_json_hs256():
+    payload = "Please take a moment to register today"
+    keys = [SYMKey(key=jwkest.intarr2bin(HMAC_KEY))]
+    _jws = JWS(payload, alg="HS256")
+    _sig = {
+        'alg': 'HS256'
+    }
+    _jwt = _jws.sign_json(per_signature_head=[_sig], keys=keys, alg='HS256')
+    _jwt_sig = "%s.%s.%s" % ( _jwt['signatures'][0]['header'],
+                              b64e(_jwt['payload']),
+                              _jwt['signatures'][0]['signature'] )
+
+    info = _jws.verify_compact(_jwt_sig, keys)
+
+    assert info == payload
 
 if __name__ == "__main__":
     test_signer_ps512()
