@@ -645,8 +645,8 @@ class JWE(JWx):
 
             try:
                 token = encrypter.encrypt(_key, **kwargs)
-            except Exception as err:
-                pass
+            except TypeError:
+                raise
             else:
                 logger.debug(
                     "Encrypted message using key with kid=%s" % key.kid)

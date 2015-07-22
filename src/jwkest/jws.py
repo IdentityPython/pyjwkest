@@ -1,4 +1,6 @@
 """JSON Web Token"""
+import six
+
 try:
     from builtins import str
     from builtins import object
@@ -247,7 +249,11 @@ class JWx(object):
     """
 
     def __init__(self, msg=None, with_digest=False, **kwargs):
-        self.msg = msg
+        if six.PY3 and isinstance(msg, six.string_types):
+            self.msg = msg.encode("utf-8")
+        else:
+            self.msg = msg
+
         self._dict = {}
         self.with_digest = with_digest
         self.jwt = None
@@ -311,7 +317,7 @@ class JWx(object):
 
         if "kid" in self:
             try:
-                assert isinstance(self["kid"], str)
+                assert isinstance(self["kid"], six.string_types)
             except AssertionError:
                 raise HeaderError("kid of wrong value type")
 

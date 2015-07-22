@@ -212,5 +212,11 @@ def test_encrypt_decrypt_rsa_cbc():
     assert msg == plain
 
 
+def test_rsa_with_kid():
+    encryption_keys = [RSAKey(use="enc", key=rsa,
+                              kid="some-key-id")]
+    jwe = JWE("some content", alg="RSA-OAEP", enc="A256CBC-HS512")
+    jwe.encrypt(keys=encryption_keys, kid="some-key-id")
+
 if __name__ == "__main__":
-    test_encrypt_decrypt_rsa_cbc()
+    test_rsa_with_kid()
