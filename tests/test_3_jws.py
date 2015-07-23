@@ -337,5 +337,23 @@ def test_no_alg_and_alg_none_same():
 
     assert _jwt0 == _jwt1
 
+
+def test_sign_2():
+    keyset = {"keys": [
+        {"alg": "RS512",
+         "kty": "RSA",
+         "d": "ckLyXxkbjC4szg8q8G0ERBZV-9CszeOxpRtx1KM9BLl0Do3li_Km2vvFvfXJ7MxQpiZ18pBoCcyYQEU262ym8wI22JWMPrZe24HCNxLxqzr_JEuBhpKFxQF6EFTSvJEJD1FkoTuCTvN0zD7YHGaJQG6JzVEuFUY3ewxjH0FYNa_ppTnPP3LC-T9u_GX9Yqyuw1KOYoHSzhWSWQOeAgs4dH9-iAxN1wdZ6eH1jFWAs43svk_rhwdgyJMlihFtV9MAInBlfi_Zu8wRVhVl5urkJrLf0tGFnMbnzb6dYSlUXxEYClpY12W7kXW9aePDqkCwI4oZyxmOmgq4hunKGR1dAQ",
+         "e": "AQAB",
+         "use": "sig",
+         "kid": "af22448d-4c7b-464d-b63a-f5bd90f6d7d1",
+         "n": "o9g8DpUwBW6B1qmcm-TfEh4rNX7n1t38jdo4Gkl_cI3q--7n0Blg0kN88LHZvyZjUB2NhBdFYNxMP8ucy0dOXvWGWzaPmGnq3DM__lN8P4WjD1cCTAVEYKawNBAmGKqrFj1SgpPNsSqiqK-ALM1w6mZ-QGimjOgwCyJy3l9lzZh5D8tKnS2t1pZgE0X5P7lZQWHYpHPqp4jKhETzrCpPGfv0Rl6nmmjp7NlRYBkWKf_HEKE333J6M039m2FbKgxrBg3zmYYpmHuMzVgxxb8LSiv5aqyeyJjxM-YDUAgNQBfKNhONqXyu9DqtSprNkw6sqmuxK0QUVrNYl3b03PgS5Q"
+        }]}
+
+    keys = KEYS()
+    keys.load_dict(keyset)
+    jws = JWS("payload", alg="RS512")
+    jws.sign_compact(keys=keys)
+
+
 if __name__ == "__main__":
-    test_signer_ps512()
+    test_sign_2()

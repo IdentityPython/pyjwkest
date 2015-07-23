@@ -354,14 +354,16 @@ class RSAKey(Key):
                         else:
                             setattr(self, param, val)
 
-                lst = [self.n, self.e, self.d]
+                lst = [self.n, self.e]
+                if self.d:
+                    lst.append(self.d)
                 if self.p:
                     lst.append(self.p)
                     if self.q:
                         lst.append(self.q)
                     self.key = RSA.construct(tuple(lst))
                 else:
-                    self.key = RSA.construct((self.n, self.e))
+                    self.key = RSA.construct(lst)
             except ValueError as err:
                 raise DeSerializationNotPossible("%s" % err)
         elif self.x5c:
