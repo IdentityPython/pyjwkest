@@ -267,7 +267,7 @@ class Key(object):
                 continue
 
             if isinstance(item, bytes):
-                item = str(item)
+                item = item.decode('utf-8')
                 setattr(self, param, item)
 
             try:

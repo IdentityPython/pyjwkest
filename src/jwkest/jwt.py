@@ -39,9 +39,11 @@ def b64encode_item(item):
 
 class JWT(object):
     def __init__(self, **headers):
+        if not headers.get("alg"):
+            headers["alg"] = None
         self.headers = headers
-        self.part = []
-        self.b64part = []
+        self.b64part = [ b64encode_item(headers) ]
+        self.part = [ b64d(self.b64part[0]) ]
 
     def unpack(self, token):
         """
@@ -71,7 +73,8 @@ class JWT(object):
             else:
                 headers = {'alg': 'none'}
 
-        _all = [b64encode_item(headers)]
+        self.part = [ self.part[0] ] + parts
+        _all = self.b64part = [ self.b64part[0] ]
         _all.extend([b64encode_item(p) for p in parts])
 
         return b".".join(_all)
