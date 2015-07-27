@@ -5,7 +5,7 @@ from jwkest.ecc import P521
 
 import jwkest
 from jwkest import jws
-from jwkest import b64e
+from jwkest import b64d, b64e
 
 from jwkest.jwk import SYMKey, KEYS
 from jwkest.jwk import ECKey
@@ -15,6 +15,9 @@ from jwkest.jws import SIGNER_ALGS, factory
 from jwkest.jws import JWSig
 from jwkest.jws import JWS
 
+import codecs
+import json
+import io
 import os.path
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
@@ -354,6 +357,51 @@ def test_sign_2():
     jws = JWS("payload", alg="RS512")
     jws.sign_compact(keys=keys)
 
+def test_signer_protected_headers():
+    payload = "Please take a moment to register today"
+    _key = ECKey().load_key(P256)
+    keys = [_key]
+    _jws = JWS(payload, alg="ES256")
+    protected = dict(header1=u"header1 is protected",
+        header2="header2 is protected too", a=1)
+    _jwt = _jws.sign_compact(keys, protected=protected)
+
+    exp_protected = protected.copy()
+    exp_protected['alg'] = 'ES256'
+    enc_header, enc_payload, sig = _jwt.split(b'.')
+    assert json.loads(b64d(enc_header).decode("utf-8")) == exp_protected
+    assert b64d(enc_payload).decode("utf-8") == payload
+
+    _rj = JWS()
+    info = _rj.verify_compact(_jwt, keys)
+    assert info == payload
+
+def test_verify_protected_headers():
+    payload = "Please take a moment to register today"
+    _key = ECKey().load_key(P256)
+    keys = [_key]
+    _jws = JWS(payload, alg="ES256")
+    protected = dict(header1=u"header1 is protected",
+        header2="header2 is protected too", a=1)
+    _jwt = _jws.sign_compact(keys, protected=protected)
+    protectedHeader, enc_payload, sig = _jwt.split(b".")
+    data = dict(payload=enc_payload, signatures=[
+        dict(
+            header=dict(alg=u"ES256", jwk=_key.serialize()),
+            protected=protectedHeader,
+            signature=sig,
+            )
+        ])
+    fobj = io.BytesIO(JSONEncoder().encode(data).encode("utf-8"))
+    _jws = JWS()
+    reader = codecs.getreader("utf-8")
+    assert _jws.verify_json(reader(fobj)) == payload
+
+class JSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, bytes):
+            return o.decode('utf-8')
+        return json.JSONEncoder.default(self, o)
 
 if __name__ == "__main__":
     test_sign_2()
