@@ -7,7 +7,10 @@ import struct
 import six
 from jwkest.ecc import P256
 from jwkest import long2intarr
-from jwkest.jwk import jwk_wrap, import_rsa_key_from_file, rsa_eq, keyrep
+from jwkest.jwk import jwk_wrap
+from jwkest.jwk import import_rsa_key_from_file
+from jwkest.jwk import rsa_eq
+from jwkest.jwk import keyrep
 from jwkest.jwk import KEYS
 from jwkest.jwk import base64url_to_long
 from jwkest.jwk import ECKey

@@ -3,6 +3,8 @@
 from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import division
+import six
+
 try:
     from builtins import object
 except ImportError:
@@ -68,12 +70,8 @@ class NISTEllipticCurve(object):
     # key
     def dh_z(self, priv, pub):
         return self.int2bytes( mulp(self.a, self.b, self.p, pub, priv)[0] )
-       
-    # ECDSA (adapted from ecdsa.py)
-    def sign(self, h, priv, k=None):
-        while h > self.N:
-            h >>= 1
-        r = s = 0
+
+    def _sign_loop(self, r, s, h, k, priv):
         while r == 0 or s == 0:
             if k is None:
                 k = (getrandbits(self.bits) % (self.N - 1)) + 1
@@ -83,7 +81,21 @@ class NISTEllipticCurve(object):
             if r == 0:
                 continue
             s = (kinv * (h + r * priv)) % self.N
-        return self.int2bytes(r) + self.int2bytes(s) 
+        return r, s
+
+    # ECDSA (adapted from ecdsa.py)
+    def sign(self, h, priv, k=None):
+        while h > self.N:
+            h >>= 1
+
+        if six.PY2:
+            r = s = 0L
+        else:
+            r = s = 0
+
+        r, s = self._sign_loop(r, s, h, k, priv)
+
+        return self.int2bytes(r) + self.int2bytes(s)
 
     def verify(self, h, sig, pub):
         while h > self.N:

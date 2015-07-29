@@ -396,6 +396,15 @@ class RSAKey(Key):
             self.d = self.key.d
         except AttributeError:
             pass
+        else:
+            for param in ["p", "q"]:
+                try:
+                    val = getattr(self.key, param)
+                except AttributeError:
+                    pass
+                else:
+                    if val:
+                        setattr(self, param, val)
 
     def load(self, filename):
         """
