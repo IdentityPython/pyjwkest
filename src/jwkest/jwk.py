@@ -738,9 +738,8 @@ class KEYS(object):
         _res = {}
         for kty, k in [(k.kty, k) for k in self._keys]:
             if kty not in ["RSA", "EC", "oct"]:
-                kty = kty.upper()
-                if kty in ["RSA", "EC"]:
-                    pass
+                if kty in ["rsa", "ec"]:
+                    kty = kty.upper()
                 else:
                     kty = kty.lower()
 
