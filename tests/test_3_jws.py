@@ -317,7 +317,7 @@ def test_signer_ps512():
     # Key has to be big enough  > 512+512+2
     keys = [RSAKey(key=import_rsa_key_from_file(full_path("./size2048.key")))]
     #keys[0]._keytype = "private"
-    _jws = JWS(payload, alg="PS521")
+    _jws = JWS(payload, alg="PS512")
     _jwt = _jws.sign_compact(keys)
 
     _rj = factory(_jwt)
