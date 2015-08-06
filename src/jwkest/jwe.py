@@ -404,10 +404,14 @@ class JWE_SYM(JWe):
 
         # If no iv and cek are given generate them
         cek, iv = self._generate_key_and_iv(self["enc"], cek, iv)
+        if isinstance(key, six.binary_type):
+            kek = key
+        else:
+            kek = intarr2str(key)
 
         # The iv for this function must be 64 bit
         # Which is certainly different from the one above
-        jek = aes_wrap_key(key, cek)
+        jek = aes_wrap_key(kek, cek)
 
         _enc = self["enc"]
 
