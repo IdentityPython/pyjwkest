@@ -15,27 +15,11 @@
 # limitations under the License.
 #
 
-from setuptools import setup
 import glob
-import sys
-from setuptools.command.test import test as TestCommand
+
+from setuptools import setup
 
 __author__ = 'rohe0002'
-
-
-class PyTest(TestCommand):
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        #import here, cause outside the eggs aren't loaded
-        import pytest
-
-        errno = pytest.main(self.test_args)
-        sys.exit(errno)
-
 
 setup(
     name="pyjwkest",
@@ -55,6 +39,5 @@ setup(
     install_requires=["pycrypto >= 2.6.1", "requests", "six", "future"],
     tests_require=['pytest'],
     zip_safe=False,
-    cmdclass={'test': PyTest},
     scripts=glob.glob('script/*.py'),
 )
