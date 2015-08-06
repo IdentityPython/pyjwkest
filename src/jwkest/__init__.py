@@ -197,3 +197,15 @@ def constant_time_compare(a, b):
     for c, d in zip(a, b):
         r |= c ^ d
     return r == 0
+
+def as_bytes(s):
+    """
+    Convert an unicode string to bytes.
+    :param s: Unicode / bytes string
+    :return: bytes string
+    """
+    try:
+        s = s.encode()
+    except AttributeError:
+        pass
+    return s
