@@ -207,7 +207,7 @@ def as_bytes(s):
     """
     try:
         s = s.encode()
-    except AttributeError:
+    except (AttributeError, UnicodeDecodeError):
         pass
     return s
 
@@ -220,6 +220,6 @@ def as_unicode(b):
     """
     try:
         b = b.decode()
-    except AttributeError:
+    except (AttributeError, UnicodeDecodeError):
         pass
     return b

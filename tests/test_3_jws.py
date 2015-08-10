@@ -133,13 +133,13 @@ def test_hmac_from_keyrep():
 
 
 def test_left_hash_hs256():
-    hsh = jws.left_hash(b'Please take a moment to register today')
-    assert hsh == b'rCFHVJuxTqRxOsn2IUzgvA'
+    hsh = jws.left_hash('Please take a moment to register today')
+    assert hsh == 'rCFHVJuxTqRxOsn2IUzgvA'
 
 
 def test_left_hash_hs512():
-    hsh = jws.left_hash(b'Please take a moment to register today', "HS512")
-    assert hsh == b'_h6feWLt8zbYcOFnaBmekTzMJYEHdVTaXlDgJSWsEeY'
+    hsh = jws.left_hash('Please take a moment to register today', "HS512")
+    assert hsh == '_h6feWLt8zbYcOFnaBmekTzMJYEHdVTaXlDgJSWsEeY'
 
 
 def test_rs256():
