@@ -286,7 +286,7 @@ def test_signer_ps256_fail():
     keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
     #keys[0]._keytype = "private"
     _jws = JWS(payload, alg="PS256")
-    _jwt = _jws.sign_compact(keys)[:-5] + b'abcde'
+    _jwt = _jws.sign_compact(keys)[:-5] + 'abcde'
 
     _rj = JWS()
     try:

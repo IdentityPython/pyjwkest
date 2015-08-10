@@ -13,7 +13,7 @@ def test_pack_jwt():
     jwt = _jwt.pack(parts=[{"iss": "joe", "exp": 1300819380,
                             "http://example.com/is_root": True}, ""])
 
-    p = jwt.split(b'.')
+    p = jwt.split('.')
     assert len(p) == 3
 
 
