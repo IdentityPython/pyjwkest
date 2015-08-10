@@ -249,10 +249,7 @@ class JWx(object):
     """
 
     def __init__(self, msg=None, with_digest=False, **kwargs):
-        if six.PY3 and isinstance(msg, six.string_types):
-            self.msg = msg.encode("utf-8")
-        else:
-            self.msg = msg
+        self.msg = msg
 
         self._dict = {}
         self.with_digest = with_digest
@@ -480,9 +477,9 @@ class JWS(JWx):
             raise UnknownAlgorithm(_alg)
 
         _input = jwt.pack(parts=[self.msg])
-        sig = _signer.sign(_input, key.get_key(alg=_alg, private=True))
+        sig = _signer.sign(_input.encode("utf-8"), key.get_key(alg=_alg, private=True))
         logger.debug("Signed message using key with kid=%s" % key.kid)
-        return b".".join([_input, b64encode_item(sig)])
+        return ".".join([_input, b64encode_item(sig).decode("utf-8")])
 
     def verify_compact(self, jws, keys=None, allow_none=False, sigalg=None):
         """
