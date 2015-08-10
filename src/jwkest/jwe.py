@@ -18,7 +18,7 @@ from Crypto.Util.number import long_to_bytes
 from Crypto.Cipher import PKCS1_v1_5
 from Crypto.Cipher import PKCS1_OAEP
 
-from jwkest import b64d
+from jwkest import b64d, as_bytes
 from jwkest import b64e
 from jwkest import JWKESTException
 from jwkest import MissingKey
@@ -456,7 +456,7 @@ class JWE_RSA(JWe):
         :return: A jwe
         """
 
-        _msg = self.msg
+        _msg = as_bytes(self.msg)
         if "zip" in self:
             if self["zip"] == "DEF":
                 _msg = zlib.compress(_msg)
@@ -681,7 +681,7 @@ class JWE(JWx):
         for key in keys:
             _key = key.encryption_key(alg=_alg, private=False)
             try:
-                msg = decrypter.decrypt(bytes(token), _key)
+                msg = decrypter.decrypt(as_bytes(token), _key)
             except (KeyError, DecryptionFailed):
                 pass
             else:

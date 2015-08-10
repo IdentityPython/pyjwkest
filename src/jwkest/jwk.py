@@ -517,7 +517,7 @@ class SYMKey(Key):
 
     def __init__(self, kty="oct", alg="", use="", kid="", key=None,
                  x5c=None, x5t="", x5u="", k="", mtrl=""):
-        Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
+        Key.__init__(self, kty, alg, use, kid, as_bytes(key), x5c, x5t, x5u)
         self.k = k
         if not self.key and self.k:
             if isinstance(self.k, str):

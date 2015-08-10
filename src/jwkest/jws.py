@@ -21,7 +21,7 @@ from Crypto.Signature import PKCS1_PSS
 from Crypto.Util.number import bytes_to_long
 import sys
 
-from jwkest import b64d
+from jwkest import b64d, as_unicode
 from jwkest import b64e
 from jwkest import constant_time_compare
 from jwkest import safe_str_cmp
@@ -72,11 +72,11 @@ class SignerAlgError(JWSException):
 def left_hash(msg, func="HS256"):
     """ 128 bits == 16 bytes """
     if func == 'HS256':
-        return b64e(sha256_digest(msg)[:16])
+        return as_unicode(b64e(sha256_digest(msg)[:16]))
     elif func == 'HS384':
-        return b64e(sha384_digest(msg)[:24])
+        return as_unicode(b64e(sha384_digest(msg)[:24]))
     elif func == 'HS512':
-        return b64e(sha512_digest(msg)[:32])
+        return as_unicode(b64e(sha512_digest(msg)[:32]))
 
 
 def mpint(b):
