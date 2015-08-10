@@ -1,4 +1,6 @@
 """JSON Web Token"""
+import six
+
 try:
     from builtins import str
     from builtins import object
@@ -247,7 +249,11 @@ class JWx(object):
     """
 
     def __init__(self, msg=None, with_digest=False, **kwargs):
-        self.msg = msg
+        if six.PY3 and isinstance(msg, six.string_types):
+            self.msg = msg.encode("utf-8")
+        else:
+            self.msg = msg
+
         self._dict = {}
         self.with_digest = with_digest
         self.jwt = None
@@ -311,7 +317,7 @@ class JWx(object):
 
         if "kid" in self:
             try:
-                assert isinstance(self["kid"], str)
+                assert isinstance(self["kid"], six.string_types)
             except AssertionError:
                 raise HeaderError("kid of wrong value type")
 
@@ -424,11 +430,12 @@ class JWS(JWx):
 
         return key, xargs
 
-    def sign_compact(self, keys=None):
+    def sign_compact(self, keys=None, protected=None):
         """
         Produce a JWS using the JWS Compact Serialization
 
         :param keys: A dictionary of keys
+        :param protected: The protected headers (a dictionary)
         :return:
         """
 
@@ -445,7 +452,8 @@ class JWS(JWx):
         else:
             keys = self._pick_keys(self._get_keys(), use="sig", alg=_alg)
 
-        xargs = {"alg": _alg}
+        xargs = protected or {}
+        xargs["alg"] = _alg
 
         if keys:
             key = keys[0]
@@ -471,10 +479,10 @@ class JWS(JWx):
         except KeyError:
             raise UnknownAlgorithm(_alg)
 
-        _input = b".".join([b64encode_item(xargs), b64encode_item(self.msg)])
+        _input = jwt.pack(parts=[self.msg])
         sig = _signer.sign(_input, key.get_key(alg=_alg, private=True))
         logger.debug("Signed message using key with kid=%s" % key.kid)
-        return jwt.pack(parts=[self.msg, sig])
+        return b".".join([_input, b64encode_item(sig)])
 
     def verify_compact(self, jws, keys=None, allow_none=False, sigalg=None):
         """
@@ -583,7 +591,9 @@ class JWS(JWx):
 
         _claim = None
         for _sign in _signs:
-            token = b".".join([_sign["header"], _payload, _sign["signature"]])
+            token = b".".join([_sign["protected"].encode(), _payload.encode(), _sign["signature"].encode()])
+            header = _sign.get("header", {})
+            self.__init__(**header)
             _tmp = self.verify_compact(token, keys, allow_none, sigalg)
             if _claim is None:
                 _claim = _tmp

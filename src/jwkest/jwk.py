@@ -190,8 +190,9 @@ class Key(object):
     public_members = ["kty", "alg", "use", "kid", "x5c", "x5t", "x5u"]
 
     def __init__(self, kty="", alg="", use="", kid="", key=None, x5c=None,
-                 x5t="", x5u=""):
+                 x5t="", x5u="", **kwargs):
         self.key = key
+        self.extra_args = kwargs
 
         # want kty, alg, use and kid to be strings
         if isinstance(kty, six.string_types):
@@ -220,14 +221,8 @@ class Key(object):
         self.inactive_since = 0
 
     def to_dict(self):
-        _dict = self.serialize()
-
-        res = {}
-        for key in self.public_members:
-            try:
-                res[key] = _dict[key]
-            except (KeyError, AttributeError):
-                pass
+        res = self.serialize()
+        res.update(self.extra_args)
         return res
 
     def common(self):
@@ -272,7 +267,7 @@ class Key(object):
                 continue
 
             if isinstance(item, bytes):
-                item = str(item)
+                item = item.decode('utf-8')
                 setattr(self, param, item)
 
             try:
@@ -321,14 +316,14 @@ class RSAKey(Key):
     """
     members = Key.members
     members.extend(["n", "e", "d", "p", "q"])
-    longs = ["n", "e", "d", "p", "q"]
+    longs = ["n", "e", "d", "p", "q", "dp", "dq", "di", "qi"]
     public_members = Key.public_members
     public_members.extend(["n", "e"])
 
     def __init__(self, kty="RSA", alg="", use="", kid="", key=None,
                  x5c=None, x5t="", x5u="", n="", e="", d="", p="", q="",
-                 dp="", dq="", di="", qi=""):
-        Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u)
+                 dp="", dq="", di="", qi="", **kwargs):
+        Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u, **kwargs)
         self.n = n
         self.e = e
         self.d = d
@@ -347,13 +342,28 @@ class RSAKey(Key):
     def deserialize(self):
         if self.n and self.e:
             try:
-                self.e = long(deser(self.e))
-                self.n = deser(self.n)
+                for param in self.longs:
+                    item = getattr(self, param)
+                    if not item or isinstance(item, six.integer_types):
+                        continue
+                    else:
+                        try:
+                            val = long(deser(item))
+                        except Exception:
+                            raise
+                        else:
+                            setattr(self, param, val)
+
+                lst = [self.n, self.e]
                 if self.d:
-                    self.d = deser(self.d)
-                    self.key = RSA.construct((self.n, self.e, self.d))
+                    lst.append(self.d)
+                if self.p:
+                    lst.append(self.p)
+                    if self.q:
+                        lst.append(self.q)
+                    self.key = RSA.construct(tuple(lst))
                 else:
-                    self.key = RSA.construct((self.n, self.e))
+                    self.key = RSA.construct(lst)
             except ValueError as err:
                 raise DeSerializationNotPossible("%s" % err)
         elif self.x5c:
@@ -373,12 +383,10 @@ class RSAKey(Key):
             raise SerializationNotPossible()
 
         res = self.common()
-        res.update({
-            "n": long_to_base64(self.n),
-            "e": long_to_base64(self.e)
-        })
-        if private and self.d:
-            res["d"] = long_to_base64(self.d)
+        for param in self.longs:
+            item = getattr(self, param)
+            if item:
+                res[param] = long_to_base64(item)
         return res
 
     def _split(self):
@@ -388,6 +396,15 @@ class RSAKey(Key):
             self.d = self.key.d
         except AttributeError:
             pass
+        else:
+            for param in ["p", "q"]:
+                try:
+                    val = getattr(self.key, param)
+                except AttributeError:
+                    pass
+                else:
+                    if val:
+                        setattr(self, param, val)
 
     def load(self, filename):
         """
@@ -721,9 +738,8 @@ class KEYS(object):
         _res = {}
         for kty, k in [(k.kty, k) for k in self._keys]:
             if kty not in ["RSA", "EC", "oct"]:
-                kty = kty.upper()
-                if kty in ["RSA", "EC"]:
-                    pass
+                if kty in ["rsa", "ec"]:
+                    kty = kty.upper()
                 else:
                     kty = kty.lower()
 

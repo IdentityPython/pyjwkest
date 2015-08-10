@@ -14,3 +14,5 @@ else:
     _jw = jws.factory(jwt)
     if _jw:
         print("jws")
+        print(_jw.jwt.headers)
+        print(_jw.jwt.part[1])

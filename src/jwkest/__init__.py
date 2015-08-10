@@ -64,6 +64,10 @@ class MissingKey(JWKESTException):
     """ No usable key """
 
 
+class UnknownKeytype(Invalid):
+    """An unknown key type"""
+
+
 # ---------------------------------------------------------------------------
 # Helper functions
 

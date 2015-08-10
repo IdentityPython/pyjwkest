@@ -34,5 +34,18 @@ def test_pack_unpack():
         "http://example.com/is_root"]
 
 
+def test_unpack_str():
+    _jwt = JWT(**{"alg": "none"})
+    payload = {"iss": "joe", "exp": 1300819380,
+               "http://example.com/is_root": True}
+    jwt = _jwt.pack(parts=[payload, ""])
+
+    jwt = jwt.decode('utf-8')
+
+    _jwt2 = JWT().unpack(jwt)
+    assert _jwt2
+    out_payload = _jwt2.payload()
+
+
 if __name__ == "__main__":
-    test_pack_unpack()
+    test_unpack_str()
