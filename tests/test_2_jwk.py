@@ -1,5 +1,6 @@
 from __future__ import print_function
 import base64
+from collections import Counter
 import json
 from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import _RSAobj
@@ -26,6 +27,7 @@ BASEDIR = os.path.abspath(os.path.dirname(__file__))
 def full_path(local_file):
     return os.path.join(BASEDIR, local_file)
 
+
 CERT = full_path("cert.pem")
 KEY = full_path("server.key")
 
@@ -39,7 +41,7 @@ JWK = {"keys": [
 
 
 def _eq(l1, l2):
-    return set(l1) == set(l2)
+    return Counter(l1) == Counter(l2)
 
 
 def test_urlsafe_base64decode():
@@ -163,12 +165,13 @@ def test_load_jwk():
 
 
 def test_import_rsa_key():
-    _ckey = RSA.importKey(open(KEY, 'r').read())
+    _ckey = RSA.importKey(open(full_path(KEY), 'r').read())
     assert isinstance(_ckey, _RSAobj)
     djwk = jwk_wrap(_ckey).to_dict()
     print(djwk)
-    assert _eq(list(djwk.keys()), ["kty", "e", "n", "d"])
-    assert djwk["n"] == b'5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
+    assert _eq(djwk.keys(), ["kty", "e", "n", "p", "q", "d"])
+    assert djwk[
+               "n"] == b'5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
     assert djwk['e'] == b'AQAB'
 
 
@@ -180,6 +183,7 @@ def test_serialize_rsa_pub_key():
     restored_key = RSAKey(**d_rsakey)
 
     assert rsa_eq(restored_key, rsakey)
+
 
 def test_serialize_rsa_priv_key():
     rsakey = RSAKey(key=import_rsa_key_from_file(full_path("rsa.key")))
@@ -276,7 +280,7 @@ JWKS = {"keys": [
         "y": u'GOd2jL_6wa0cfnyA0SmEhok9fkYEnAHFKLLM79BZ8_E',
         "crv": "P-256"
     }
-    ]}
+]}
 
 
 def test_keys():
@@ -291,10 +295,11 @@ def test_keys():
     assert len(keyl['oct']) == 1
     assert len(keyl['ec']) == 1
 
+
 def test_private_key_from_jwk():
     keys = []
 
-    kspec = json.loads(open("jwk_private_key.json").read())
+    kspec = json.loads(open(full_path("jwk_private_key.json")).read())
     keys.append(keyrep(kspec))
 
     key = keys[0]
@@ -315,6 +320,7 @@ def test_private_key_from_jwk():
                ['n', 'alg', 'dq', 'e', 'q', 'p', 'dp', 'd', 'ext', 'key_ops',
                 'kty', 'qi'])
     assert _eq(list(_d.keys()), kspec.keys())
+
 
 if __name__ == "__main__":
     test_private_key_from_jwk()
