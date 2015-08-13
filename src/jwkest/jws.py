@@ -193,7 +193,7 @@ SIGNER_ALGS = {
 
     'PS256': PSSSigner(SHA256),
     'PS384': PSSSigner(SHA384),
-    'PS521': PSSSigner(SHA512),
+    'PS512': PSSSigner(SHA512),
 
     'none': None
 }

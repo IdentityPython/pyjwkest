@@ -15,7 +15,8 @@ from Crypto.Util.asn1 import DerSequence
 
 from requests import request
 
-from jwkest import base64url_to_long, as_bytes
+from jwkest import base64url_to_long
+from jwkest import as_bytes
 from jwkest import base64_to_long
 from jwkest import long_to_base64
 from jwkest import JWKESTException
@@ -446,8 +447,8 @@ class ECKey(Key):
     public_members = ["kty", "alg", "use", "kid", "crv", "x", "y"]
 
     def __init__(self, kty="EC", alg="", use="", kid="", key=None,
-                 crv="", x="", y="", d="", curve=None):
-        Key.__init__(self, kty, alg, use, kid, key)
+                 crv="", x="", y="", d="", curve=None, **kwargs):
+        Key.__init__(self, kty, alg, use, kid, key, **kwargs)
         self.crv = crv
         self.x = x
         self.y = y
@@ -533,8 +534,8 @@ class SYMKey(Key):
     public_members = members[:]
 
     def __init__(self, kty="oct", alg="", use="", kid="", key=None,
-                 x5c=None, x5t="", x5u="", k="", mtrl=""):
-        Key.__init__(self, kty, alg, use, kid, as_bytes(key), x5c, x5t, x5u)
+                 x5c=None, x5t="", x5u="", k="", mtrl="", **kwargs):
+        Key.__init__(self, kty, alg, use, kid, as_bytes(key), x5c, x5t, x5u, **kwargs)
         self.k = k
         if not self.key and self.k:
             if isinstance(self.k, str):
