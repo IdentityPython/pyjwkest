@@ -40,8 +40,6 @@ def test_unpack_str():
                "http://example.com/is_root": True}
     jwt = _jwt.pack(parts=[payload, ""])
 
-    jwt = jwt.decode('utf-8')
-
     _jwt2 = JWT().unpack(jwt)
     assert _jwt2
     out_payload = _jwt2.payload()
