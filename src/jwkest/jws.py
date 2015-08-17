@@ -328,7 +328,7 @@ class JWx(object):
             self._dict.keys()))
 
         if "jwk" in self:
-            return self["jwk"]
+            return [self["jwk"]]
         elif "jku" in self:
             keys = KEYS()
             keys.load_from_url(self["jku"])
