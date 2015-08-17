@@ -364,10 +364,11 @@ class JWx(object):
             logger.error("Unknown arlgorithm '%s'" % alg)
             return []
 
+        logger.debug("Picking key by key type={}".format(_k))
         _kty = [_k.lower(), _k.upper(), _k.lower().encode("utf-8"),
                 _k.upper().encode("utf-8")]
         _keys = [k for k in keys if k.kty in _kty]
-
+        logger.debug("Keys of key type:{}".format(_keys))
         try:
             _kid = self["kid"]
         except KeyError:
