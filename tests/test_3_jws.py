@@ -468,9 +468,9 @@ def test_pick():
     keys = KEYS()
     keys.load_dict(JWK2)
     _jws = JWS("foobar", alg="RS256", kid="MnC_VZcATfM5pOYiJHMba9goEKY")
-    _keys = _jws._pick_keys(keys, "sig")
+    _keys = _jws._pick_keys(keys, use="sig")
     assert len(_keys) == 1
 
 
 if __name__ == "__main__":
-    test_pick()
+    test_signer_ps512()

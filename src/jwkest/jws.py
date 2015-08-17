@@ -324,8 +324,11 @@ class JWx(object):
         return _header
 
     def _get_keys(self):
+        logger.debug("_get_keys(): self._dict.keys={}".format(
+            self._dict.keys()))
+
         if "jwk" in self:
-            return [self["jwk"]]
+            return self["jwk"]
         elif "jku" in self:
             keys = KEYS()
             keys.load_from_url(self["jku"])
@@ -371,7 +374,7 @@ class JWx(object):
             _kid = None
 
         logger.debug("Picking key based on alg={}, kid={} and use={}".format(
-            alg, use, _kid))
+            alg, _kid, use))
 
         pkey = []
         for _key in _keys:
@@ -528,14 +531,14 @@ class JWS(JWx):
         else:
             _keys = self._pick_keys(self._get_keys())
 
-        verifier = SIGNER_ALGS[_alg]
-
         if not _keys:
             if "kid" in self:
                 raise NoSuitableSigningKeys(
                     "No key with kid: %s" % (self["kid"]))
             else:
                 raise NoSuitableSigningKeys("No key for algorithm: %s" % _alg)
+
+        verifier = SIGNER_ALGS[_alg]
 
         for key in _keys:
             try:
