@@ -365,11 +365,19 @@ class JWx(object):
                 _k.upper().encode("utf-8")]
         _keys = [k for k in keys if k.kty in _kty]
 
+        try:
+            _kid = self["kid"]
+        except KeyError:
+            _kid = None
+
+        logger.debug("Picking key based on alg={}, kid={} and use={}".format(
+            alg, use, _kid))
+
         pkey = []
         for _key in _keys:
-            if "kid" in self and self["kid"]:
+            if _kid:
                 try:
-                    assert self["kid"] == _key.kid
+                    assert _kid == _key.kid
                 except (KeyError, AttributeError):
                     pass
                 except AssertionError:
@@ -525,8 +533,7 @@ class JWS(JWx):
         if not _keys:
             if "kid" in self:
                 raise NoSuitableSigningKeys(
-                    "No key for algorithm: %s with kid: %s" % (_alg,
-                                                               self["kid"]))
+                    "No key with kid: %s" % (self["kid"]))
             else:
                 raise NoSuitableSigningKeys("No key for algorithm: %s" % _alg)
 
