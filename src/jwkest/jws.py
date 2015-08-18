@@ -368,7 +368,6 @@ class JWx(object):
         _kty = [_k.lower(), _k.upper(), _k.lower().encode("utf-8"),
                 _k.upper().encode("utf-8")]
         _keys = [k for k in keys if k.kty in _kty]
-        logger.debug("Keys of key type:{}".format(_keys))
         try:
             _kid = self["kid"]
         except KeyError:
@@ -379,6 +378,7 @@ class JWx(object):
 
         pkey = []
         for _key in _keys:
+            logger.debug("KEY: {}".format(_key))
             if _kid:
                 try:
                     assert _kid == _key.kid
