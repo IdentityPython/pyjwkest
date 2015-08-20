@@ -23,7 +23,7 @@ from Crypto.Signature import PKCS1_PSS
 from Crypto.Util.number import bytes_to_long
 import sys
 
-from jwkest import b64d
+from jwkest import b64d, as_unicode
 from jwkest import b64e
 from jwkest import constant_time_compare
 from jwkest import safe_str_cmp
@@ -74,11 +74,11 @@ class SignerAlgError(JWSException):
 def left_hash(msg, func="HS256"):
     """ 128 bits == 16 bytes """
     if func == 'HS256':
-        return b64e(sha256_digest(msg)[:16])
+        return as_unicode(b64e(sha256_digest(msg)[:16]))
     elif func == 'HS384':
-        return b64e(sha384_digest(msg)[:24])
+        return as_unicode(b64e(sha384_digest(msg)[:24]))
     elif func == 'HS512':
-        return b64e(sha512_digest(msg)[:32])
+        return as_unicode(b64e(sha512_digest(msg)[:32]))
 
 
 def mpint(b):
@@ -249,10 +249,7 @@ class JWx(object):
     """
 
     def __init__(self, msg=None, with_digest=False, **kwargs):
-        if six.PY3 and isinstance(msg, six.string_types):
-            self.msg = msg.encode("utf-8")
-        else:
-            self.msg = msg
+        self.msg = msg
 
         self._dict = {}
         self.with_digest = with_digest
@@ -492,9 +489,9 @@ class JWS(JWx):
             raise UnknownAlgorithm(_alg)
 
         _input = jwt.pack(parts=[self.msg])
-        sig = _signer.sign(_input, key.get_key(alg=_alg, private=True))
+        sig = _signer.sign(_input.encode("utf-8"), key.get_key(alg=_alg, private=True))
         logger.debug("Signed message using key with kid=%s" % key.kid)
-        return b".".join([_input, b64encode_item(sig)])
+        return ".".join([_input, b64encode_item(sig).decode("utf-8")])
 
     def verify_compact(self, jws, keys=None, allow_none=False, sigalg=None):
         """

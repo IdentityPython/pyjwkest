@@ -193,13 +193,13 @@ def test_hmac_from_keyrep():
 
 
 def test_left_hash_hs256():
-    hsh = jws.left_hash(b'Please take a moment to register today')
-    assert hsh == b'rCFHVJuxTqRxOsn2IUzgvA'
+    hsh = jws.left_hash('Please take a moment to register today')
+    assert hsh == 'rCFHVJuxTqRxOsn2IUzgvA'
 
 
 def test_left_hash_hs512():
-    hsh = jws.left_hash(b'Please take a moment to register today', "HS512")
-    assert hsh == b'_h6feWLt8zbYcOFnaBmekTzMJYEHdVTaXlDgJSWsEeY'
+    hsh = jws.left_hash('Please take a moment to register today', "HS512")
+    assert hsh == '_h6feWLt8zbYcOFnaBmekTzMJYEHdVTaXlDgJSWsEeY'
 
 
 def test_rs256():
@@ -349,7 +349,7 @@ def test_signer_ps256_fail():
     keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
     #keys[0]._keytype = "private"
     _jws = JWS(payload, alg="PS256")
-    _jwt = _jws.sign_compact(keys)[:-5] + b'abcde'
+    _jwt = _jws.sign_compact(keys)[:-5] + 'abcde'
 
     _rj = JWS()
     try:
@@ -428,9 +428,9 @@ def test_signer_protected_headers():
 
     exp_protected = protected.copy()
     exp_protected['alg'] = 'ES256'
-    enc_header, enc_payload, sig = _jwt.split(b'.')
-    assert json.loads(b64d(enc_header).decode("utf-8")) == exp_protected
-    assert b64d(enc_payload).decode("utf-8") == payload
+    enc_header, enc_payload, sig = _jwt.split('.')
+    assert json.loads(b64d(enc_header.encode("utf-8")).decode("utf-8")) == exp_protected
+    assert b64d(enc_payload.encode("utf-8")).decode("utf-8") == payload
 
     _rj = JWS()
     info = _rj.verify_compact(_jwt, keys)
@@ -444,7 +444,7 @@ def test_verify_protected_headers():
     protected = dict(header1=u"header1 is protected",
         header2="header2 is protected too", a=1)
     _jwt = _jws.sign_compact(keys, protected=protected)
-    protectedHeader, enc_payload, sig = _jwt.split(b".")
+    protectedHeader, enc_payload, sig = _jwt.split(".")
     data = dict(payload=enc_payload, signatures=[
         dict(
             header=dict(alg=u"ES256", jwk=_key.serialize()),

@@ -13,7 +13,7 @@ def test_pack_jwt():
     jwt = _jwt.pack(parts=[{"iss": "joe", "exp": 1300819380,
                             "http://example.com/is_root": True}, ""])
 
-    p = jwt.split(b'.')
+    p = jwt.split('.')
     assert len(p) == 3
 
 
@@ -39,8 +39,6 @@ def test_unpack_str():
     payload = {"iss": "joe", "exp": 1300819380,
                "http://example.com/is_root": True}
     jwt = _jwt.pack(parts=[payload, ""])
-
-    jwt = jwt.decode('utf-8')
 
     _jwt2 = JWT().unpack(jwt)
     assert _jwt2

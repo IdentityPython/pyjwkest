@@ -16,6 +16,7 @@ Performance should be reasonable, since the heavy lifting is all done in
 PyCrypto's AES.
 """
 from __future__ import division
+
 try:
     from builtins import hex
     from builtins import range
@@ -39,7 +40,7 @@ def aes_unwrap_key_and_iv(kek, wrapped):
             B = decrypt(ciphertext)
             a = QUAD.unpack(B[:8])[0]
             r[i] = B[8:]
-    return "".join(r[1:]), a
+    return b"".join(r[1:]), a
 
 
 def aes_unwrap_key(kek, wrapped, iv=0xa6a6a6a6a6a6a6a6):

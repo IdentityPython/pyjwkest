@@ -16,6 +16,7 @@ from Crypto.Util.asn1 import DerSequence
 from requests import request
 
 from jwkest import base64url_to_long
+from jwkest import as_bytes
 from jwkest import base64_to_long
 from jwkest import long_to_base64
 from jwkest import JWKESTException
@@ -66,15 +67,15 @@ def intarr2str(arr):
 
 
 def sha256_digest(msg):
-    return hashlib.sha256(msg).digest()
+    return hashlib.sha256(as_bytes(msg)).digest()
 
 
 def sha384_digest(msg):
-    return hashlib.sha384(msg).digest()
+    return hashlib.sha384(as_bytes(msg)).digest()
 
 
 def sha512_digest(msg):
-    return hashlib.sha512(msg).digest()
+    return hashlib.sha512(as_bytes(msg)).digest()
 
 
 # =============================================================================
@@ -534,7 +535,7 @@ class SYMKey(Key):
 
     def __init__(self, kty="oct", alg="", use="", kid="", key=None,
                  x5c=None, x5t="", x5u="", k="", mtrl="", **kwargs):
-        Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u, **kwargs)
+        Key.__init__(self, kty, alg, use, kid, as_bytes(key), x5c, x5t, x5u, **kwargs)
         self.k = k
         if not self.key and self.k:
             if isinstance(self.k, str):

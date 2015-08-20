@@ -18,7 +18,7 @@ from Crypto.Util.number import long_to_bytes
 from Crypto.Cipher import PKCS1_v1_5
 from Crypto.Cipher import PKCS1_OAEP
 
-from jwkest import b64d
+from jwkest import b64d, as_bytes
 from jwkest import b64e
 from jwkest import JWKESTException
 from jwkest import MissingKey
@@ -404,7 +404,7 @@ class JWE_SYM(JWe):
 
         # If no iv and cek are given generate them
         cek, iv = self._generate_key_and_iv(self["enc"], cek, iv)
-        if isinstance(key, six.string_types):
+        if isinstance(key, six.binary_type):
             kek = key
         else:
             kek = intarr2str(key)
@@ -415,7 +415,7 @@ class JWE_SYM(JWe):
 
         _enc = self["enc"]
 
-        ctxt, tag, cek = self.enc_setup(_enc, _msg, jwe.b64_encode_header(),
+        ctxt, tag, cek = self.enc_setup(_enc, _msg.encode(), jwe.b64_encode_header(),
                                         cek, iv=iv)
         return jwe.pack(parts=[jek, iv, ctxt, tag])
 
@@ -456,7 +456,7 @@ class JWE_RSA(JWe):
         :return: A jwe
         """
 
-        _msg = self.msg
+        _msg = as_bytes(self.msg)
         if "zip" in self:
             if self["zip"] == "DEF":
                 _msg = zlib.compress(_msg)
@@ -681,7 +681,7 @@ class JWE(JWx):
         for key in keys:
             _key = key.encryption_key(alg=_alg, private=False)
             try:
-                msg = decrypter.decrypt(bytes(token), _key)
+                msg = decrypter.decrypt(as_bytes(token), _key)
             except (KeyError, DecryptionFailed):
                 pass
             else:

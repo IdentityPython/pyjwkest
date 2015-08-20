@@ -1,6 +1,6 @@
 import json
 import six
-from jwkest import b64d
+from jwkest import b64d, as_unicode
 from jwkest import b64e
 from jwkest import BadSyntax
 
@@ -58,7 +58,7 @@ class JWT(object):
         part = split_token(token)
         self.b64part = part
         self.part = [b64d(p) for p in part]
-        self.headers = json.loads(self.part[0].decode("utf-8"))
+        self.headers = json.loads(self.part[0].decode())
         return self
 
     def pack(self, parts, headers=None):
@@ -77,10 +77,10 @@ class JWT(object):
         _all = self.b64part = [ self.b64part[0] ]
         _all.extend([b64encode_item(p) for p in parts])
 
-        return b".".join(_all)
+        return ".".join([a.decode() for a in _all])
 
     def payload(self):
-        _msg = self.part[1].decode("utf-8")
+        _msg = as_unicode(self.part[1])
 
         # If not JSON web token assume JSON
         if "cty" in self.headers and self.headers["cty"].lower() != "jwt":
