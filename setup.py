@@ -23,7 +23,7 @@ __author__ = 'rohe0002'
 
 setup(
     name="pyjwkest",
-    version="1.0.2",
+    version="1.0.3",
     description="Python implementation of JWT, JWE, JWS and JWK",
     author="Roland Hedberg",
     author_email="roland.hedberg@adm.umu.se",
