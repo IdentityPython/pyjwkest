@@ -222,7 +222,8 @@ SUPPORTED = {
     "alg": ["RSA1_5", "RSA-OAEP", "A128KW", "A192KW", "A256KW",
             "ECDH-ES", "ECDH-ES+A128KW", "ECDH-ES+A192KW", "ECDH-ES+A256KW"],
     "enc": ["A128CBC-HS256", "A192CBC-HS384", "A256CBC-HS512",
-            "A128GCM", "A192GCM", "A256GCM"],
+            #"A128GCM", "A192GCM",
+            "A256GCM"],
 }
 
 
@@ -645,8 +646,8 @@ class JWE(JWx):
 
             try:
                 token = encrypter.encrypt(_key, **kwargs)
-            except TypeError:
-                raise
+            except TypeError as err:
+                raise err
             else:
                 logger.debug(
                     "Encrypted message using key with kid=%s" % key.kid)
