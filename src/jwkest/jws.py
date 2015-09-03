@@ -321,7 +321,7 @@ class JWx(object):
         return _header
 
     def _get_keys(self):
-        logger.debug("_get_keys(): self._dict.keys={}".format(
+        logger.debug("_get_keys(): self._dict.keys={0}".format(
             self._dict.keys()))
 
         if "jwk" in self:
@@ -361,7 +361,7 @@ class JWx(object):
             logger.error("Unknown arlgorithm '%s'" % alg)
             return []
 
-        logger.debug("Picking key by key type={}".format(_k))
+        logger.debug("Picking key by key type={0}".format(_k))
         _kty = [_k.lower(), _k.upper(), _k.lower().encode("utf-8"),
                 _k.upper().encode("utf-8")]
         _keys = [k for k in keys if k.kty in _kty]
@@ -370,12 +370,12 @@ class JWx(object):
         except KeyError:
             _kid = None
 
-        logger.debug("Picking key based on alg={}, kid={} and use={}".format(
+        logger.debug("Picking key based on alg={0}, kid={1} and use={2}".format(
             alg, _kid, use))
 
         pkey = []
         for _key in _keys:
-            logger.debug("KEY: {}".format(_key))
+            logger.debug("KEY: {0}".format(_key))
             if _kid:
                 try:
                     assert _kid == _key.kid
@@ -519,7 +519,7 @@ class JWS(JWx):
                     raise SignerAlgError("none not allowed")
 
         if sigalg and sigalg != jwt.headers["alg"]:
-            raise SignerAlgError("Expected {} got {}".format(
+            raise SignerAlgError("Expected {0} got {1}".format(
                 sigalg, jwt.headers["alg"]))
 
         self["alg"] = _alg = jwt.headers["alg"]
