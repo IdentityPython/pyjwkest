@@ -206,7 +206,7 @@ ECKEY = {
 def test_import_export_eckey():
     _key = ECKey(**ECKEY)
     _key.deserialize()
-    assert _eq(list(_key.keys()), ["y", "x", "crv", "kty"])
+    assert _eq(list(_key.keys()), ["y", "x", "d", "crv", "kty"])
 
 
 def test_create_eckey():

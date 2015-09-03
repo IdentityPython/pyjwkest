@@ -222,7 +222,7 @@ class Key(object):
         self.inactive_since = 0
 
     def to_dict(self):
-        res = self.serialize()
+        res = self.serialize(private=True)
         res.update(self.extra_args)
         return res
 
@@ -384,10 +384,18 @@ class RSAKey(Key):
             raise SerializationNotPossible()
 
         res = self.common()
-        for param in self.longs:
+
+        public_longs = list(set(self.public_members) & set(self.longs))
+        for param in public_longs:
             item = getattr(self, param)
             if item:
                 res[param] = long_to_base64(item)
+
+        if private:
+            for param in self.longs:
+                item = getattr(self, param)
+                if item:
+                    res[param] = long_to_base64(item)
         return res
 
     def _split(self):
