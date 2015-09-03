@@ -29,12 +29,12 @@ class NISTEllipticCurve(object):
         if name == "P-521" or name == b'P-521':
             return NISTEllipticCurve(521)
         else:
-            raise Exception("Unknown curve {}".format(name))
+            raise Exception("Unknown curve {0}".format(name))
 
     # Get the name of this curve
     # XXX This only works because we only support prime curves right now
     def name(self):
-        return "P-{}".format(self.bits)
+        return "P-{0}".format(self.bits)
 
     # Integer-to-byte-string conversion
     def int2bytes(self, x):
