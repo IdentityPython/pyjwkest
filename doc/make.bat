@@ -33,11 +33,8 @@ if "%1" == "help" (
 	echo.  texinfo    to make Texinfo files
 	echo.  gettext    to make PO message catalogs
 	echo.  changes    to make an overview over all changed/added/deprecated items
-<<<<<<< HEAD
-=======
 	echo.  xml        to make Docutils-native XML files
 	echo.  pseudoxml  to make pseudoxml-XML files for display purposes
->>>>>>> d8858378e9d3351804dba5654444cc23b9e1c07c
 	echo.  linkcheck  to check all external links for integrity
 	echo.  doctest    to run all doctests embedded in the documentation if enabled
 	goto end
@@ -49,8 +46,6 @@ if "%1" == "clean" (
 	goto end
 )
 
-<<<<<<< HEAD
-=======
 
 %SPHINXBUILD% 2> nul
 if errorlevel 9009 (
@@ -65,7 +60,6 @@ if errorlevel 9009 (
 	exit /b 1
 )
 
->>>>>>> d8858378e9d3351804dba5654444cc23b9e1c07c
 if "%1" == "html" (
 	%SPHINXBUILD% -b html %ALLSPHINXOPTS% %BUILDDIR%/html
 	if errorlevel 1 exit /b 1
@@ -121,15 +115,9 @@ if "%1" == "qthelp" (
 	echo.
 	echo.Build finished; now you can run "qcollectiongenerator" with the ^
 .qhcp project file in %BUILDDIR%/qthelp, like this:
-<<<<<<< HEAD
 	echo.^> qcollectiongenerator %BUILDDIR%\qthelp\pyjwkest.qhcp
 	echo.To view the help file:
 	echo.^> assistant -collectionFile %BUILDDIR%\qthelp\pyjwkest.ghc
-=======
-	echo.^> qcollectiongenerator %BUILDDIR%\qthelp\pyoidc.qhcp
-	echo.To view the help file:
-	echo.^> assistant -collectionFile %BUILDDIR%\qthelp\pyoidc.ghc
->>>>>>> d8858378e9d3351804dba5654444cc23b9e1c07c
 	goto end
 )
 
@@ -157,8 +145,6 @@ if "%1" == "latex" (
 	goto end
 )
 
-<<<<<<< HEAD
-=======
 if "%1" == "latexpdf" (
 	%SPHINXBUILD% -b latex %ALLSPHINXOPTS% %BUILDDIR%/latex
 	cd %BUILDDIR%/latex
@@ -179,7 +165,6 @@ if "%1" == "latexpdfja" (
 	goto end
 )
 
->>>>>>> d8858378e9d3351804dba5654444cc23b9e1c07c
 if "%1" == "text" (
 	%SPHINXBUILD% -b text %ALLSPHINXOPTS% %BUILDDIR%/text
 	if errorlevel 1 exit /b 1
@@ -238,8 +223,6 @@ results in %BUILDDIR%/doctest/output.txt.
 	goto end
 )
 
-<<<<<<< HEAD
-=======
 if "%1" == "xml" (
 	%SPHINXBUILD% -b xml %ALLSPHINXOPTS% %BUILDDIR%/xml
 	if errorlevel 1 exit /b 1
@@ -256,5 +239,4 @@ if "%1" == "pseudoxml" (
 	goto end
 )
 
->>>>>>> d8858378e9d3351804dba5654444cc23b9e1c07c
 :end
