@@ -487,7 +487,7 @@ class ECKey(Key):
         self.curve = NISTEllipticCurve.by_name(self.crv)
         if self.d:
             try:
-                if isinstance(self.d, str):
+                if isinstance(self.d, six.string_types):
                     self.d = deser(self.d)
             except ValueError as err:
                 raise DeSerializationNotPossible(str(err))
