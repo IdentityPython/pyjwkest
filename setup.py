@@ -16,14 +16,19 @@
 #
 
 import glob
+import re
 
 from setuptools import setup
 
 __author__ = 'rohe0002'
 
+with open('src/jwkest/__init__.py', 'r') as fd:
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+                        fd.read(), re.MULTILINE).group(1)
+
 setup(
     name="pyjwkest",
-    version="1.0.4.beta",
+    version=version,
     description="Python implementation of JWT, JWE, JWS and JWK",
     author="Roland Hedberg",
     author_email="roland.hedberg@adm.umu.se",

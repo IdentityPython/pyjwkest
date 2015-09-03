@@ -13,6 +13,8 @@ except ImportError:
 
 from binascii import unhexlify
 
+__version__ = "1.0.4.beta"
+
 logger = logging.getLogger(__name__)
 
 JWT_TYPES = (u"JWT", u"application/jws", u"JWS", u"JWE")
