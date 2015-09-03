@@ -1,12 +1,12 @@
 .. _howto:
 
-How to use pyOIDC
-=================
+How to use pyJWKEST
+===================
 
 :Release: |release|
 :Date: |today|
 
-Before you can use pyOIDC, you'll need to get it installed.
+Before you can use pyJWKEST, you'll need to get it installed.
 If you have not done it yet, read the :ref:`install`
 
 Once you have it installed you can try to run the examples.
