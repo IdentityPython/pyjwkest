@@ -77,6 +77,7 @@ class DecryptionFailed(JWEException):
 class WrongEncryptionAlgorithm(JWEException):
     pass
 
+
 # ---------------------------------------------------------------------------
 # Base class
 
@@ -106,7 +107,6 @@ class Encrypter(object):
 
 
 class RSAEncrypter(Encrypter):
-
     def encrypt(self, msg, key, padding="pkcs1_padding"):
         if padding == "pkcs1_padding":
             cipher = PKCS1_v1_5.new(key)
@@ -126,7 +126,7 @@ class RSAEncrypter(Encrypter):
                 dsize = SHA.digest_size
             else:
                 dsize = 0
-            sentinel = Random.new().read(32+dsize)
+            sentinel = Random.new().read(32 + dsize)
             text = cipher.decrypt(ciphertext, sentinel)
             if dsize:
                 _digest = text[-dsize:]
@@ -146,6 +146,7 @@ class RSAEncrypter(Encrypter):
             raise Exception("Unsupported padding")
 
         return text
+
 
 # ---------------------------------------------------------------------------
 
@@ -215,6 +216,7 @@ def keysize(spec):
         return int(spec[1:4])
     return 0
 
+
 ENC2ALG = {"A128CBC": "aes_128_cbc", "A192CBC": "aes_192_cbc",
            "A256CBC": "aes_256_cbc"}
 
@@ -222,7 +224,7 @@ SUPPORTED = {
     "alg": ["RSA1_5", "RSA-OAEP", "A128KW", "A192KW", "A256KW",
             "ECDH-ES", "ECDH-ES+A128KW", "ECDH-ES+A192KW", "ECDH-ES+A256KW"],
     "enc": ["A128CBC-HS256", "A192CBC-HS384", "A256CBC-HS512",
-            #"A128GCM", "A192GCM",
+            # "A128GCM", "A192GCM",
             "A256GCM"],
 }
 
@@ -236,6 +238,7 @@ def alg2keytype(alg):
         return "EC"
     else:
         return None
+
 
 # =============================================================================
 
@@ -416,7 +419,8 @@ class JWE_SYM(JWe):
 
         _enc = self["enc"]
 
-        ctxt, tag, cek = self.enc_setup(_enc, _msg.encode(), jwe.b64_encode_header(),
+        ctxt, tag, cek = self.enc_setup(_enc, _msg.encode(),
+                                        jwe.b64_encode_header(),
                                         cek, iv=iv)
         return jwe.pack(parts=[jek, iv, ctxt, tag])
 
@@ -513,9 +517,9 @@ class JWE_RSA(JWe):
         except AssertionError:
             raise NotSupportedAlgorithm(enc)
 
-        msg, flag = self._decrypt(enc, cek, jwe.ciphertext(), 
+        msg, flag = self._decrypt(enc, cek, jwe.ciphertext(),
                                   jwe.b64_protected_header(),
-                                  jwe.initialization_vector(), 
+                                  jwe.initialization_vector(),
                                   jwe.authentication_tag())
         if flag is False:
             raise DecryptionFailed()
@@ -550,7 +554,7 @@ class JWE_EC(JWe):
             "apu": b64e(apu),
             "apv": b64e(apv),
         }
-        
+
         cek, iv = self._generate_key_and_iv(self.enc)
         if self.alg == "ECDH-ES":
             try:
@@ -558,8 +562,8 @@ class JWE_EC(JWe):
             except KeyError:
                 raise Exception(
                     "Unknown key length for algorithm %s" % self.enc)
-            
-            cek = ecdh_derive_key(curve, eprivk, key, apu, apv, self.enc, 
+
+            cek = ecdh_derive_key(curve, eprivk, key, apu, apv, self.enc,
                                   dk_len)
         elif self.alg in ["ECDH-ES+A128KW", "ECDH-ES+A192KW", "ECDH-ES+A256KW"]:
             _pre, _post = self.alg.split("+")
@@ -623,6 +627,7 @@ class JWE(JWx):
         elif _alg.startswith("A") and _alg.endswith("KW"):
             encrypter = JWE_SYM(self.msg, **self._dict)
         else:
+            logger.error("'{}' is not a supported algorithm".format(_alg))
             raise NotSupportedAlgorithm
 
         if keys:
@@ -631,6 +636,9 @@ class JWE(JWx):
             keys = self._pick_keys(self._get_keys(), use="enc")
 
         if not keys:
+            logger.error(
+                "Could not find any suitable encryption key for alg='{"
+                "}'".format(_alg))
             raise NoSuitableEncryptionKey(_alg)
 
         if cek:
@@ -650,20 +658,21 @@ class JWE(JWx):
                 raise err
             else:
                 logger.debug(
-                    "Encrypted message using key with kid=%s" % key.kid)
+                    "Encrypted message using key with kid={}".format(key.kid))
                 return token
 
+        logger.error("Could not find any suitable encryption key")
         raise NoSuitableEncryptionKey()
 
     def decrypt(self, token, keys=None, alg=None):
         jwe = JWEnc().unpack(token)
-        #header, ek, eiv, ctxt, tag = token.split(b".")
-        #self.parse_header(header)
+        # header, ek, eiv, ctxt, tag = token.split(b".")
+        # self.parse_header(header)
 
         _alg = jwe.headers["alg"]
         if alg and alg != _alg:
             raise WrongEncryptionAlgorithm()
-        
+
         if _alg in ["RSA-OAEP", "RSA1_5"]:
             decrypter = JWE_RSA(**self._dict)
         elif _alg.startswith("A") and _alg.endswith("KW"):
