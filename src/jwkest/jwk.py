@@ -393,6 +393,9 @@ class RSAKey(Key):
 
         if private:
             for param in self.longs:
+                if not private and param in ["d", "p", "q", "dp", "dq", "di",
+                                             "qi"]:
+                    continue
                 item = getattr(self, param)
                 if item:
                     res[param] = long_to_base64(item)
@@ -740,8 +743,8 @@ class KEYS(object):
     def by_kid(self, kid):
         return [k for k in self._keys if kid == k.kid]
 
-    def wrap_add(self, keyinst):
-        self._keys.append(jwk_wrap(keyinst))
+    def wrap_add(self, keyinst, use="", kid=''):
+        self._keys.append(jwk_wrap(keyinst, use, kid))
 
     def as_dict(self):
         _res = {}
