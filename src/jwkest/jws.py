@@ -368,7 +368,10 @@ class JWx(object):
         try:
             _kid = self["kid"]
         except KeyError:
-            _kid = None
+            try:
+                _kid = self.jwt.headers["kid"]
+            except (AttributeError, KeyError):
+                _kid = None
 
         logger.debug("Picking key based on alg={0}, kid={1} and use={2}".format(
             alg, _kid, use))
@@ -533,6 +536,9 @@ class JWS(JWx):
             if "kid" in self:
                 raise NoSuitableSigningKeys(
                     "No key with kid: %s" % (self["kid"]))
+            elif "kid" in self.jwt.headers:
+                raise NoSuitableSigningKeys(
+                    "No key with kid: %s" % (self.jwt.headers["kid"]))
             else:
                 raise NoSuitableSigningKeys("No key for algorithm: %s" % _alg)
 
