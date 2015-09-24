@@ -455,7 +455,7 @@ def test_verify_protected_headers():
             signature=sig,
         )
     ])
-    stream = io.StringIO(json.dumps(data))
+    stream = io.StringIO(json.dumps(data, ensure_ascii=False))
     _jws = JWS()
     assert _jws.verify_json(stream) == payload
 
