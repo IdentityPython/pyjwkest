@@ -149,14 +149,14 @@ def test_1():
 
 
 def test_hmac_256():
-    payload = b'Please take a moment to register today'
+    payload = 'Please take a moment to register today'
     keys = [SYMKey(key=jwkest.intarr2bin(HMAC_KEY))]
     _jws = JWS(payload, alg="HS256")
     _jwt = _jws.sign_compact(keys)
 
     info = JWS().verify_compact(_jwt, keys)
 
-    assert info == payload.decode("utf-8")
+    assert info == payload
 
 
 def test_hmac_384():
