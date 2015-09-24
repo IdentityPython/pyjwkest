@@ -3,6 +3,7 @@ import base64
 import logging
 import re
 import struct
+import six
 
 try:
     from builtins import zip
@@ -107,8 +108,9 @@ def long_to_base64(n):
 
 
 def base64_to_long(data):
-    # if isinstance(data, str):
-    #     data = bytes(data)
+    if isinstance(data, six.text_type):
+        data = data.encode("ascii")
+
     # urlsafe_b64decode will happily convert b64encoded data
     _d = base64.urlsafe_b64decode(bytes(data) + b'==')
     return intarr2long(struct.unpack('%sB' % len(_d), _d))

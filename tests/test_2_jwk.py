@@ -31,12 +31,12 @@ def full_path(local_file):
 CERT = full_path("cert.pem")
 KEY = full_path("server.key")
 
-N = b'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8'
-E = b'AQAB'
+N = 'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8'
+E = 'AQAB'
 
 JWK = {"keys": [
-    {'kty': 'RSA', 'use': 'foo', 'e': E.decode("utf-8"), 'kid': "abc",
-     'n': N.decode("utf8")}
+    {'kty': 'RSA', 'use': 'foo', 'e': E, 'kid': "abc",
+     'n': N}
 ]}
 
 
