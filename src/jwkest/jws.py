@@ -308,9 +308,9 @@ class JWx(object):
                     pass
 
         if "jwk" in self:
-            _header["jwk"] = self["jwk"].to_dict()
+            _header["jwk"] = self["jwk"].serialize()
         elif "jwk" in _extra:
-            _header["jwk"] = extra["jwk"].to_dict()
+            _header["jwk"] = extra["jwk"].serialize()
 
         if "kid" in self:
             try:

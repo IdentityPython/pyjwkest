@@ -287,7 +287,7 @@ def test_a_1_3b():
 def test_jws_1():
     msg = {"iss": "joe", "exp": 1300819380, "http://example.com/is_root": True}
     key = SYMKey(key=jwkest.intarr2bin(HMAC_KEY))
-    _jws = JWS(msg, cty="JWT", alg="HS256", jwk=key.to_dict())
+    _jws = JWS(msg, cty="JWT", alg="HS256", jwk=key.serialize())
     res = _jws.sign_compact()
 
     _jws2 = JWS(alg="HS256")

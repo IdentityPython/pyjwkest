@@ -222,6 +222,11 @@ class Key(object):
         self.inactive_since = 0
 
     def to_dict(self):
+        """
+        A wrapper for to_dict the makes sure that all the private information
+        as well as extra arguments are included. This method should *not* be
+        used for exporting information about the key.
+        """
         res = self.serialize(private=True)
         res.update(self.extra_args)
         return res
@@ -249,7 +254,7 @@ class Key(object):
     def serialize(self, private=False):
         """
         map key characteristics into attribute values that can be used
-        to create an on-the-wire represntation of the key
+        to create an on-the-wire representation of the key
         """
         pass
 
