@@ -104,7 +104,7 @@ def long_to_base64(n):
     if not len(data):
         data = '\x00'
     s = base64.urlsafe_b64encode(data).rstrip(b'=')
-    return s
+    return s.decode("ascii")
 
 
 def base64_to_long(data):

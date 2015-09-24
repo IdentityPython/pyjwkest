@@ -86,8 +86,8 @@ def test_kspec():
     print(_key)
     jwk = _key.serialize()
     assert jwk["kty"] == "RSA"
-    assert jwk["e"] == JWK["keys"][0]["e"].encode("utf-8")
-    assert jwk["n"] == JWK["keys"][0]["n"].encode("utf-8")
+    assert jwk["e"] == JWK["keys"][0]["e"]
+    assert jwk["n"] == JWK["keys"][0]["n"]
 
 
 def test_loads_0():
@@ -169,9 +169,8 @@ def test_import_rsa_key():
     djwk = jwk_wrap(_ckey).to_dict()
     print(djwk)
     assert _eq(djwk.keys(), ["kty", "e", "n", "p", "q", "d"])
-    assert djwk[
-               "n"] == b'5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
-    assert djwk['e'] == b'AQAB'
+    assert djwk["n"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
+    assert djwk['e'] == 'AQAB'
 
 
 def test_serialize_rsa_pub_key():
