@@ -19,6 +19,7 @@ from jwkest.jwk import pem_cert2rsa
 from jwkest.jwk import RSAKey
 from jwkest.jwk import base64_to_long
 import os.path
+import pytest
 
 __author__ = 'rohe0002'
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
@@ -54,14 +55,12 @@ def test_urlsafe_base64decode():
     s0 = base64.b64encode(data)
     # try to convert it back to long, should throw an exception if the strict
     # function is used
-    try:
-        l = base64url_to_long(s0)
-    except ValueError:
-        pass
-    else:
-        assert False
-    # Not else
+    with pytest.raises(ValueError):
+        base64url_to_long(s0)
+
+    # Not else, should not raise exception
     l = base64_to_long(s0)
+    assert l
 
 
 def test_pem_cert2rsa():
@@ -238,12 +237,7 @@ def test_cmp_rsa_ec():
 
     _key2 = ECKey(**ECKEY)
 
-    try:
-        assert _key1 == _key2
-    except AssertionError:
-        pass
-    else:
-        assert False
+    assert _key1 != _key2
 
 
 def test_cmp_neq_ec():
@@ -251,12 +245,7 @@ def test_cmp_neq_ec():
     _key1 = ECKey(x=pub[0], y=pub[1], d=priv, crv="P-256")
     _key2 = ECKey(**ECKEY)
 
-    try:
-        assert _key1 == _key2
-    except AssertionError:
-        pass
-    else:
-        assert False
+    assert _key1 != _key2
 
 
 JWKS = {"keys": [
