@@ -26,6 +26,7 @@ BASEDIR = os.path.abspath(os.path.dirname(__file__))
 def full_path(local_file):
     return os.path.join(BASEDIR, local_file)
 
+
 KEY = full_path("server.key")
 
 JWK = {"keys": [{'alg': 'RSA',
@@ -43,7 +44,6 @@ HMAC_KEY = [3, 35, 53, 75, 43, 15, 165, 188, 131, 126, 6, 101, 119, 123, 166,
             46, 191, 211, 251, 90, 146, 210, 6, 71, 239, 150, 138, 180, 195,
             119, 98, 61, 34, 61, 46, 33, 114, 5, 46, 79, 8, 192, 205, 154, 245,
             103, 208, 128, 163]
-
 
 JWKS = {"keys": [
     {
@@ -132,6 +132,7 @@ JWK2 = {
 SIGKEYS = KEYS()
 SIGKEYS.load_dict(JWKS)
 
+
 def test_1():
     claimset = {"iss": "joe",
                 "exp": 1300819380,
@@ -205,7 +206,7 @@ def test_left_hash_hs512():
 def test_rs256():
     payload = "Please take a moment to register today"
     keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
-    #keys[0]._keytype = "private"
+    # keys[0]._keytype = "private"
     _jws = JWS(payload, alg="RS256")
     _jwt = _jws.sign_compact(keys)
 
@@ -218,7 +219,7 @@ def test_rs256():
 def test_rs384():
     payload = "Please take a moment to register today"
     keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
-    #keys[0]._keytype = "private"
+    # keys[0]._keytype = "private"
     _jws = JWS(payload, alg="RS384")
     _jwt = _jws.sign_compact(keys)
 
@@ -230,7 +231,7 @@ def test_rs384():
 def test_rs512():
     payload = "Please take a moment to register today"
     keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
-    #keys[0]._keytype = "private"
+    # keys[0]._keytype = "private"
     _jws = JWS(payload, alg="RS512")
     _jwt = _jws.sign_compact(keys)
 
@@ -323,7 +324,7 @@ def test_signer_es512():
     payload = "Please take a moment to register today"
     _key = ECKey().load_key(P521)
     keys = [_key]
-    #keys[0]._keytype = "private"
+    # keys[0]._keytype = "private"
     _jws = JWS(payload, alg="ES512")
     _jwt = _jws.sign_compact(keys)
 
@@ -335,7 +336,7 @@ def test_signer_es512():
 def test_signer_ps256():
     payload = "Please take a moment to register today"
     keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
-    #keys[0]._keytype = "private"
+    # keys[0]._keytype = "private"
     _jws = JWS(payload, alg="PS256")
     _jwt = _jws.sign_compact(keys)
 
@@ -347,7 +348,7 @@ def test_signer_ps256():
 def test_signer_ps256_fail():
     payload = "Please take a moment to register today"
     keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
-    #keys[0]._keytype = "private"
+    # keys[0]._keytype = "private"
     _jws = JWS(payload, alg="PS256")
     _jwt = _jws.sign_compact(keys)[:-5] + 'abcde'
 
@@ -363,7 +364,7 @@ def test_signer_ps256_fail():
 def test_signer_ps384():
     payload = "Please take a moment to register today"
     keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
-    #keys[0]._keytype = "private"
+    # keys[0]._keytype = "private"
     _jws = JWS(payload, alg="PS384")
     _jwt = _jws.sign_compact(keys)
 
@@ -376,7 +377,7 @@ def test_signer_ps512():
     payload = "Please take a moment to register today"
     # Key has to be big enough  > 512+512+2
     keys = [RSAKey(key=import_rsa_key_from_file(full_path("./size2048.key")))]
-    #keys[0]._keytype = "private"
+    # keys[0]._keytype = "private"
     _jws = JWS(payload, alg="PS512")
     _jwt = _jws.sign_compact(keys)
 
@@ -410,12 +411,13 @@ def test_sign_2():
          "use": "sig",
          "kid": "af22448d-4c7b-464d-b63a-f5bd90f6d7d1",
          "n": "o9g8DpUwBW6B1qmcm-TfEh4rNX7n1t38jdo4Gkl_cI3q--7n0Blg0kN88LHZvyZjUB2NhBdFYNxMP8ucy0dOXvWGWzaPmGnq3DM__lN8P4WjD1cCTAVEYKawNBAmGKqrFj1SgpPNsSqiqK-ALM1w6mZ-QGimjOgwCyJy3l9lzZh5D8tKnS2t1pZgE0X5P7lZQWHYpHPqp4jKhETzrCpPGfv0Rl6nmmjp7NlRYBkWKf_HEKE333J6M039m2FbKgxrBg3zmYYpmHuMzVgxxb8LSiv5aqyeyJjxM-YDUAgNQBfKNhONqXyu9DqtSprNkw6sqmuxK0QUVrNYl3b03PgS5Q"
-        }]}
+         }]}
 
     keys = KEYS()
     keys.load_dict(keyset)
     jws = JWS("payload", alg="RS512")
     jws.sign_compact(keys=keys)
+
 
 def test_signer_protected_headers():
     payload = "Please take a moment to register today"
@@ -423,7 +425,7 @@ def test_signer_protected_headers():
     keys = [_key]
     _jws = JWS(payload, alg="ES256")
     protected = dict(header1=u"header1 is protected",
-        header2="header2 is protected too", a=1)
+                     header2="header2 is protected too", a=1)
     _jwt = _jws.sign_compact(keys, protected=protected)
 
     exp_protected = protected.copy()
@@ -436,13 +438,14 @@ def test_signer_protected_headers():
     info = _rj.verify_compact(_jwt, keys)
     assert info == payload
 
+
 def test_verify_protected_headers():
     payload = "Please take a moment to register today"
     _key = ECKey().load_key(P256)
     keys = [_key]
     _jws = JWS(payload, alg="ES256")
     protected = dict(header1=u"header1 is protected",
-        header2="header2 is protected too", a=1)
+                     header2="header2 is protected too", a=1)
     _jwt = _jws.sign_compact(keys, protected=protected)
     protectedHeader, enc_payload, sig = _jwt.split(".")
     data = dict(payload=enc_payload, signatures=[
@@ -450,18 +453,11 @@ def test_verify_protected_headers():
             header=dict(alg=u"ES256", jwk=_key.serialize()),
             protected=protectedHeader,
             signature=sig,
-            )
-        ])
-    fobj = io.BytesIO(JSONEncoder().encode(data).encode("utf-8"))
+        )
+    ])
+    stream = io.StringIO(json.dumps(data))
     _jws = JWS()
-    reader = codecs.getreader("utf-8")
-    assert _jws.verify_json(reader(fobj)) == payload
-
-class JSONEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, bytes):
-            return o.decode('utf-8')
-        return json.JSONEncoder.default(self, o)
+    assert _jws.verify_json(stream) == payload
 
 
 def test_pick():
