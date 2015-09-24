@@ -166,10 +166,7 @@ def b64d(b):
     :param b: bytes
     """
 
-    if b.endswith(b'='):  # shouldn't but there you are
-        cb = b.split(b'=')[0]
-    else:
-        cb = b
+    cb = b.rstrip(b"=")  # shouldn't but there you are
 
     # Python's base64 functions ignore invalid characters, so we need to
     # check for them explicitly.
