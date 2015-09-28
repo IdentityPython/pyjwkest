@@ -19,6 +19,7 @@ from jwkest.jwk import pem_cert2rsa
 from jwkest.jwk import RSAKey
 from jwkest.jwk import base64_to_long
 import os.path
+import pytest
 
 __author__ = 'rohe0002'
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
@@ -31,12 +32,12 @@ def full_path(local_file):
 CERT = full_path("cert.pem")
 KEY = full_path("server.key")
 
-N = b'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8'
-E = b'AQAB'
+N = 'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8'
+E = 'AQAB'
 
 JWK = {"keys": [
-    {'kty': 'RSA', 'use': 'foo', 'e': E.decode("utf-8"), 'kid': "abc",
-     'n': N.decode("utf8")}
+    {'kty': 'RSA', 'use': 'foo', 'e': E, 'kid': "abc",
+     'n': N}
 ]}
 
 
@@ -54,14 +55,12 @@ def test_urlsafe_base64decode():
     s0 = base64.b64encode(data)
     # try to convert it back to long, should throw an exception if the strict
     # function is used
-    try:
-        l = base64url_to_long(s0)
-    except ValueError:
-        pass
-    else:
-        assert False
-    # Not else
+    with pytest.raises(ValueError):
+        base64url_to_long(s0)
+
+    # Not else, should not raise exception
     l = base64_to_long(s0)
+    assert l
 
 
 def test_pem_cert2rsa():
@@ -87,8 +86,8 @@ def test_kspec():
     print(_key)
     jwk = _key.serialize()
     assert jwk["kty"] == "RSA"
-    assert jwk["e"] == JWK["keys"][0]["e"].encode("utf-8")
-    assert jwk["n"] == JWK["keys"][0]["n"].encode("utf-8")
+    assert jwk["e"] == JWK["keys"][0]["e"]
+    assert jwk["n"] == JWK["keys"][0]["n"]
 
 
 def test_loads_0():
@@ -170,9 +169,8 @@ def test_import_rsa_key():
     djwk = jwk_wrap(_ckey).to_dict()
     print(djwk)
     assert _eq(djwk.keys(), ["kty", "e", "n", "p", "q", "d"])
-    assert djwk[
-               "n"] == b'5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
-    assert djwk['e'] == b'AQAB'
+    assert djwk["n"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
+    assert djwk['e'] == 'AQAB'
 
 
 def test_serialize_rsa_pub_key():
@@ -238,12 +236,7 @@ def test_cmp_rsa_ec():
 
     _key2 = ECKey(**ECKEY)
 
-    try:
-        assert _key1 == _key2
-    except AssertionError:
-        pass
-    else:
-        assert False
+    assert _key1 != _key2
 
 
 def test_cmp_neq_ec():
@@ -251,12 +244,7 @@ def test_cmp_neq_ec():
     _key1 = ECKey(x=pub[0], y=pub[1], d=priv, crv="P-256")
     _key2 = ECKey(**ECKEY)
 
-    try:
-        assert _key1 == _key2
-    except AssertionError:
-        pass
-    else:
-        assert False
+    assert _key1 != _key2
 
 
 JWKS = {"keys": [

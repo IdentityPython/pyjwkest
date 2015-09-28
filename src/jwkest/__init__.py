@@ -3,6 +3,7 @@ import base64
 import logging
 import re
 import struct
+import six
 
 try:
     from builtins import zip
@@ -103,12 +104,13 @@ def long_to_base64(n):
     if not len(data):
         data = '\x00'
     s = base64.urlsafe_b64encode(data).rstrip(b'=')
-    return s
+    return s.decode("ascii")
 
 
 def base64_to_long(data):
-    # if isinstance(data, str):
-    #     data = bytes(data)
+    if isinstance(data, six.text_type):
+        data = data.encode("ascii")
+
     # urlsafe_b64decode will happily convert b64encoded data
     _d = base64.urlsafe_b64decode(bytes(data) + b'==')
     return intarr2long(struct.unpack('%sB' % len(_d), _d))
@@ -164,10 +166,7 @@ def b64d(b):
     :param b: bytes
     """
 
-    if b.endswith(b'='):  # shouldn't but there you are
-        cb = b.split(b'=')[0]
-    else:
-        cb = b
+    cb = b.rstrip(b"=")  # shouldn't but there you are
 
     # Python's base64 functions ignore invalid characters, so we need to
     # check for them explicitly.
