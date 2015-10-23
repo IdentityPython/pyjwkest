@@ -14,7 +14,7 @@ except ImportError:
 
 from binascii import unhexlify
 
-__version__ = "1.0.6"
+__version__ = "1.0.7beta"
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +177,14 @@ def b64d(b):
         b = add_padding(b)
 
     return base64.urlsafe_b64decode(b)
+
+
+def b64e_enc_dec(str, encode, decode):
+    return base64.urlsafe_b64encode(str.encode(encode)).decode(decode)
+
+
+def b64d_enc_dec(str, encode, decode):
+    return base64.urlsafe_b64decode(str.encode(encode)).decode(decode)
 
 
 # 'Stolen' from Werkzeug

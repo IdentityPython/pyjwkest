@@ -481,6 +481,9 @@ class JWS(JWx):
             else:
                 raise NoSuitableSigningKeys("No key for algorithm: %s" % _alg)
 
+        if "typ" in self:
+            xargs["typ"] = self["typ"]
+
         jwt = JWSig(**xargs)
         if _alg == "none":
             return jwt.pack(parts=[self.msg, ""])

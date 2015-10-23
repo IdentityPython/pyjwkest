@@ -39,8 +39,20 @@ def lrequest(url, method="GET", **kwargs):
     return requests.request(method, url, **kwargs)
 
 
-def sign(msg, key, alg):
+def sign(msg, key, alg="", msgtype=None):
+    """
+
+    :param msg: The message to sign
+    :param key: The signing key
+    :param alg: Which signing algorithm to use, this information may
+        appear in the headers dictionary
+    :param msgtype: The type of payload
+    :return: A JWS
+    """
     _jws = JWS(msg, alg=alg)
+    if msgtype:
+        _jws["typ"] = msgtype
+
     return _jws.sign_compact(key)
 
 
@@ -81,6 +93,7 @@ if __name__ == "__main__":
     parser.add_argument('-J', dest="jwks", help="JSON Web Keys")
     parser.add_argument('-i', dest="kid", help="key id")
     parser.add_argument('-l', dest="log", help="logfile name")
+    parser.add_argument('-t', dest="msgtype", help="JWT message type")
     parser.add_argument("message", nargs="?", help="The message")
 
     args = parser.parse_args()
@@ -116,7 +129,7 @@ if __name__ == "__main__":
         message = args.message
 
     if args.sign:
-        _msg = sign(message, keys, args.alg)
+        _msg = sign(message, keys, args.alg, args.msgtype)
         if args.encrypt:
             _msg = encrypt(_msg, keys, args.encalg, args.encenc)
         print(_msg)
