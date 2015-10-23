@@ -53,7 +53,10 @@ class JWT(object):
         :param token: The JWT
         """
         if isinstance(token, six.string_types):
-            token = token.encode("utf-8")
+            try:
+                token = token.encode("utf-8")
+            except UnicodeDecodeError:
+                pass
 
         part = split_token(token)
         self.b64part = part
