@@ -410,7 +410,7 @@ class JWx(object):
 
 class JWS(JWx):
 
-    def alg_keys(self, keys, use):
+    def alg_keys(self, keys, use, protected=None):
         try:
             _alg = self["alg"]
         except KeyError:
@@ -424,7 +424,8 @@ class JWS(JWx):
         else:
             keys = self._pick_keys(self._get_keys(), use=use, alg=_alg)
 
-        xargs = {}
+        xargs = protected or {}
+        xargs["alg"] = _alg
 
         if keys:
             key = keys[0]
@@ -440,7 +441,7 @@ class JWS(JWx):
             else:
                 raise NoSuitableSigningKeys("No key for algorithm: %s" % _alg)
 
-        return key, xargs
+        return key, xargs, _alg
 
     def sign_compact(self, keys=None, protected=None):
         """
@@ -451,35 +452,7 @@ class JWS(JWx):
         :return:
         """
 
-        try:
-            _alg = self["alg"]
-        except KeyError:
-            self["alg"] = _alg = "none"
-        else:
-            if not _alg:
-                self["alg"] = _alg = "none"
-
-        if keys:
-            keys = self._pick_keys(keys, use="sig", alg=_alg)
-        else:
-            keys = self._pick_keys(self._get_keys(), use="sig", alg=_alg)
-
-        xargs = protected or {}
-        xargs["alg"] = _alg
-
-        if keys:
-            key = keys[0]
-            if key.kid:
-                xargs["kid"] = key.kid
-        elif not _alg or _alg.lower() == "none":
-            key = None
-        else:
-            if "kid" in self:
-                raise NoSuitableSigningKeys(
-                    "No key for algorithm: %s with kid: %s" % (_alg,
-                                                               self["kid"]))
-            else:
-                raise NoSuitableSigningKeys("No key for algorithm: %s" % _alg)
+        key, xargs, _alg = self.alg_keys(keys, 'sig', protected)
 
         if "typ" in self:
             xargs["typ"] = self["typ"]
@@ -516,8 +489,12 @@ class JWS(JWx):
             if self["alg"] != jwt.headers["alg"]:
                 raise SignerAlgError("Wrong signing algorithm")
 
-        if "alg" in jwt.headers:
-            if jwt.headers["alg"].lower() == "none":
+        try:
+            _alg = jwt.headers["alg"]
+        except KeyError:
+            pass
+        else:
+            if _alg is None or _alg.lower() == "none":
                 if allow_none:
                     self.msg = jwt.payload()
                     return self.msg
