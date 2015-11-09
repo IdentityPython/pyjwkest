@@ -347,6 +347,9 @@ class RSAKey(Key):
 
     def deserialize(self):
         if self.n and self.e:
+            # If kid is not set, update it to a hash of public part
+            if self.kid == "":
+                self.kid = hashlib.sha1(str(self.n).encode('utf-8')).hexdigest()
             try:
                 for param in self.longs:
                     item = getattr(self, param)
@@ -422,6 +425,9 @@ class RSAKey(Key):
                 else:
                     if val:
                         setattr(self, param, val)
+        # If kid is not set, update it to a hash of public part
+        if self.kid == "":
+            self.kid = hashlib.sha1(str(self.n).encode('utf-8')).hexdigest()
 
     def load(self, filename):
         """

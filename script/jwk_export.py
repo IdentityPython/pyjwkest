@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-import os
 import argparse
+import json
+import os
+
 from jwkest.jwk import RSAKey
 from jwkest.jwk import rsa_load
-from jwkest.jwk import dump_jwks
 
 __author__ = 'rolandh'
 
@@ -21,5 +22,5 @@ rsa_key = RSAKey(key=rsa_load(args.key))
 keyfile = os.path.join(args.path, args.name)
 
 f = open(keyfile + ".jwk", "w")
-f.write(dump_jwks([rsa_key]))
+f.write(json.dumps(rsa_key.serialize()))
 f.close()
