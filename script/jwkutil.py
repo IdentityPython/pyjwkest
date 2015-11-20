@@ -94,6 +94,7 @@ if __name__ == "__main__":
     parser.add_argument('-i', dest="kid", help="key id")
     parser.add_argument('-l', dest="log", help="logfile name")
     parser.add_argument('-t', dest="msgtype", help="JWT message type")
+    parser.add_argument('-u', dest="jwks_url", help="JSON Web Keys URL")
     parser.add_argument("message", nargs="?", help="The message")
 
     args = parser.parse_args()
@@ -116,6 +117,11 @@ if __name__ == "__main__":
     if args.jwks:
         _k = KEYS()
         _k.load_jwks(open(args.jwks).read())
+        keys.extend(_k._keys)
+
+    if args.jwks_url:
+        _k = KEYS()
+        _k.load_from_url(args.jwks_url, False)
         keys.extend(_k._keys)
 
     if not keys:

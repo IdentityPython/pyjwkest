@@ -5,7 +5,7 @@ from jwkest import jws
 
 __author__ = 'roland'
 
-jwt = open(sys.argv[1]).read()
+jwt = sys.argv[1]
 
 _jw = jwe.factory(jwt)
 if _jw:
