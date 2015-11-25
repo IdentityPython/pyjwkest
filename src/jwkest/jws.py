@@ -430,7 +430,7 @@ class JWS(JWx):
         if keys:
             key = keys[0]
             if key.kid:
-                xargs = {"kid": key.kid}
+                xargs["kid"] = key.kid
         elif not _alg or _alg.lower() == "none":
             key = None
         else:
