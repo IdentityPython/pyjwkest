@@ -485,14 +485,10 @@ class JWS(JWx):
         jwt = JWSig().unpack(jws)
         self.jwt = jwt
 
-        if "alg" in self and "alg" in jwt.headers:
-            if self["alg"] != jwt.headers["alg"]:
-                raise SignerAlgError("Wrong signing algorithm")
-
         try:
             _alg = jwt.headers["alg"]
         except KeyError:
-            pass
+            _alg = None
         else:
             if _alg is None or _alg.lower() == "none":
                 if allow_none:
@@ -501,11 +497,15 @@ class JWS(JWx):
                 else:
                     raise SignerAlgError("none not allowed")
 
-        if sigalg and sigalg != jwt.headers["alg"]:
+        if "alg" in self and _alg:
+            if self["alg"] != _alg:
+                raise SignerAlgError("Wrong signing algorithm")
+
+        if sigalg and sigalg != _alg:
             raise SignerAlgError("Expected {0} got {1}".format(
                 sigalg, jwt.headers["alg"]))
 
-        self["alg"] = _alg = jwt.headers["alg"]
+        self["alg"] = _alg
 
         if keys:
             _keys = self._pick_keys(keys)
