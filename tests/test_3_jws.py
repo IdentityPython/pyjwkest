@@ -1,4 +1,5 @@
 from __future__ import print_function
+from Crypto.PublicKey import RSA
 from jwkest.ecc import P256
 from jwkest.ecc import P384
 from jwkest.ecc import P521
@@ -15,10 +16,10 @@ from jwkest.jws import SIGNER_ALGS, factory
 from jwkest.jws import JWSig
 from jwkest.jws import JWS
 
-import codecs
 import json
 import io
 import os.path
+from hashlib import md5
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -47,14 +48,16 @@ HMAC_KEY = [3, 35, 53, 75, 43, 15, 165, 188, 131, 126, 6, 101, 119, 123, 166,
 
 JWKS = {"keys": [
     {
-        "n": b"zkpUgEgXICI54blf6iWiD2RbMDCOO1jV0VSff1MFFnujM4othfMsad7H1kRo50YM5S_X9TdvrpdOfpz5aBaKFhT6Ziv0nhtcekq1eRl8mjBlvGKCE5XGk-0LFSDwvqgkJoFYInq7bu0a4JEzKs5AyJY75YlGh879k1Uu2Sv3ZZOunfV1O1Orta-NvS-aG_jN5cstVbCGWE20H0vFVrJKNx0Zf-u-aA-syM4uX7wdWgQ-owoEMHge0GmGgzso2lwOYf_4znanLwEuO3p5aabEaFoKNR4K6GjQcjBcYmDEE4CtfRU9AEmhcD1kleiTB9TjPWkgDmT9MXsGxBHf3AKT5w",
+        "n":
+            b"zkpUgEgXICI54blf6iWiD2RbMDCOO1jV0VSff1MFFnujM4othfMsad7H1kRo50YM5S_X9TdvrpdOfpz5aBaKFhT6Ziv0nhtcekq1eRl8mjBlvGKCE5XGk-0LFSDwvqgkJoFYInq7bu0a4JEzKs5AyJY75YlGh879k1Uu2Sv3ZZOunfV1O1Orta-NvS-aG_jN5cstVbCGWE20H0vFVrJKNx0Zf-u-aA-syM4uX7wdWgQ-owoEMHge0GmGgzso2lwOYf_4znanLwEuO3p5aabEaFoKNR4K6GjQcjBcYmDEE4CtfRU9AEmhcD1kleiTB9TjPWkgDmT9MXsGxBHf3AKT5w",
         "e": b"AQAB",
         "kty": "RSA",
         "kid": "5-VBFv40P8D4I-7SFz7hMugTbPs",
         "use": "sig"
     },
     {
-        "k": b"YTEyZjBlMDgxMGI4YWU4Y2JjZDFiYTFlZTBjYzljNDU3YWM0ZWNiNzhmNmFlYTNkNTY0NzMzYjE",
+        "k":
+            b"YTEyZjBlMDgxMGI4YWU4Y2JjZDFiYTFlZTBjYzljNDU3YWM0ZWNiNzhmNmFlYTNkNTY0NzMzYjE",
         "kty": "oct",
         "use": "sig"
     },
@@ -247,17 +250,20 @@ def test_a_1_1a():
 
 
 def test_a_1_1b():
-    payload = b'{"iss":"joe",\r\n "exp":1300819380,\r\n "http://example.com/is_root":true}'
+    payload = b'{"iss":"joe",\r\n "exp":1300819380,' \
+              b'\r\n "http://example.com/is_root":true}'
     val = b64e(payload)
-    assert val == (b'eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9'
-                   b'leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ')
+    assert val == (
+    b'eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9'
+    b'leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ')
 
 
 def test_a_1_1c():
     hmac = jwkest.intarr2bin(HMAC_KEY)
     signer = SIGNER_ALGS["HS256"]
     header = b'{"typ":"JWT",\r\n "alg":"HS256"}'
-    payload = b'{"iss":"joe",\r\n "exp":1300819380,\r\n "http://example.com/is_root":true}'
+    payload = b'{"iss":"joe",\r\n "exp":1300819380,' \
+              b'\r\n "http://example.com/is_root":true}'
     sign_input = b64e(header) + b'.' + b64e(payload)
     sig = signer.sign(sign_input, hmac)
     assert b64e(sig) == b'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk'
@@ -406,11 +412,13 @@ def test_sign_2():
     keyset = {"keys": [
         {"alg": "RS512",
          "kty": "RSA",
-         "d": "ckLyXxkbjC4szg8q8G0ERBZV-9CszeOxpRtx1KM9BLl0Do3li_Km2vvFvfXJ7MxQpiZ18pBoCcyYQEU262ym8wI22JWMPrZe24HCNxLxqzr_JEuBhpKFxQF6EFTSvJEJD1FkoTuCTvN0zD7YHGaJQG6JzVEuFUY3ewxjH0FYNa_ppTnPP3LC-T9u_GX9Yqyuw1KOYoHSzhWSWQOeAgs4dH9-iAxN1wdZ6eH1jFWAs43svk_rhwdgyJMlihFtV9MAInBlfi_Zu8wRVhVl5urkJrLf0tGFnMbnzb6dYSlUXxEYClpY12W7kXW9aePDqkCwI4oZyxmOmgq4hunKGR1dAQ",
+         "d": "ckLyXxkbjC4szg8q8G0ERBZV"
+              "-9CszeOxpRtx1KM9BLl0Do3li_Km2vvFvfXJ7MxQpiZ18pBoCcyYQEU262ym8wI22JWMPrZe24HCNxLxqzr_JEuBhpKFxQF6EFTSvJEJD1FkoTuCTvN0zD7YHGaJQG6JzVEuFUY3ewxjH0FYNa_ppTnPP3LC-T9u_GX9Yqyuw1KOYoHSzhWSWQOeAgs4dH9-iAxN1wdZ6eH1jFWAs43svk_rhwdgyJMlihFtV9MAInBlfi_Zu8wRVhVl5urkJrLf0tGFnMbnzb6dYSlUXxEYClpY12W7kXW9aePDqkCwI4oZyxmOmgq4hunKGR1dAQ",
          "e": "AQAB",
          "use": "sig",
          "kid": "af22448d-4c7b-464d-b63a-f5bd90f6d7d1",
-         "n": "o9g8DpUwBW6B1qmcm-TfEh4rNX7n1t38jdo4Gkl_cI3q--7n0Blg0kN88LHZvyZjUB2NhBdFYNxMP8ucy0dOXvWGWzaPmGnq3DM__lN8P4WjD1cCTAVEYKawNBAmGKqrFj1SgpPNsSqiqK-ALM1w6mZ-QGimjOgwCyJy3l9lzZh5D8tKnS2t1pZgE0X5P7lZQWHYpHPqp4jKhETzrCpPGfv0Rl6nmmjp7NlRYBkWKf_HEKE333J6M039m2FbKgxrBg3zmYYpmHuMzVgxxb8LSiv5aqyeyJjxM-YDUAgNQBfKNhONqXyu9DqtSprNkw6sqmuxK0QUVrNYl3b03PgS5Q"
+         "n": "o9g8DpUwBW6B1qmcm-TfEh4rNX7n1t38jdo4Gkl_cI3q"
+              "--7n0Blg0kN88LHZvyZjUB2NhBdFYNxMP8ucy0dOXvWGWzaPmGnq3DM__lN8P4WjD1cCTAVEYKawNBAmGKqrFj1SgpPNsSqiqK-ALM1w6mZ-QGimjOgwCyJy3l9lzZh5D8tKnS2t1pZgE0X5P7lZQWHYpHPqp4jKhETzrCpPGfv0Rl6nmmjp7NlRYBkWKf_HEKE333J6M039m2FbKgxrBg3zmYYpmHuMzVgxxb8LSiv5aqyeyJjxM-YDUAgNQBfKNhONqXyu9DqtSprNkw6sqmuxK0QUVrNYl3b03PgS5Q"
          }]}
 
     keys = KEYS()
@@ -431,7 +439,8 @@ def test_signer_protected_headers():
     exp_protected = protected.copy()
     exp_protected['alg'] = 'ES256'
     enc_header, enc_payload, sig = _jwt.split('.')
-    assert json.loads(b64d(enc_header.encode("utf-8")).decode("utf-8")) == exp_protected
+    assert json.loads(
+        b64d(enc_header.encode("utf-8")).decode("utf-8")) == exp_protected
     assert b64d(enc_payload.encode("utf-8")).decode("utf-8") == payload
 
     _rj = JWS()
@@ -468,5 +477,15 @@ def test_pick():
     assert len(_keys) == 1
 
 
+def test_dj_usage():
+    key_string = open(full_path("./size2048.key"), 'r').read()
+    key = RSA.importKey(key_string)
+    payload = "Please take a moment to register today"
+    keys = [RSAKey(key=key, kid=md5(key_string.encode('utf-8')).hexdigest())]
+    _jws = JWS(payload, alg='RS256')
+    sjwt = _jws.sign_compact(keys)
+    _jwt = factory(sjwt)
+    assert _jwt.jwt.headers['alg'] == 'RS256'
+
 if __name__ == "__main__":
-    test_signer_ps512()
+    test_dj_usage()
