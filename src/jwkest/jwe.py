@@ -18,7 +18,7 @@ from Crypto.Util.number import long_to_bytes
 from Crypto.Cipher import PKCS1_v1_5
 from Crypto.Cipher import PKCS1_OAEP
 
-from jwkest import b64d, as_bytes
+from jwkest import b64d, as_bytes, WrongNumberOfParts
 from jwkest import b64e
 from jwkest import JWKESTException
 from jwkest import MissingKey
@@ -307,6 +307,9 @@ class JWEnc(JWT):
                     return False
         return True
 
+    def __len__(self):
+        return len(self.part)
+
 
 class JWe(JWx):
     @staticmethod
@@ -429,6 +432,9 @@ class JWE_SYM(JWe):
             raise MissingKey("On of key or cek must be specified")
 
         jwe = JWEnc().unpack(token)
+
+        if len(jwe) != 5:
+            raise WrongNumberOfParts(len(jwe))
 
         if not cek:
             jek = jwe.encrypted_key()

@@ -35,6 +35,10 @@ class Invalid(JWKESTException):
     """The JWT is invalid."""
 
 
+class WrongNumberOfParts(Invalid):
+    pass
+
+
 class BadSyntax(Invalid):
     """The JWT could not be parsed because the syntax is invalid."""
 

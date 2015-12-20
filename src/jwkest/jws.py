@@ -23,7 +23,7 @@ from Crypto.Signature import PKCS1_PSS
 from Crypto.Util.number import bytes_to_long
 import sys
 
-from jwkest import b64d, as_unicode
+from jwkest import b64d, as_unicode, Invalid, WrongNumberOfParts
 from jwkest import b64e
 from jwkest import constant_time_compare
 from jwkest import safe_str_cmp
@@ -218,6 +218,15 @@ class JWSig(JWT):
 
     def signature(self):
         return self.part[2]
+
+    def __len__(self):
+        return len(self.part)
+
+    def valid(self):
+        if len(self) != 3:
+            return False
+
+        return True
 
 
 class JWx(object):
@@ -483,6 +492,9 @@ class JWS(JWx):
         :return:
         """
         jwt = JWSig().unpack(jws)
+        if len(jwt) != 3:
+            raise WrongNumberOfParts(len(jwt))
+
         self.jwt = jwt
 
         try:
@@ -528,7 +540,7 @@ class JWS(JWx):
             try:
                 res = verifier.verify(jwt.sign_input(), jwt.signature(),
                                       key.get_key(alg=_alg, private=False))
-            except BadSignature:
+            except (BadSignature, IndexError):
                 pass
             else:
                 if res is True:
