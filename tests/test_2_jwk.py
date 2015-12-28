@@ -134,7 +134,7 @@ def test_loads_1():
 def test_dumps():
     _ckey = pem_cert2rsa(CERT)
     jwk = jwk_wrap(_ckey).serialize()
-    assert _eq(list(jwk.keys()), ["kty", "e", "n"])
+    assert _eq(list(jwk.keys()), ["kty", "e", "n", "kid"])
 
 
 def test_dump_jwk():
@@ -146,7 +146,7 @@ def test_dump_jwk():
     _wk = json.loads(jwk)
     assert list(_wk.keys()) == ["keys"]
     assert len(_wk["keys"]) == 1
-    assert _eq(list(_wk["keys"][0].keys()), ["kty", "e", "n"])
+    assert _eq(list(_wk["keys"][0].keys()), ["kty", "e", "n", "kid"])
 
 
 def test_load_jwk():
@@ -168,9 +168,10 @@ def test_import_rsa_key():
     assert isinstance(_ckey, _RSAobj)
     djwk = jwk_wrap(_ckey).to_dict()
     print(djwk)
-    assert _eq(djwk.keys(), ["kty", "e", "n", "p", "q", "d"])
+    assert _eq(djwk.keys(), ["kty", "e", "n", "p", "q", "d", "kid"])
     assert djwk["n"] == '5zbNbHIYIkGGJ3RGdRKkYmF4gOorv5eDuUKTVtuu3VvxrpOWvwnFV-NY0LgqkQSMMyVzodJE3SUuwQTUHPXXY5784vnkFqzPRx6bHgPxKz7XfwQjEBTafQTMmOeYI8wFIOIHY5i0RWR-gxDbh_D5TXuUqScOOqR47vSpIbUH-nc'
     assert djwk['e'] == 'AQAB'
+    assert djwk['kid'] == 'ceb1941d5dec739c127b206c27511d2fcef06481'
 
 
 def test_serialize_rsa_pub_key():
@@ -282,6 +283,7 @@ def test_keys():
     assert len(keyl['rsa']) == 1
     assert len(keyl['oct']) == 1
     assert len(keyl['ec']) == 1
+    assert _eq(keyl.kids(), ['5-VBFv40P8D4I-7SFz7hMugTbPs', '7snis'])
 
 
 def test_private_key_from_jwk():
@@ -306,8 +308,10 @@ def test_private_key_from_jwk():
     print(_d.keys())
     assert _eq(list(_d.keys()),
                ['n', 'alg', 'dq', 'e', 'q', 'p', 'dp', 'd', 'ext', 'key_ops',
-                'kty', 'qi'])
+                'kty', 'qi', 'kid'])
     assert _eq(list(_d.keys()), kspec.keys())
+    # Test that kid in file is preserved and not replaced
+    assert key.kid == 'test'
 
 
 if __name__ == "__main__":
