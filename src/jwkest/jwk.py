@@ -376,10 +376,13 @@ class RSAKey(Key):
             except ValueError as err:
                 raise DeSerializationNotPossible("%s" % err)
         elif self.x5c:
-            if self.x5t:  # verify the cert
-                pass
+            der_cert = base64.b64decode(self.x5c[0].encode("ascii"))
 
-            self.key = der2rsa(base64.b64decode(self.x5c[0].encode("ascii")))
+            if self.x5t:  # verify the cert
+                if not b64d(self.x5t.encode("ascii")) == hashlib.sha1(der_cert).digest():
+                    raise DeSerializationNotPossible("The thumbprint ('x5t') does not match the certificate.")
+
+            self.key = der2rsa(der_cert)
             self._split()
             if len(self.x5c) > 1:  # verify chain
                 pass
