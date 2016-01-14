@@ -340,7 +340,10 @@ class RSAKey(Key):
         self.di = di
         self.qi = qi
 
-        if not self.key and self.n and self.e:
+        has_public_key_parts = len(self.n) > 0 and len(self.e)
+        has_x509_cert_chain = len(self.x5c) > 0
+
+        if not self.key and (has_public_key_parts or has_x509_cert_chain):
             self.deserialize()
         elif self.key and not (self.n and self.e):
             self._split()
@@ -376,8 +379,7 @@ class RSAKey(Key):
             if self.x5t:  # verify the cert
                 pass
 
-            cert = "\n".join([PREFIX, str(self.x5c[0]), POSTFIX])
-            self.key = import_rsa_key(cert)
+            self.key = der2rsa(base64.b64decode(self.x5c[0].encode("ascii")))
             self._split()
             if len(self.x5c) > 1:  # verify chain
                 pass

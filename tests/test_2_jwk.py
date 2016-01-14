@@ -310,5 +310,26 @@ def test_private_key_from_jwk():
     assert _eq(list(_d.keys()), kspec.keys())
 
 
+def test_rsa_pubkey_from_x509_cert_chain():
+    cert = "MIID0jCCArqgAwIBAgIBSTANBgkqhkiG9w0BAQQFADCBiDELMAkGA1UEBhMCREUxEDAOBgNVBAgTB0JhdmF" \
+           "yaWExEzARBgNVBAoTCkJpb0lEIEdtYkgxLzAtBgNVBAMTJkJpb0lEIENsaWVudCBDZXJ0aWZpY2F0aW9uIE" \
+           "F1dGhvcml0eSAyMSEwHwYJKoZIhvcNAQkBFhJzZWN1cml0eUBiaW9pZC5jb20wHhcNMTUwNDE1MTQ1NjM4W" \
+           "hcNMTYwNDE0MTQ1NjM4WjBfMQswCQYDVQQGEwJERTETMBEGA1UEChMKQmlvSUQgR21iSDE7MDkGA1UEAxMy" \
+           "QmlvSUQgT3BlbklEIENvbm5lY3QgSWRlbnRpdHkgUHJvdmlkZXIgQ2VydGlmaWNhdGUwggEiMA0GCSqGSIb" \
+           "3DQEBAQUAA4IBDwAwggEKAoIBAQC9aFETmU6kDfMBPKM2OfI5eedO3XP12Ci0hDC99bdzUUIhDZG34PQqcH" \
+           "89gVWGthJv5w3kqpdSrxfPCFMsBdnyk1VCuXmLgXS8s4oBtt1c9iM0J8X6Z+5subS3Xje8fu55Csh0JXNfo" \
+           "y29rCY/O6y0fNignegg0KS4PHv5T+agFmaG4rxCQV9/kd8tlo/HTyVPsuSPDgsXxisIVqur9aujYwdCoAZU" \
+           "8OU+5ccMLNIhpWJn+xNjgDRr4L9nxAYKc9vy+f7EoH3LT24B71zazZsQ78vpocz98UT/7vdgS/IYXFniPuU" \
+           "fblja7cq31bUoySDx6FYrtfCSUxNhaZSX8mppAgMBAAGjbzBtMAkGA1UdEwQCMAAwHQYDVR0OBBYEFOfg3f" \
+           "/ewBLK5SkcBEXusD62OlzaMB8GA1UdIwQYMBaAFCQmdD+nVcVLaKt3vu73XyNgpPEpMAsGA1UdDwQEAwIDi" \
+           "DATBgNVHSUEDDAKBggrBgEFBQcDAjANBgkqhkiG9w0BAQQFAAOCAQEAKQjhcL/iGhy0549hEHRQArJXs1im" \
+           "7W244yE+TSChdMWKe2eWvEhc9wX1aVV2mNJM1ZNeYSgfoK6jjuXaHiSaIJEUcW1wVM3rDywi2a9GKzOFgrW" \
+           "pVbpXQ05LSE7qEEWRmSpIMyKTitUalNpNA6cOML5hiuUTfZbw7OvPwbnbSYYL674gEA2sW5AhPiCr9dVnMn" \
+           "/UK2II40802zdXUOvIxWeXpcsCxxZMjp/Ir2jIZWOEjlAXQVGr2oBfL/be/o5WXpaqWSfPRBZV8htRIf0vT" \
+           "lGx7xR8FPWDYmcj4o/tKoNC1AchjOnCwwE/mj4hgtoAsHNmYXF0oZXk7cozqYDqKQ=="
+    rsa_key = RSAKey(x5c=[cert])
+    assert rsa_key.key
+
+
 if __name__ == "__main__":
     test_private_key_from_jwk()
