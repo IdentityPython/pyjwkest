@@ -487,5 +487,24 @@ def test_dj_usage():
     _jwt = factory(sjwt)
     assert _jwt.jwt.headers['alg'] == 'RS256'
 
+def test_rs256_rm_signature():
+    payload = "Please take a moment to register today"
+    keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
+    # keys[0]._keytype = "private"
+    _jws = JWS(payload, alg="RS256")
+    _jwt = _jws.sign_compact(keys)
+
+    p = _jwt.split('.')
+    _jwt = '.'.join(p[:-1])
+
+    _rj = JWS()
+    try:
+        _ = _rj.verify_compact(_jwt, keys)
+    except jwkest.WrongNumberOfParts:
+        pass
+    else:
+        assert False
+
+
 if __name__ == "__main__":
-    test_dj_usage()
+    test_rs256_rm_signature()
