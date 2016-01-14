@@ -15,7 +15,7 @@ from Crypto.Util.asn1 import DerSequence
 
 from requests import request
 
-from jwkest import base64url_to_long
+from jwkest import base64url_to_long, as_unicode
 from jwkest import as_bytes
 from jwkest import base64_to_long
 from jwkest import long_to_base64
@@ -563,7 +563,7 @@ class SYMKey(Key):
 
     def serialize(self, private=True):
         res = self.common()
-        res["k"] = b64e(bytes(self.key))
+        res["k"] = as_unicode(b64e(bytes(self.key)))
         return res
 
     def encryption_key(self, alg, **kwargs):
