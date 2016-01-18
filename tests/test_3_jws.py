@@ -505,6 +505,12 @@ def test_rs256_rm_signature():
     else:
         assert False
 
+def test_alg_keys_assume_alg_from_single_key():
+    expected_alg = "HS256"
+    keys = [SYMKey(k="foobar", alg=expected_alg)]
+
+    _, _, alg = JWS().alg_keys(keys, "sig")
+    assert alg == expected_alg
 
 if __name__ == "__main__":
     test_rs256_rm_signature()

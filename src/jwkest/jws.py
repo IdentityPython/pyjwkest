@@ -428,6 +428,11 @@ class JWS(JWx):
             if not _alg:
                 self["alg"] = _alg = "none"
 
+        if keys is not None and len(keys) == 1:
+            key = next(iter(keys))  # first element from either list or dict
+            if key.alg:
+                _alg = key.alg
+
         if keys:
             keys = self._pick_keys(keys, use=use, alg=_alg)
         else:
