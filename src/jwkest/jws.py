@@ -406,6 +406,22 @@ class JWx(object):
 
         return pkey
 
+    def _pick_alg(self, keys):
+        alg = None
+        try:
+            alg = self["alg"]
+        except KeyError:
+            # try to get alg from key if there is only one
+            if keys is not None and len(keys) == 1:
+                key = next(iter(keys))  # first element from either list or dict
+                if key.alg:
+                    self["alg"] = alg = key.alg
+
+        if not alg:
+            self["alg"] = alg = "none"
+
+        return alg
+
     def _decode(self, payload):
         _msg = b64d(bytes(payload))
         if "cty" in self:
@@ -420,13 +436,7 @@ class JWx(object):
 class JWS(JWx):
 
     def alg_keys(self, keys, use, protected=None):
-        try:
-            _alg = self["alg"]
-        except KeyError:
-            self["alg"] = _alg = "none"
-        else:
-            if not _alg:
-                self["alg"] = _alg = "none"
+        _alg = self._pick_alg(keys)
 
         if keys:
             keys = self._pick_keys(keys, use=use, alg=_alg)
