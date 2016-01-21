@@ -17,12 +17,14 @@ def split_token(token):
 def b2s_conv(item):
     if isinstance(item, bytes):
         return item.decode("utf-8")
-    elif isinstance(item, (six.string_types, int, bool)):
+    elif item is None or isinstance(item, (six.string_types, int, bool)):
         return item
     elif isinstance(item, list):
         return [b2s_conv(i) for i in item]
     elif isinstance(item, dict):
         return dict([(k, b2s_conv(v)) for k, v in item.items()])
+
+    raise ValueError("Can't convert {}.".format(repr(item)))
 
 
 def b64encode_item(item):

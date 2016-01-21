@@ -1,5 +1,8 @@
 import json
-from jwkest.jwt import JWT
+
+import pytest
+
+from jwkest.jwt import JWT, b2s_conv
 
 __author__ = 'roland'
 
@@ -43,6 +46,10 @@ def test_unpack_str():
     _jwt2 = JWT().unpack(jwt)
     assert _jwt2
     out_payload = _jwt2.payload()
+
+def test_b2s_conv_raise_exception_on_bad_value():
+    with pytest.raises(ValueError):
+        b2s_conv(object())
 
 
 if __name__ == "__main__":

@@ -505,6 +505,19 @@ def test_rs256_rm_signature():
     else:
         assert False
 
+def test_pick_alg_assume_alg_from_single_key():
+    expected_alg = "HS256"
+    keys = [SYMKey(k="foobar", alg=expected_alg)]
+
+    alg = JWS()._pick_alg(keys)
+    assert alg == expected_alg
+
+def test_pick_alg_dont_get_alg_from_single_key_if_already_specified():
+    expected_alg = "RS512"
+    keys = [RSAKey(key=import_rsa_key_from_file(KEY), alg="RS256")]
+
+    alg = JWS(alg=expected_alg)._pick_alg(keys)
+    assert alg == expected_alg
 
 if __name__ == "__main__":
     test_rs256_rm_signature()
