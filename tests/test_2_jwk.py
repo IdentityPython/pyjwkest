@@ -3,7 +3,7 @@ import base64
 from collections import Counter
 import json
 from Crypto.PublicKey import RSA
-from Crypto.PublicKey.RSA import _RSAobj
+from Crypto.PublicKey.RSA import RsaKey
 import struct
 import six
 from jwkest.ecc import P256
@@ -65,7 +65,7 @@ def test_urlsafe_base64decode():
 
 def test_pem_cert2rsa():
     _ckey = pem_cert2rsa(CERT)
-    assert isinstance(_ckey, _RSAobj)
+    assert isinstance(_ckey, RsaKey)
 
 
 def test_extract_rsa_from_cert_2():
@@ -160,12 +160,12 @@ def test_load_jwk():
     assert len(keylist1) == 1
     key = keylist1["rsa"][0]
     assert key.kty == 'RSA'
-    assert isinstance(key.key, _RSAobj)
+    assert isinstance(key.key, RsaKey)
 
 
 def test_import_rsa_key():
     _ckey = RSA.importKey(open(full_path(KEY), 'r').read())
-    assert isinstance(_ckey, _RSAobj)
+    assert isinstance(_ckey, RsaKey)
     djwk = jwk_wrap(_ckey).to_dict()
     print(djwk)
     assert _eq(djwk.keys(), ["kty", "e", "n", "p", "q", "d"])

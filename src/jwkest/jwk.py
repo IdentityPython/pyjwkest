@@ -10,7 +10,7 @@ from binascii import a2b_base64
 
 from Crypto.PublicKey import RSA
 from Crypto.PublicKey.RSA import importKey
-from Crypto.PublicKey.RSA import _RSAobj
+from Crypto.PublicKey.RSA import RsaKey
 from Crypto.Util.asn1 import DerSequence
 
 from requests import request
@@ -110,6 +110,7 @@ def der2rsa(der):
 def pem_cert2rsa(pem_file):
     # Convert from PEM to DER
     pem = open(pem_file).read()
+    _rsa = RSA.importKey(pem)
     lines = pem.replace(" ", '').split()
     return der2rsa(a2b_base64(''.join(lines[1:-1])))
 
@@ -648,7 +649,7 @@ def jwk_wrap(key, use="", kid=""):
     :param kid: A key id
     :return: The Key instance
     """
-    if isinstance(key, _RSAobj):
+    if isinstance(key, RsaKey):
         kspec = RSAKey(use=use, kid=kid).load_key(key)
     elif isinstance(key, str):
         kspec = SYMKey(key=key, use=use, kid=kid)

@@ -1,7 +1,9 @@
 import base64
 import os
 import struct
-from jwkest import long2intarr, b64d, b64e
+from jwkest import long2intarr
+from jwkest import b64d
+from jwkest import b64e
 from jwkest import intarr2long
 from jwkest import base64_to_long
 from jwkest import long_to_base64

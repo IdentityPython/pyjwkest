@@ -349,17 +349,19 @@ def y_from_x(x, p, q, n, sign):
 
 
 if __name__ == "__main__":
-    import rsa
+    from Crypto.Random.random import randint
+    from Crypto.Util.number import getPrime
     import time
 
     t = time.time()
-    n = rsa.get_prime(256 / 8, 20)
+    n = getPrime(int(256/8))
+    #n = rsa.get_prime(256 / 8, 20)
     tp = time.time() - t
-    p = rsa.random.randint(1, n)
-    p1 = (rsa.random.randint(1, n), rsa.random.randint(1, n))
+    p = randint(1, n)
+    p1 = (randint(1, n), randint(1, n))
     q = curve_q(p1[0], p1[1], p, n)
-    r1 = rsa.random.randint(1, n)
-    r2 = rsa.random.randint(1, n)
+    r1 = randint(1, n)
+    r2 = randint(1, n)
     q1 = mulp(p, q, n, p1, r1)
     q2 = mulp(p, q, n, p1, r2)
     s1 = mulp(p, q, n, q1, r2)
@@ -368,14 +370,15 @@ if __name__ == "__main__":
     tt = time.time() - t
 
     def test(tcount, bits=256):
-        n = rsa.get_prime(bits / 8, 20)
-        p = rsa.random.randint(1, n)
-        p1 = (rsa.random.randint(1, n), rsa.random.randint(1, n))
+        n = getPrime(int(bits/8))
+        #n = rsa.get_prime(bits / 8, 20)
+        p = randint(1, n)
+        p1 = (randint(1, n), randint(1, n))
         q = curve_q(p1[0], p1[1], p, n)
-        p2 = mulp(p, q, n, p1, rsa.random.randint(1, n))
+        p2 = mulp(p, q, n, p1, randint(1, n))
 
-        c1 = [rsa.random.randint(1, n) for i in range(tcount)]
-        c2 = [rsa.random.randint(1, n) for i in range(tcount)]
+        c1 = [randint(1, n) for i in range(tcount)]
+        c2 = [randint(1, n) for i in range(tcount)]
         c = list(zip(c1, c2))
 
         t = time.time()

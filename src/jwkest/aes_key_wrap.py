@@ -16,6 +16,7 @@ Performance should be reasonable, since the heavy lifting is all done in
 PyCrypto's AES.
 """
 from __future__ import division
+from Crypto.Cipher.AES import MODE_ECB
 
 try:
     from builtins import hex
@@ -28,12 +29,12 @@ from Crypto.Cipher import AES
 QUAD = struct.Struct('>Q')
 
 
-def aes_unwrap_key_and_iv(kek, wrapped):
+def aes_unwrap_key_and_iv(kek, wrapped, mode=MODE_ECB):
     n = (len(wrapped) // 8) - 1
     #NOTE: R[0] is never accessed, left in for consistency with RFC indices
     r = [None] + [wrapped[i * 8:i * 8 + 8] for i in range(1, n + 1)]
     a = QUAD.unpack(wrapped[:8])[0]
-    decrypt = AES.new(kek).decrypt
+    decrypt = AES.new(kek, mode).decrypt
     for j in range(5, -1, -1):  #counting down
         for i in range(n, 0, -1):  #(n, n-1, ..., 1)
             ciphertext = QUAD.pack(a ^ (n * j + i)) + r[i]
@@ -62,11 +63,11 @@ def aes_unwrap_key_withpad(kek, wrapped):
     return key[:key_len]
 
 
-def aes_wrap_key(kek, plaintext, iv=0xa6a6a6a6a6a6a6a6):
+def aes_wrap_key(kek, plaintext, iv=0xa6a6a6a6a6a6a6a6, mode=MODE_ECB):
     n = len(plaintext) // 8
     r = [None] + [plaintext[i * 8:i * 8 + 8] for i in range(0, n)]
     a = iv
-    encrypt = AES.new(kek).encrypt
+    encrypt = AES.new(kek, mode).encrypt
     for j in range(6):
         for i in range(1, n + 1):
             b = encrypt(QUAD.pack(a) + r[i])

@@ -1,8 +1,9 @@
-from __future__ import print_function
-import array
+#from __future__ import print_function
 import hashlib
 import os
 import sys
+import array
+
 from Crypto.PublicKey import RSA
 
 from jwkest.aes_gcm import AES_GCM
