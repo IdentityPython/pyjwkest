@@ -66,7 +66,7 @@ class JWT(object):
         self.headers = json.loads(self.part[0].decode())
         return self
 
-    def pack(self, parts, headers=None):
+    def pack(self, parts=None, headers=None):
         """
         Packs components into a JWT
 
@@ -77,6 +77,9 @@ class JWT(object):
                 headers = self.headers
             else:
                 headers = {'alg': 'none'}
+
+        if not parts:
+            parts = self.part[1:]
 
         self.part = [self.part[0]] + parts
         _all = self.b64part = [self.b64part[0]]
