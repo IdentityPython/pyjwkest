@@ -45,6 +45,12 @@ def test_pack_unpack():
         "http://example.com/is_root"]
 
 
+def test_pack_with_headers():
+    _jwt = JWT()
+    jwt = _jwt.pack(parts=["", ""], headers={"foo": "bar"})
+    assert JWT().unpack(jwt).headers["foo"] == "bar"
+
+
 def test_unpack_str():
     _jwt = JWT(**{"alg": "none"})
     payload = {"iss": "joe", "exp": 1300819380,

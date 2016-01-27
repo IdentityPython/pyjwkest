@@ -81,8 +81,8 @@ class JWT(object):
         if not parts:
             parts = self.part[1:]
 
-        self.part = [self.part[0]] + parts
-        _all = self.b64part = [self.b64part[0]]
+        self.part = [headers] + parts
+        _all = self.b64part = [b64encode_item(headers)]
         _all.extend([b64encode_item(p) for p in parts])
 
         return ".".join([a.decode() for a in _all])
