@@ -593,11 +593,11 @@ class JWE_EC(JWe):
                 raise Exception(
                     "Unknown key length for algorithm %s" % self.enc)
 
-            cek = ecdh_derive_key(curve, key.d, (epk.x, epk.y), apu, apv, str(self.enc), dk_len)
+            cek = ecdh_derive_key(curve, key.d, (epk.x, epk.y), apu, apv, str(self.enc).encode(), dk_len)
         elif self.alg in ["ECDH-ES+A128KW", "ECDH-ES+A192KW", "ECDH-ES+A256KW"]:
             _pre, _post = self.alg.split("+")
             klen = int(_post[1:4])
-            kek = ecdh_derive_key(curve, key.d, (epk.x, epk.y), apu, apv, str(_post), klen)
+            kek = ecdh_derive_key(curve, key.d, (epk.x, epk.y), apu, apv, str(_post).encode(), klen)
             encrypted_key = aes_wrap_key(kek, cek)
         else:
             raise Exception("Unsupported algorithm %s" % self.alg)
@@ -618,9 +618,9 @@ class JWE_EC(JWe):
         epubkey = ECKey(**self.headers["epk"])
         apu = apv = ""
         if "apu" in self.headers:
-            apu = b64d(str(self.headers["apu"]))
+            apu = b64d(self.headers["apu"].encode())
         if "apv" in self.headers:
-            apv = b64d(str(self.headers["apv"]))
+            apv = b64d(self.headers["apv"].encode())
 
         if self.headers["alg"] == "ECDH-ES":
             try:
@@ -628,11 +628,11 @@ class JWE_EC(JWe):
             except KeyError:
                 raise Exception("Unknown key length for algorithm")
 
-            self.cek = ecdh_derive_key(epubkey.curve, key.d, (epubkey.x, epubkey.y), apu, apv, str(self.headers["enc"]), dk_len)
+            self.cek = ecdh_derive_key(epubkey.curve, key.d, (epubkey.x, epubkey.y), apu, apv, str(self.headers["enc"]).encode(), dk_len)
         elif self.headers["alg"] in ["ECDH-ES+A128KW", "ECDH-ES+A192KW", "ECDH-ES+A256KW"]:
             _pre, _post = self.headers['alg'].split("+")
             klen = int(_post[1:4])
-            kek = ecdh_derive_key(epubkey.curve, key.d, (epubkey.x, epubkey.y), apu, apv, str(_post), klen)
+            kek = ecdh_derive_key(epubkey.curve, key.d, (epubkey.x, epubkey.y), apu, apv, str(_post).encode(), klen)
             self.cek = aes_unwrap_key(kek, token.encrypted_key())
         else:
             raise Exception("Unsupported algorithm %s" % self.headers["alg"])
