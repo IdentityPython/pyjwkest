@@ -69,6 +69,8 @@ class NoSuitableEncryptionKey(JWEException):
 class NoSuitableDecryptionKey(JWEException):
     pass
 
+class NoSuitableECDHKey(JWEException):
+    pass
 
 class DecryptionFailed(JWEException):
     pass
@@ -224,8 +226,7 @@ SUPPORTED = {
     "alg": ["RSA1_5", "RSA-OAEP", "A128KW", "A192KW", "A256KW",
             "ECDH-ES", "ECDH-ES+A128KW", "ECDH-ES+A192KW", "ECDH-ES+A256KW"],
     "enc": ["A128CBC-HS256", "A192CBC-HS384", "A256CBC-HS512",
-            # "A128GCM", "A192GCM",
-            "A256GCM"],
+            "A128GCM", "A192GCM", "A256GCM"],
 }
 
 
@@ -348,7 +349,7 @@ class JWe(JWx):
 
         key, iv = self._generate_key_and_iv(enc_alg, key, iv)
 
-        if enc_alg == "A256GCM":
+        if enc_alg in ["A192GCM", "A128GCM", "A256GCM"]:
             gcm = AES_GCM(bytes_to_long(key))
             ctxt, tag = gcm.encrypt(bytes_to_long(iv), msg, auth_data)
             tag = long_to_bytes(tag)
@@ -503,7 +504,11 @@ class JWE_RSA(JWe):
         :param key: A key to use for decrypting
         :return: The decrypted message
         """
-        jwe = JWEnc().unpack(token)
+        if not isinstance(token, JWEnc):
+            jwe = JWEnc().unpack(token)
+        else:
+            jwe = token
+
         self.jwt = jwe.encrypted_key()
         jek = jwe.encrypted_key()
 
@@ -537,31 +542,50 @@ class JWE_RSA(JWe):
 
 
 class JWE_EC(JWe):
+
+    args = JWe.args[:]
+    args.append("enc")
+
     def enc_setup(self, msg, auth_data, key=None, **kwargs):
 
         encrypted_key = ""
+        self.msg = msg
+        self.auth_data = auth_data
+
         # Generate the input parameters
         try:
             apu = b64d(kwargs["apu"])
         except KeyError:
-            apu = b64d(Random.get_random_bytes(16))
+            apu = Random.get_random_bytes(16)
         try:
             apv = b64d(kwargs["apv"])
         except KeyError:
-            apv = b64d(Random.get_random_bytes(16))
+            apv = Random.get_random_bytes(16)
 
-        # Generate an ephemeral key pair
+        # Handle Local Key and Ephemeral Public Key
+        if not key:
+            raise Exception("EC Key Required for ECDH-ES JWE Encrpytion Setup")
+
+        # Generate an ephemeral key pair if none is given
         curve = NISTEllipticCurve.by_name(key.crv)
         if "epk" in kwargs:
-            eprivk = ECKey(kwargs["epk"])
+            epk = kwargs["epk"] if isinstance(kwargs["epk"], ECKey) else ECKey(kwargs["epk"])
         else:
-            (eprivk, epk) = curve.key_pair()
+            raise Exception("Ephemeral Public Key (EPK) Required for ECDH-ES JWE Encryption Setup")
+
         params = {
             "apu": b64e(apu),
             "apv": b64e(apv),
+            "epk": key.serialize(False)
         }
 
-        cek, iv = self._generate_key_and_iv(self.enc)
+        cek = iv = None
+        if 'cek' in kwargs and kwargs['cek']:
+            cek = kwargs['cek']
+        if 'iv' in kwargs and kwargs['iv']:
+            iv = kwargs['iv']
+
+        cek, iv = self._generate_key_and_iv(self.enc, cek=cek, iv=iv)
         if self.alg == "ECDH-ES":
             try:
                 dk_len = KEYLEN[self.enc]
@@ -569,18 +593,85 @@ class JWE_EC(JWe):
                 raise Exception(
                     "Unknown key length for algorithm %s" % self.enc)
 
-            cek = ecdh_derive_key(curve, eprivk, key, apu, apv, self.enc,
-                                  dk_len)
+            cek = ecdh_derive_key(curve, key.d, (epk.x, epk.y), apu, apv, str(self.enc), dk_len)
         elif self.alg in ["ECDH-ES+A128KW", "ECDH-ES+A192KW", "ECDH-ES+A256KW"]:
             _pre, _post = self.alg.split("+")
             klen = int(_post[1:4])
-            kek = ecdh_derive_key(curve, eprivk, key, apu, apv, _post, klen)
+            kek = ecdh_derive_key(curve, key.d, (epk.x, epk.y), apu, apv, str(_post), klen)
             encrypted_key = aes_wrap_key(kek, cek)
         else:
             raise Exception("Unsupported algorithm %s" % self.alg)
 
-        return cek, encrypted_key, iv, params
+        return cek, encrypted_key, iv, params, epk
 
+    def dec_setup(self, token, key=None, **kwargs):
+
+        self.headers = token.headers
+        self.iv = token.initialization_vector()
+        self.ctxt = token.ciphertext()
+        self.tag = token.authentication_tag()
+
+        # Handle EPK / Curve
+        if "epk" not in self.headers or "crv" not in self.headers["epk"]:
+            raise Exception("Ephemeral Public Key Missing in ECDH-ES Computation")
+
+        epubkey = ECKey(**self.headers["epk"])
+        apu = apv = ""
+        if "apu" in self.headers:
+            apu = b64d(str(self.headers["apu"]))
+        if "apv" in self.headers:
+            apv = b64d(str(self.headers["apv"]))
+
+        if self.headers["alg"] == "ECDH-ES":
+            try:
+                dk_len = KEYLEN[self.headers["enc"]]
+            except KeyError:
+                raise Exception("Unknown key length for algorithm")
+
+            self.cek = ecdh_derive_key(epubkey.curve, key.d, (epubkey.x, epubkey.y), apu, apv, str(self.headers["enc"]), dk_len)
+        elif self.headers["alg"] in ["ECDH-ES+A128KW", "ECDH-ES+A192KW", "ECDH-ES+A256KW"]:
+            _pre, _post = self.headers['alg'].split("+")
+            klen = int(_post[1:4])
+            kek = ecdh_derive_key(epubkey.curve, key.d, (epubkey.x, epubkey.y), apu, apv, str(_post), klen)
+            self.cek = aes_unwrap_key(kek, token.encrypted_key())
+        else:
+            raise Exception("Unsupported algorithm %s" % self.headers["alg"])
+
+        return self.cek
+
+    def encrypt(self, key, iv="", cek="", **kwargs):
+
+        _msg = as_bytes(self.msg)
+        _args = self._dict
+        try:
+            _args["kid"] = kwargs["kid"]
+        except KeyError:
+            pass
+
+        if 'params' in kwargs:
+            if 'apu' in kwargs['params']:
+                 _args['apu'] = kwargs['params']['apu']
+            if 'apv' in kwargs['params']:
+                _args['apv'] = kwargs['params']['apv']
+            if 'epk' in kwargs['params']:
+                _args['epk'] = kwargs['params']['epk']
+
+
+        jwe = JWEnc(**_args)
+        ctxt, tag, cek = super(JWE_EC, self).enc_setup(self["enc"], _msg, jwe.b64_encode_header(), cek, iv=iv)
+        if 'encrypted_key' in kwargs:
+            return jwe.pack(parts=[kwargs['encrypted_key'], iv, ctxt, tag])
+        return jwe.pack(parts=[iv, ctxt, tag])
+
+    def decrypt(self, token=None, key=None):
+
+        if not self.cek:
+            raise Exception("Content Encryption Key is Not Yet Set")
+
+        msg, valid = super(JWE_EC, self)._decrypt(self.headers["enc"], self.cek, self.ctxt, token.b64_encode_header(), self.iv, self.tag)
+        self.msg = msg
+        self.msg_valid = valid
+        return msg
 
 class JWE(JWx):
     args = ["alg", "enc", "epk", "zip", "jku", "jwk", "x5u", "x5t",
@@ -627,15 +718,11 @@ class JWE(JWx):
         :param kwargs: Extra key word arguments
         :return: Encrypted message
         """
-        _alg = self["alg"]
-        if _alg.startswith("RSA") and _alg in ["RSA-OAEP", "RSA1_5"]:
-            encrypter = JWE_RSA(self.msg, **self._dict)
-        elif _alg.startswith("A") and _alg.endswith("KW"):
-            encrypter = JWE_SYM(self.msg, **self._dict)
-        else:
-            logger.error("'{}' is not a supported algorithm".format(_alg))
-            raise NotSupportedAlgorithm
 
+        encrypted_key = cek = iv = None
+        _alg = self["alg"]
+
+        # Find Usable Keys
         if keys:
             keys = self._pick_keys(keys, use="enc")
         else:
@@ -647,13 +734,36 @@ class JWE(JWx):
                 "}'".format(_alg))
             raise NoSuitableEncryptionKey(_alg)
 
+        # Determine Encryption Class by Algorithm
+        if _alg in ["RSA-OAEP", "RSA1_5"]:
+            encrypter = JWE_RSA(self.msg, **self._dict)
+        elif _alg.startswith("A") and _alg.endswith("KW"):
+            encrypter = JWE_SYM(self.msg, **self._dict)
+        elif _alg.startswith("ECDH-ES"):
+
+            # ECDH-ES Requires the Server ECDH-ES Key to be set
+            if not keys:
+                raise NoSuitableECDHKey(_alg)
+
+            encrypter = JWE_EC(**self._dict)
+            cek, encrypted_key, iv, params, eprivk = encrypter.enc_setup(self.msg, self._dict, key=keys[0], **self._dict)
+            kwargs["encrypted_key"] = encrypted_key
+            kwargs["params"] = params
+        else:
+            logger.error("'{}' is not a supported algorithm".format(_alg))
+            raise NotSupportedAlgorithm
+
         if cek:
             kwargs["cek"] = cek
+
         if iv:
             kwargs["iv"] = iv
 
         for key in keys:
-            _key = key.encryption_key(alg=_alg, private=True)
+            if self.enc:
+                _key = key.encryption_key(alg=self.enc, private=True)
+            else:
+                _key = key.encryption_key(alg=_alg, private=True)
 
             if key.kid:
                 encrypter["kid"] = key.kid
@@ -670,22 +780,19 @@ class JWE(JWx):
         logger.error("Could not find any suitable encryption key")
         raise NoSuitableEncryptionKey()
 
-    def decrypt(self, token, keys=None, alg=None):
-        jwe = JWEnc().unpack(token)
-        # header, ek, eiv, ctxt, tag = token.split(b".")
-        # self.parse_header(header)
+    def decrypt(self, token=None, keys=None, alg=None):
+        if token:
+            jwe = JWEnc().unpack(token)
+            # header, ek, eiv, ctxt, tag = token.split(b".")
+            # self.parse_header(header)
+        elif self.jwt:
+            token = jwe = self.jwt
 
         _alg = jwe.headers["alg"]
         if alg and alg != _alg:
             raise WrongEncryptionAlgorithm()
 
-        if _alg in ["RSA-OAEP", "RSA1_5"]:
-            decrypter = JWE_RSA(**self._dict)
-        elif _alg.startswith("A") and _alg.endswith("KW"):
-            decrypter = JWE_SYM(self.msg, **self._dict)
-        else:
-            raise NotSupportedAlgorithm
-
+        # Find appropriate keys
         if keys:
             keys = self._pick_keys(keys, use="enc", alg=_alg)
         else:
@@ -693,6 +800,21 @@ class JWE(JWx):
 
         if not keys:
             raise NoSuitableDecryptionKey(_alg)
+
+        if _alg in ["RSA-OAEP", "RSA1_5"]:
+            decrypter = JWE_RSA(**self._dict)
+        elif _alg.startswith("A") and _alg.endswith("KW"):
+            decrypter = JWE_SYM(self.msg, **self._dict)
+        elif _alg.startswith("ECDH-ES"):
+
+            # ECDH-ES Requires the Server ECDH-ES Key to be set
+            if not keys:
+                raise NoSuitableECDHKey(_alg)
+
+            decrypter = JWE_EC(**self._dict)
+            cek = decrypter.dec_setup(token, key=keys[0])
+        else:
+            raise NotSupportedAlgorithm
 
         for key in keys:
             _key = key.encryption_key(alg=_alg, private=False)

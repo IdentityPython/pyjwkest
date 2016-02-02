@@ -11,8 +11,9 @@ from jwkest.aes_key_wrap import aes_wrap_key
 from jwkest import b64e, long2intarr
 from jwkest import intarr2long
 from jwkest import long2hexseq
-from jwkest.jwk import RSAKey
-from jwkest.jwe import JWE_RSA, factory
+from jwkest.ecc import NISTEllipticCurve
+from jwkest.jwk import RSAKey, ECKey
+from jwkest.jwe import JWE_RSA, factory, JWE_EC
 from jwkest.jwe import JWe
 from jwkest.jwe import JWE
 
@@ -221,3 +222,62 @@ def test_rsa_with_kid():
 
 if __name__ == "__main__":
     test_rsa_with_kid()
+
+# Test ECDH-ES
+curve = NISTEllipticCurve.by_name('P-256')
+epriv, epub = curve.key_pair()
+localpriv, localpub = curve.key_pair()
+
+epk = ECKey(crv=curve.name(), d=epriv, x=epub[0], y=epub[1])
+localkey = ECKey(crv=curve.name(), d=localpriv, x=localpub[0], y=localpub[1])
+
+def test_ecdh_encrypt_decrypt_direct_key():
+
+    global epk
+
+    jwenc = JWE_EC(plain, alg="ECDH-ES", enc="A128GCM")
+    cek, encrypted_key, iv, params, ret_epk = jwenc.enc_setup(plain, '', key=localkey, epk=epk)
+
+    kwargs = {}
+    kwargs['params'] = params
+    kwargs['cek']= cek
+    kwargs['iv'] = iv
+    kwargs['encrypted_key'] = encrypted_key
+
+    assert "epk" in params
+    assert not encrypted_key
+
+    jwt = jwenc.encrypt(key=localkey, **kwargs)
+
+    ret_jwe = factory(jwt)
+    jwdec = JWE_EC()
+    jwdec.dec_setup(ret_jwe.jwt, key=epk)
+    msg = jwdec.decrypt(ret_jwe.jwt, key=epk)
+
+    assert msg == plain
+
+def test_ecdh_encrypt_decrypt_keywrapped_key():
+
+    global epk
+
+    jwenc = JWE_EC(plain, alg="ECDH-ES+A128KW", enc="A128GCM")
+    cek, encrypted_key, iv, params, ret_epk = jwenc.enc_setup(plain, '', key=localkey, epk=epk)
+
+    kwargs = {}
+    kwargs['params'] = params
+    kwargs['cek']= cek
+    kwargs['iv'] = iv
+    kwargs['encrypted_key'] = encrypted_key
+
+    assert "epk" in params
+    assert encrypted_key
+
+    jwt = jwenc.encrypt(key=localkey, **kwargs)
+
+    ret_jwe = factory(jwt)
+    jwdec = JWE_EC()
+    jwdec.dec_setup(ret_jwe.jwt, key=epk)
+    msg = jwdec.decrypt(ret_jwe.jwt, key=epk)
+
+    assert msg == plain
+
