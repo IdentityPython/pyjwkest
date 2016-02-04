@@ -7,7 +7,7 @@ from Crypto.PublicKey.RSA import RsaKey
 import struct
 import six
 from jwkest.ecc import P256
-from jwkest import long2intarr
+from jwkest import long2intarr, b64e
 from jwkest.jwk import jwk_wrap, DeSerializationNotPossible
 from jwkest.jwk import import_rsa_key_from_file
 from jwkest.jwk import rsa_eq
@@ -354,6 +354,29 @@ def test_rsa_pubkey_verify_x509_thumbprint():
 
     with pytest.raises(DeSerializationNotPossible):
         RSAKey(x5c=[cert], x5t="abcdefgh")  # incorrect thumbprint
+
+
+EXPECTED = [
+    b'iA7PvG_DfJIeeqQcuXFmvUGjqBkda8In_uMpZrcodVA',
+    b'kLsuyGef1kfw5-t-N9CJLIHx_dpZ79-KemwqjwdrvTI',
+    b'8w34j9PLyCVC7VOZZb1tFVf0MOa2KZoy87lICMeD5w8'
+]
+
+
+def test_fingerprint():
+    keyl = KEYS()
+    keyl.load_dict(JWKS)
+    for key in keyl:
+        txt = key.fingerprint('SHA-256')
+        assert b64e(txt) in EXPECTED
+
+
+def test_fingerprint_7638_example():
+    key = RSAKey(
+        n='0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw',
+        e='AQAB', alg='RS256', kid='2011-04-29')
+    fingerprint = key.fingerprint('SHA-256')
+    assert b64e(fingerprint) == b'NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs'
 
 
 if __name__ == "__main__":

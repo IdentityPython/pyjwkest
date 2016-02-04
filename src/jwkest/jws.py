@@ -23,7 +23,7 @@ from Crypto.Signature import PKCS1_PSS
 from Crypto.Util.number import bytes_to_long
 import sys
 
-from jwkest import b64d, as_unicode, Invalid, WrongNumberOfParts
+from jwkest import b64d, as_unicode, WrongNumberOfParts
 from jwkest import b64e
 from jwkest import constant_time_compare
 from jwkest import safe_str_cmp

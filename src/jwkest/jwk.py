@@ -78,6 +78,12 @@ def sha512_digest(msg):
     return hashlib.sha512(as_bytes(msg)).digest()
 
 
+DIGEST_HASH = {
+    'SHA-256': sha256_digest,
+    'SHA-384': sha384_digest,
+    'SHA-512': sha512_digest
+}
+
 # =============================================================================
 
 
@@ -190,6 +196,7 @@ class Key(object):
     members = ["kty", "alg", "use", "kid", "x5c", "x5t", "x5u"]
     longs = []
     public_members = ["kty", "alg", "use", "kid", "x5c", "x5t", "x5u"]
+    required = ['kty']
 
     def __init__(self, kty="", alg="", use="", kid="", key=None, x5c=None,
                  x5t="", x5u="", **kwargs):
@@ -307,6 +314,24 @@ class Key(object):
     def keys(self):
         return list(self.to_dict().keys())
 
+    def fingerprint(self, hash_function, members=None):
+        if members is None:
+            members = self.required
+
+        members.sort()
+        ser = self.serialize()
+        _se = []
+        for elem in members:
+            try:
+                _val = ser[elem]
+            except KeyError:  # should never happen with the required set
+                pass
+            else:
+                _se.append('"{}":{}'.format(elem, json.dumps(_val)))
+        _json = '{{{}}}'.format(','.join(_se))
+
+        return DIGEST_HASH[hash_function](_json)
+
 
 def deser(val):
     if isinstance(val, str):
@@ -326,6 +351,7 @@ class RSAKey(Key):
     longs = ["n", "e", "d", "p", "q", "dp", "dq", "di", "qi"]
     public_members = Key.public_members
     public_members.extend(["n", "e"])
+    required = ['kty', 'n', 'e']
 
     def __init__(self, kty="RSA", alg="", use="", kid="", key=None,
                  x5c=None, x5t="", x5u="", n="", e="", d="", p="", q="",
@@ -467,6 +493,7 @@ class ECKey(Key):
     members = ["kty", "alg", "use", "kid", "crv", "x", "y", "d"]
     longs = ['x', 'y', 'd']
     public_members = ["kty", "alg", "use", "kid", "crv", "x", "y"]
+    required = ['crv', 'key', 'x', 'y']
 
     def __init__(self, kty="EC", alg="", use="", kid="", key=None,
                  crv="", x="", y="", d="", curve=None, **kwargs):
@@ -554,6 +581,7 @@ ALG2KEYLEN = {
 class SYMKey(Key):
     members = ["kty", "alg", "use", "kid", "k"]
     public_members = members[:]
+    required = ['k', 'kty']
 
     def __init__(self, kty="oct", alg="", use="", kid="", key=None,
                  x5c=None, x5t="", x5u="", k="", mtrl="", **kwargs):
@@ -774,3 +802,4 @@ class KEYS(object):
 
     def add(self, item, enc="utf-8"):
         self._keys.append(keyrep(item, enc))
+
