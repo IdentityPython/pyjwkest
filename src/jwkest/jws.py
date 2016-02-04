@@ -206,7 +206,7 @@ def alg2keytype(alg):
         return "RSA"
     elif alg.startswith("HS") or alg.startswith("A"):
         return "oct"
-    elif alg.startswith("ES"):
+    elif alg.startswith("ES") or alg.startswith("ECDH-ES"):
         return "EC"
     else:
         return None
@@ -367,7 +367,7 @@ class JWx(object):
 
         _k = self.alg2keytype(alg)
         if _k is None:
-            logger.error("Unknown arlgorithm '%s'" % alg)
+            logger.error("Unknown algorithm '%s'" % alg)
             return []
 
         logger.debug("Picking key by key type={0}".format(_k))

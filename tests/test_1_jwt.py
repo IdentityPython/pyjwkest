@@ -1,5 +1,3 @@
-import json
-
 import pytest
 
 from jwkest.jwt import JWT, b2s_conv
@@ -20,6 +18,16 @@ def test_pack_jwt():
     assert len(p) == 3
 
 
+def test_unpack_pack():
+    _jwt = JWT(**{"alg": "none"})
+    payload = {"iss": "joe", "exp": 1300819380,
+               "http://example.com/is_root": True}
+    jwt = _jwt.pack(parts=[payload, ""])
+    repacked = JWT().unpack(jwt).pack()
+
+    assert jwt == repacked
+
+
 def test_pack_unpack():
     _jwt = JWT(**{"alg": "none"})
     payload = {"iss": "joe", "exp": 1300819380,
@@ -37,6 +45,12 @@ def test_pack_unpack():
         "http://example.com/is_root"]
 
 
+def test_pack_with_headers():
+    _jwt = JWT()
+    jwt = _jwt.pack(parts=["", ""], headers={"foo": "bar"})
+    assert JWT().unpack(jwt).headers["foo"] == "bar"
+
+
 def test_unpack_str():
     _jwt = JWT(**{"alg": "none"})
     payload = {"iss": "joe", "exp": 1300819380,
@@ -46,6 +60,7 @@ def test_unpack_str():
     _jwt2 = JWT().unpack(jwt)
     assert _jwt2
     out_payload = _jwt2.payload()
+
 
 def test_b2s_conv_raise_exception_on_bad_value():
     with pytest.raises(ValueError):
