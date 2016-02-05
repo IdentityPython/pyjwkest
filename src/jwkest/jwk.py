@@ -803,3 +803,6 @@ class KEYS(object):
     def add(self, item, enc="utf-8"):
         self._keys.append(keyrep(item, enc))
 
+
+def load_jwks_from_url(url):
+    return KEYS().load_from_url(url)._keys
