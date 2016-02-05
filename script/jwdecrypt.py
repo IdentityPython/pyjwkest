@@ -52,11 +52,11 @@ if __name__ == "__main__":
 
     keys = {}
     if args.jwk_url:
-        keys = assign(load_jwks_from_url(lrequest, args.jwk_url))
+        keys = load_jwks_from_url(args.jwk_url)
     elif args.jwk_file:
         keys = load_jwks(open(args.jwk_file).read())
     elif args.x509_url:
-        keys = load_x509_cert(lrequest, args.x509_url)
+        keys = load_x509_cert(args.x509_url, {})
     elif args.x509_file:
         keys = [import_rsa_key_from_file(args.x509_file)]
     elif args.rsa_file:

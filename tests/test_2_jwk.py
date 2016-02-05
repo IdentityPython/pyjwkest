@@ -8,7 +8,7 @@ import struct
 import six
 from jwkest.ecc import P256
 from jwkest import long2intarr, b64e
-from jwkest.jwk import jwk_wrap, DeSerializationNotPossible
+from jwkest.jwk import jwk_wrap, DeSerializationNotPossible, load_jwks
 from jwkest.jwk import import_rsa_key_from_file
 from jwkest.jwk import rsa_eq
 from jwkest.jwk import keyrep
@@ -377,6 +377,11 @@ def test_fingerprint_7638_example():
         e='AQAB', alg='RS256', kid='2011-04-29')
     fingerprint = key.fingerprint('SHA-256')
     assert b64e(fingerprint) == b'NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs'
+
+
+def test_load_jwks():
+    keysl = load_jwks(json.dumps(JWKS))
+    assert len(keysl) == 3
 
 
 if __name__ == "__main__":

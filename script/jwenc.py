@@ -1,9 +1,11 @@
 #!/usr/bin/env python
+from __future__ import print_function
+import argparse
+
 import sys
 
 __author__ = 'rohe0002'
 
-import argparse
 import requests
 from jwkest.jwk import load_jwks_from_url, RSAKey
 from jwkest.jwk import rsa_load
@@ -61,7 +63,7 @@ if __name__ == "__main__":
 
     keys = {}
     if args.jwk_url:
-        keys = load_jwks_from_url(args.jwk_url, {})
+        keys = load_jwks_from_url(args.jwk_url)
     elif args.jwk_file:
         keys = load_jwks(open(args.jwk_file).read())
     elif args.x509_url:
@@ -80,21 +82,22 @@ if __name__ == "__main__":
         _key.serialize()
         keys = [_key]
     else:
-        print >> sys.stderr, "Needs encryption key"
+        print("Needs encryption key", file=sys.stderr)
         exit()
 
     if not args.enc or not args.alg:
-        print >> sys.stderr, "There are no default encryption methods"
+        print("There are no default encryption methods", file=sys.stderr)
         exit()
 
     if args.enc not in SUPPORTED["enc"]:
-        print >> sys.stderr, "Encryption method %s not supported" % args.enc
-        print >> sys.stderr, "Methods supported: %s" % SUPPORTED["enc"]
+        print("Encryption method %s not supported", args.enc, file=sys.stderr)
+        print("Methods supported: %s", SUPPORTED["enc"], file=sys.stderr)
         exit()
 
     if args.alg not in SUPPORTED["alg"]:
-        print >> sys.stderr, "Encryption algorithm %s not supported" % args.alg
-        print >> sys.stderr, "Algorithms supported: %s" % SUPPORTED["alg"]
+        print("Encryption algorithm %s not supported", args.alg,
+              file=sys.stderr)
+        print("Algorithms supported: %s", SUPPORTED["alg"], file=sys.stderr)
         exit()
 
     if args.file:
@@ -105,4 +108,4 @@ if __name__ == "__main__":
         message = args.message
 
     jwe = JWE(message, alg=args.alg, enc=args.enc)
-    print jwe.encrypt(keys)
+    print(jwe.encrypt(keys))

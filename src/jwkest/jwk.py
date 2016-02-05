@@ -723,7 +723,8 @@ class KEYS(object):
         :param jwks: The JWKS JSON string representation
         :return: list of 2-tuples containing key, type
         """
-        return self.load_dict(json.loads(jwks))
+        self.load_dict(json.loads(jwks))
+        return self
 
     def dump_jwks(self):
         """
@@ -768,6 +769,10 @@ class KEYS(object):
         return len(self._keys)
 
     def keys(self):
+        """
+
+        :return: A list of key types !!! not keys
+        """
         return list(set([k.kty for k in self._keys]))
 
     def __repr__(self):
@@ -804,5 +809,9 @@ class KEYS(object):
         self._keys.append(keyrep(item, enc))
 
 
-def load_jwks_from_url(url):
-    return KEYS().load_from_url(url)._keys
+def load_jwks_from_url(url, verify=True):
+    return KEYS().load_from_url(url, verify=verify)._keys
+
+
+def load_jwks(spec):
+    return KEYS().load_jwks(spec)._keys
