@@ -1,4 +1,4 @@
-#from __future__ import print_function
+# from __future__ import print_function
 import hashlib
 import os
 import sys
@@ -8,14 +8,18 @@ from Crypto.PublicKey import RSA
 
 from jwkest.aes_gcm import AES_GCM
 from jwkest.aes_key_wrap import aes_wrap_key
-from jwkest import b64e, long2intarr
+from jwkest import b64e
+from jwkest import long2intarr
 from jwkest import intarr2long
 from jwkest import long2hexseq
 from jwkest.ecc import NISTEllipticCurve
-from jwkest.jwk import RSAKey, ECKey
-from jwkest.jwe import JWE_RSA, factory, JWE_EC
+from jwkest.jwe import factory, JWE_SYM
+from jwkest.jwk import ECKey, SYMKey
+from jwkest.jwk import RSAKey
 from jwkest.jwe import JWe
 from jwkest.jwe import JWE
+from jwkest.jwe import JWE_EC
+from jwkest.jwe import JWE_RSA
 
 __author__ = 'rohe0002'
 
@@ -51,8 +55,9 @@ def test_jwe_09_a1():
 
     # A.1.3
     cek = intarr2long([177, 161, 244, 128, 84, 143, 225, 115, 63, 180, 3, 255,
-                      107, 154, 212, 246, 138, 7, 110, 91, 112, 46, 34, 105, 47,
-                      130, 203, 46, 122, 234, 64, 252])
+                       107, 154, 212, 246, 138, 7, 110, 91, 112, 46, 34, 105,
+                       47,
+                       130, 203, 46, 122, 234, 64, 252])
 
     # A.1.4 Key Encryption
     enc_key = [
@@ -75,7 +80,8 @@ def test_jwe_09_a1():
         172, 99, 226, 233, 73, 37, 124, 42, 72, 49, 242, 35, 127, 184, 134,
         117, 114, 135, 206]
 
-    b64_ejek = b'ApfOLCaDbqs_JXPYy2I937v_xmrzj-Iss1mG6NAHmeJViM6j2l0MHvfseIdHVyU2BIoGVu9ohvkkWiRq5DL2jYZTPA9TAdwq3FUIVyoH-Pedf6elHIVFi2KGDEspYMtQARMMSBcS7pslx6flh1Cfh3GBKysztVMEhZ_maFkm4PYVCsJsvq6Ct3fg2CJPOs0X1DHuxZKoIGIqcbeK4XEO5a0h5TAuJObKdfO0dKwfNSSbpu5sFrpRFwV2FTTYoqF4zI46N9-_hMIznlEpftRXhScEJuZ9HG8C8CHB1WRZ_J48PleqdhF4o7fB5J1wFqUXBtbtuGJ_A2Xe6AEhrlzCOw'
+    b64_ejek = b'ApfOLCaDbqs_JXPYy2I937v_xmrzj' \
+               b'-Iss1mG6NAHmeJViM6j2l0MHvfseIdHVyU2BIoGVu9ohvkkWiRq5DL2jYZTPA9TAdwq3FUIVyoH-Pedf6elHIVFi2KGDEspYMtQARMMSBcS7pslx6flh1Cfh3GBKysztVMEhZ_maFkm4PYVCsJsvq6Ct3fg2CJPOs0X1DHuxZKoIGIqcbeK4XEO5a0h5TAuJObKdfO0dKwfNSSbpu5sFrpRFwV2FTTYoqF4zI46N9-_hMIznlEpftRXhScEJuZ9HG8C8CHB1WRZ_J48PleqdhF4o7fB5J1wFqUXBtbtuGJ_A2Xe6AEhrlzCOw'
 
     iv = intarr2long([227, 197, 117, 252, 2, 219, 233, 68, 180, 225, 77, 219])
 
@@ -98,10 +104,11 @@ def test_jwe_09_a1():
     iv = long2hexseq(iv)
     res = b".".join([b64_header, b64_ejek, b64e(iv), b64e(ctxt), b64e(tag)])
 
-    #print(res.split(b'.'))
+    # print(res.split(b'.'))
     expected = b'.'.join([
         b'eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZHQ00ifQ',
-        b'ApfOLCaDbqs_JXPYy2I937v_xmrzj-Iss1mG6NAHmeJViM6j2l0MHvfseIdHVyU2BIoGVu9ohvkkWiRq5DL2jYZTPA9TAdwq3FUIVyoH-Pedf6elHIVFi2KGDEspYMtQARMMSBcS7pslx6flh1Cfh3GBKysztVMEhZ_maFkm4PYVCsJsvq6Ct3fg2CJPOs0X1DHuxZKoIGIqcbeK4XEO5a0h5TAuJObKdfO0dKwfNSSbpu5sFrpRFwV2FTTYoqF4zI46N9-_hMIznlEpftRXhScEJuZ9HG8C8CHB1WRZ_J48PleqdhF4o7fB5J1wFqUXBtbtuGJ_A2Xe6AEhrlzCOw',
+        b'ApfOLCaDbqs_JXPYy2I937v_xmrzj'
+        b'-Iss1mG6NAHmeJViM6j2l0MHvfseIdHVyU2BIoGVu9ohvkkWiRq5DL2jYZTPA9TAdwq3FUIVyoH-Pedf6elHIVFi2KGDEspYMtQARMMSBcS7pslx6flh1Cfh3GBKysztVMEhZ_maFkm4PYVCsJsvq6Ct3fg2CJPOs0X1DHuxZKoIGIqcbeK4XEO5a0h5TAuJObKdfO0dKwfNSSbpu5sFrpRFwV2FTTYoqF4zI46N9-_hMIznlEpftRXhScEJuZ9HG8C8CHB1WRZ_J48PleqdhF4o7fB5J1wFqUXBtbtuGJ_A2Xe6AEhrlzCOw',
         b'48V1_ALb6US04U3b',
         b'5eym8TW_c8SuK0ltJ3rpYIzOeDQz7TALvtu6UG9oMo4vpzs9tX_EFShS8iB7j6jiSdiwkIr3ajwQzaBtQD_A',
         b'ghEgxninkHEAMp4xZtB2mA'])
@@ -114,7 +121,7 @@ def sha256_digest(msg):
 
 
 def test_jwe_09_a3():
-    #Example JWE using AES Key Wrap and AES GCM
+    # Example JWE using AES Key Wrap and AES GCM
 
     msg = b'Live long and prosper.'
 
@@ -124,8 +131,8 @@ def test_jwe_09_a3():
     assert b64_header == b'eyJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0'
 
     cek = intarr2bytes([4, 211, 31, 197, 84, 157, 252, 254, 11, 100, 157, 250,
-                      63, 170, 106, 206, 107, 124, 212, 45, 111, 107, 9, 219,
-                      200, 177, 0, 240, 143, 156, 44, 207])
+                        63, 170, 106, 206, 107, 124, 212, 45, 111, 107, 9, 219,
+                        200, 177, 0, 240, 143, 156, 44, 207])
 
     shared_key = [25, 172, 32, 130, 225, 114, 26, 181, 138, 106, 254, 192, 95,
                   133, 74, 82]
@@ -165,7 +172,7 @@ def test_jwe_09_a3():
         112, 56, 102]
 
     assert to_intarr(tag) == [83, 73, 191, 98, 104, 205, 211, 128, 201, 189,
-                                 199, 133, 32, 38, 194, 85]
+                              199, 133, 32, 38, 194, 85]
 
     enc_cipher_text = b64e(ctxt)
     assert enc_cipher_text == b'KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY'
@@ -173,11 +180,13 @@ def test_jwe_09_a3():
     enc_authn_tag = b64e(tag)
     assert enc_authn_tag == b'U0m_YmjN04DJvceFICbCVQ'
 
+
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 
 
 def full_path(local_file):
     return os.path.join(BASEDIR, local_file)
+
 
 KEY = full_path("rsa.key")
 
@@ -220,6 +229,7 @@ def test_rsa_with_kid():
     jwe = JWE("some content", alg="RSA-OAEP", enc="A256CBC-HS512")
     jwe.encrypt(keys=encryption_keys, kid="some-key-id")
 
+
 if __name__ == "__main__":
     test_rsa_with_kid()
 
@@ -231,16 +241,18 @@ localpriv, localpub = curve.key_pair()
 epk = ECKey(crv=curve.name(), d=epriv, x=epub[0], y=epub[1])
 localkey = ECKey(crv=curve.name(), d=localpriv, x=localpub[0], y=localpub[1])
 
-def test_ecdh_encrypt_decrypt_direct_key():
 
+def test_ecdh_encrypt_decrypt_direct_key():
     global epk
 
     jwenc = JWE_EC(plain, alg="ECDH-ES", enc="A128GCM")
-    cek, encrypted_key, iv, params, ret_epk = jwenc.enc_setup(plain, '', key=localkey, epk=epk)
+    cek, encrypted_key, iv, params, ret_epk = jwenc.enc_setup(plain, '',
+                                                              key=localkey,
+                                                              epk=epk)
 
     kwargs = {}
     kwargs['params'] = params
-    kwargs['cek']= cek
+    kwargs['cek'] = cek
     kwargs['iv'] = iv
     kwargs['encrypted_key'] = encrypted_key
 
@@ -256,16 +268,18 @@ def test_ecdh_encrypt_decrypt_direct_key():
 
     assert msg == plain
 
-def test_ecdh_encrypt_decrypt_keywrapped_key():
 
+def test_ecdh_encrypt_decrypt_keywrapped_key():
     global epk
 
     jwenc = JWE_EC(plain, alg="ECDH-ES+A128KW", enc="A128GCM")
-    cek, encrypted_key, iv, params, ret_epk = jwenc.enc_setup(plain, '', key=localkey, epk=epk)
+    cek, encrypted_key, iv, params, ret_epk = jwenc.enc_setup(plain, '',
+                                                              key=localkey,
+                                                              epk=epk)
 
     kwargs = {}
     kwargs['params'] = params
-    kwargs['cek']= cek
+    kwargs['cek'] = cek
     kwargs['iv'] = iv
     kwargs['encrypted_key'] = encrypted_key
 
@@ -281,3 +295,12 @@ def test_ecdh_encrypt_decrypt_keywrapped_key():
 
     assert msg == plain
 
+
+def test_sym_encrypt_decrypt():
+    encryption_key = SYMKey(use="enc", key='DukeofHazardpass', kid="some-key-id")
+    jwe = JWE_SYM("some content", alg="A128KW", enc="A128CBC-HS256")
+    _jwe = jwe.encrypt(key=encryption_key, kid="some-key-id")
+    jwdec = JWE_SYM()
+
+    resp = jwdec.decrypt(_jwe, encryption_key)
+    assert resp[0] == b'some content'
