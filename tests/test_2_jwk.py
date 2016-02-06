@@ -279,7 +279,7 @@ def test_keys():
     assert len(keyl) == 3
     print(keyl.keys())
     print(keyl.dump_jwks())
-    assert _eq(keyl.keys(), ['RSA', 'oct', 'EC'])
+    assert _eq(keyl.key_types(), ['RSA', 'oct', 'EC'])
     assert len(keyl['rsa']) == 1
     assert len(keyl['oct']) == 1
     assert len(keyl['ec']) == 1

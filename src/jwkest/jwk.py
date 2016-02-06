@@ -769,6 +769,9 @@ class KEYS(object):
         return len(self._keys)
 
     def keys(self):
+        return self._keys
+
+    def key_types(self):
         """
 
         :return: A list of key types !!! not keys
@@ -808,10 +811,13 @@ class KEYS(object):
     def add(self, item, enc="utf-8"):
         self._keys.append(keyrep(item, enc))
 
+    def append(self, key):
+        self._keys.append(key)
+
 
 def load_jwks_from_url(url, verify=True):
-    return KEYS().load_from_url(url, verify=verify)._keys
+    return KEYS().load_from_url(url, verify=verify).keys()
 
 
 def load_jwks(spec):
-    return KEYS().load_jwks(spec)._keys
+    return KEYS().load_jwks(spec).keys()
