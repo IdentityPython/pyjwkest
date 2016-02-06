@@ -14,7 +14,7 @@ except ImportError:
 
 from binascii import unhexlify
 
-__version__ = "1.1.4"
+__version__ = "1.1.5a0"
 
 logger = logging.getLogger(__name__)
 
