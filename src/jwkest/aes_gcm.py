@@ -169,9 +169,10 @@ class AES_GCM(object):
         if auth_tag >= (1 << 128):
             raise InvalidInputException('Tag should be 128-bit')
 
-        if auth_tag != self.__ghash(auth_data, ciphertext) ^ \
-                bytes_to_long(self._aes_ecb.encrypt(
-                long_to_bytes((init_value << 32) | 1, 16))):
+        if auth_tag != self.__ghash(
+                auth_data, ciphertext) ^ bytes_to_long(
+                self._aes_ecb.encrypt(
+                    long_to_bytes((init_value << 32) | 1, 16))):
             raise InvalidTagException
 
         len_ciphertext = len(ciphertext)
