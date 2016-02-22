@@ -583,7 +583,7 @@ class JWS(JWx):
 
         res["payload"] = self.msg
 
-        return res
+        return json.dumps(res)
 
     def verify_json(self, jws, keys=None, allow_none=False, sigalg=None):
         """
@@ -593,7 +593,7 @@ class JWS(JWx):
         :return:
         """
 
-        _jwss = json.load(jws)
+        _jwss = json.loads(jws)
 
         try:
             _payload = _jwss["payload"]
