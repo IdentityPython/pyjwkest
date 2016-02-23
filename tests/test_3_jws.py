@@ -5,7 +5,7 @@ from jwkest.ecc import P384
 from jwkest.ecc import P521
 
 import jwkest
-from jwkest import jws
+from jwkest import jws, b64d_enc_dec
 from jwkest import b64d, b64e
 
 from jwkest.jwk import SYMKey, KEYS
@@ -254,8 +254,8 @@ def test_a_1_1b():
               b'\r\n "http://example.com/is_root":true}'
     val = b64e(payload)
     assert val == (
-    b'eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9'
-    b'leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ')
+        b'eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9'
+        b'leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ')
 
 
 def test_a_1_1c():
@@ -440,7 +440,7 @@ def test_signer_protected_headers():
     exp_protected['alg'] = 'ES256'
     enc_header, enc_payload, sig = _jwt.split('.')
     assert json.loads(
-        b64d(enc_header.encode("utf-8")).decode("utf-8")) == exp_protected
+            b64d(enc_header.encode("utf-8")).decode("utf-8")) == exp_protected
     assert b64d(enc_payload.encode("utf-8")).decode("utf-8") == payload
 
     _rj = JWS()
@@ -459,14 +459,97 @@ def test_verify_protected_headers():
     protectedHeader, enc_payload, sig = _jwt.split(".")
     data = dict(payload=enc_payload, signatures=[
         dict(
-            header=dict(alg=u"ES256", jwk=_key.serialize()),
-            protected=protectedHeader,
-            signature=sig,
+                header=dict(alg=u"ES256", jwk=_key.serialize()),
+                protected=protectedHeader,
+                signature=sig,
         )
     ])
-    stream = io.StringIO(json.dumps(data, ensure_ascii=False))
     _jws = JWS()
-    assert _jws.verify_json(stream) == payload
+    assert _jws.verify_json(json.dumps(data)) == payload
+
+
+def test_sign_json():
+    key = ECKey().load_key(P256)
+    payload = "hello world"
+    unprotected_headers = {"abc": "xyz"}
+    protected_headers = {"foo": "bar"}
+    _jwt = JWS(msg=payload, alg="ES256").sign_json(
+            headers=[(protected_headers, unprotected_headers)],
+            keys=[key])
+    jwt = json.loads(_jwt)
+    assert b64d_enc_dec(jwt["payload"]) == payload
+    assert len(jwt["signatures"]) == 1
+    assert jwt["signatures"][0]["header"] == unprotected_headers
+    assert json.loads(b64d_enc_dec(jwt["signatures"][0]["protected"])) == protected_headers
+
+
+def test_verify_json():
+    key = ECKey().load_key(P256)
+    payload = "hello world"
+    unprotected_headers = {"abc": "xyz"}
+    protected_headers = {"foo": "bar"}
+    _jwt = JWS(msg=payload, alg="ES256").sign_json(
+            headers=[(protected_headers, unprotected_headers)],
+            keys=[key])
+
+    assert JWS().verify_json(_jwt, keys=[key])
+
+
+def test_sign_json_dont_include_empty_unprotected_headers():
+    key = ECKey().load_key(P256)
+    protected_headers = {"foo": "bar"}
+    _jwt = JWS(msg="hello world", alg="ES256").sign_json(headers=[(protected_headers, None)],
+                                                         keys=[key])
+    json_jws = json.loads(_jwt)
+    assert "header" not in json_jws["signatures"][0]
+    jws_protected_headers = json.loads(b64d_enc_dec(json_jws["signatures"][0]["protected"]))
+    assert set(protected_headers.items()).issubset(set(jws_protected_headers.items()))
+
+
+def test_sign_json_dont_include_empty_protected_headers():
+    key = ECKey().load_key(P256)
+    unprotected_headers = {"foo": "bar"}
+    _jwt = JWS(msg="hello world", alg="ES256").sign_json(headers=[(None, unprotected_headers)],
+                                                         keys=[key])
+    json_jws = json.loads(_jwt)
+    jws_protected_headers = json.loads(b64d_enc_dec(json_jws["signatures"][0]["protected"]))
+    assert jws_protected_headers == {"alg": "ES256"}
+    jws_unprotected_headers = json_jws["signatures"][0]["header"]
+    assert unprotected_headers == jws_unprotected_headers
+
+
+def test_sign_json_flattened_syntax():
+    key = ECKey().load_key(P256)
+    protected_headers = {"foo": "bar"}
+    unprotected_headers = {"abc": "xyz"}
+    payload = "hello world"
+    _jwt = JWS(msg=payload, alg="ES256").sign_json(
+        headers=[(protected_headers, unprotected_headers)],
+        keys=[key], flatten=True)
+    json_jws = json.loads(_jwt)
+    assert "signatures" not in json_jws
+
+    assert b64d_enc_dec(json_jws["payload"]) == payload
+    assert json_jws["header"] == unprotected_headers
+    assert json.loads(b64d_enc_dec(json_jws["protected"])) == protected_headers
+
+def test_verify_json_flattened_syntax():
+    key = ECKey().load_key(P256)
+    protected_headers = {"foo": "bar"}
+    unprotected_headers = {"abc": "xyz"}
+    payload = "hello world"
+    _jwt = JWS(msg=payload, alg="ES256").sign_json(headers=[(protected_headers, unprotected_headers)],
+                                                         keys=[key], flatten=True)
+
+    assert JWS().verify_json(_jwt, keys=[key])
+
+def test_sign_json_dont_flatten_if_multiple_signatures():
+    key = ECKey().load_key(P256)
+    unprotected_headers = {"foo": "bar"}
+    _jwt = JWS(msg="hello world", alg="ES256").sign_json(headers=[(None, unprotected_headers),
+                                                                  (None, {"abc": "xyz"})],
+                                                         keys=[key], flatten=True)
+    assert "signatures" in json.loads(_jwt)
 
 
 def test_pick():
@@ -487,6 +570,7 @@ def test_dj_usage():
     _jwt = factory(sjwt)
     assert _jwt.jwt.headers['alg'] == 'RS256'
 
+
 def test_rs256_rm_signature():
     payload = "Please take a moment to register today"
     keys = [RSAKey(key=import_rsa_key_from_file(KEY))]
@@ -505,6 +589,7 @@ def test_rs256_rm_signature():
     else:
         assert False
 
+
 def test_pick_alg_assume_alg_from_single_key():
     expected_alg = "HS256"
     keys = [SYMKey(k="foobar", alg=expected_alg)]
@@ -512,12 +597,14 @@ def test_pick_alg_assume_alg_from_single_key():
     alg = JWS()._pick_alg(keys)
     assert alg == expected_alg
 
+
 def test_pick_alg_dont_get_alg_from_single_key_if_already_specified():
     expected_alg = "RS512"
     keys = [RSAKey(key=import_rsa_key_from_file(KEY), alg="RS256")]
 
     alg = JWS(alg=expected_alg)._pick_alg(keys)
     assert alg == expected_alg
+
 
 if __name__ == "__main__":
     test_rs256_rm_signature()

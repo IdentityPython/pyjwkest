@@ -23,7 +23,7 @@ from Crypto.Signature import PKCS1_PSS
 from Crypto.Util.number import bytes_to_long
 import sys
 
-from jwkest import b64d, as_unicode, WrongNumberOfParts
+from jwkest import b64d, as_unicode, WrongNumberOfParts, b64d_enc_dec, b64e_enc_dec
 from jwkest import b64e
 from jwkest import constant_time_compare
 from jwkest import safe_str_cmp
@@ -561,29 +561,41 @@ class JWS(JWx):
 
         raise BadSignature()
 
-    def sign_json(self, per_signature_header=None, **kwargs):
+    def sign_json(self, keys=None, headers=None, flatten=False):
         """
         Produce JWS using the JWS JSON Serialization
 
-        :param per_signature_header: Header parameter values that are to be
-            applied to a specific signature
+        :param keys: list of keys to use for signing the JWS
+        :param headers: list of tuples (protected headers, unprotected headers) for each signature
         :return:
         """
-        res = {"signatures": []}
+        def create_signature(protected, unprotected):
+            protected_headers = protected or {}
+            # always protect the signing alg header
+            protected_headers.setdefault("alg", self.alg)
+            _jws = JWS(self.msg, **protected_headers)
+            encoded_header, payload, signature = _jws.sign_compact(protected=protected,
+                                                                   keys=keys).split(".")
+            signature_entry = {"signature": signature}
+            if unprotected:
+                signature_entry["header"] = unprotected
+            if encoded_header:
+                signature_entry["protected"] = encoded_header
 
-        if per_signature_header is None:
-            per_signature_header = [{"alg": "none"}]
+            return signature_entry
 
-        for _kwa in per_signature_header:
-            _kwa.update(kwargs)
-            _jws = JWS(self.msg, **_kwa)
-            header, payload, signature = _jws.sign_compact().split(".")
-            res["signatures"].append({"header": header,
-                                      "signature": signature})
+        res = {"payload": b64e_enc_dec(self.msg, "utf-8", "ascii")}
 
-        res["payload"] = self.msg
+        if flatten and len(headers) == 1:  # Flattened JWS JSON Serialization Syntax
+            signature_entry = create_signature(*headers[0])
+            res.update(signature_entry)
+        else:
+            res["signatures"] = []
+            for protected, unprotected in headers:
+                signature_entry = create_signature(protected, unprotected)
+                res["signatures"].append(signature_entry)
 
-        return res
+        return json.dumps(res)
 
     def verify_json(self, jws, keys=None, allow_none=False, sigalg=None):
         """
@@ -593,7 +605,7 @@ class JWS(JWx):
         :return:
         """
 
-        _jwss = json.load(jws)
+        _jwss = json.loads(jws)
 
         try:
             _payload = _jwss["payload"]
@@ -603,13 +615,24 @@ class JWS(JWx):
         try:
             _signs = _jwss["signatures"]
         except KeyError:
-            raise FormatError("Missing signatures")
+            # handle Flattened JWKS Serialization Syntax
+            signature = {}
+            for key in ["protected", "header", "signature"]:
+                if key in _jwss:
+                    signature[key] = _jwss[key]
+            _signs = [signature]
 
         _claim = None
         for _sign in _signs:
-            token = b".".join([_sign["protected"].encode(), _payload.encode(), _sign["signature"].encode()])
-            header = _sign.get("header", {})
-            self.__init__(**header)
+            protected_headers = _sign.get("protected", "")
+            token = b".".join([protected_headers.encode(), _payload.encode(),
+                               _sign["signature"].encode()])
+
+            unprotected_headers = _sign.get("header", {})
+            all_headers = unprotected_headers.copy()
+            all_headers.update(json.loads(b64d_enc_dec(protected_headers) or {}))
+            self.__init__(**all_headers)
+
             _tmp = self.verify_compact(token, keys, allow_none, sigalg)
             if _claim is None:
                 _claim = _tmp
