@@ -615,7 +615,12 @@ class JWS(JWx):
         try:
             _signs = _jwss["signatures"]
         except KeyError:
-            raise FormatError("Missing signatures")
+            # handle Flattened JWKS Serialization Syntax
+            signature = {}
+            for key in ["protected", "header", "signature"]:
+                if key in _jwss:
+                    signature[key] = _jwss[key]
+            _signs = [signature]
 
         _claim = None
         for _sign in _signs:
