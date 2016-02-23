@@ -183,12 +183,12 @@ def b64d(b):
     return base64.urlsafe_b64decode(b)
 
 
-def b64e_enc_dec(str, encode, decode):
-    return base64.urlsafe_b64encode(str.encode(encode)).decode(decode)
+def b64e_enc_dec(str, encode="utf-8", decode="ascii"):
+    return b64e(str.encode(encode)).decode(decode)
 
 
-def b64d_enc_dec(str, encode, decode):
-    return base64.urlsafe_b64decode(str.encode(encode)).decode(decode)
+def b64d_enc_dec(str, encode="ascii", decode="utf-8"):
+    return b64d(str.encode(encode)).decode(decode)
 
 
 # 'Stolen' from Werkzeug
