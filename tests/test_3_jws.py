@@ -518,6 +518,31 @@ def test_sign_json_dont_include_empty_protected_headers():
     assert unprotected_headers == jws_unprotected_headers
 
 
+def test_sign_json_flattened_syntax():
+    key = ECKey().load_key(P256)
+    protected_headers = {"foo": "bar"}
+    unprotected_headers = {"abc": "xyz"}
+    payload = "hello world"
+    _jwt = JWS(msg=payload, alg="ES256").sign_json(
+        headers=[(protected_headers, unprotected_headers)],
+        keys=[key], flatten=True)
+    json_jws = json.loads(_jwt)
+    assert "signatures" not in json_jws
+
+    assert b64d_enc_dec(json_jws["payload"]) == payload
+    assert json_jws["header"] == unprotected_headers
+    assert json.loads(b64d_enc_dec(json_jws["protected"])) == protected_headers
+
+
+def test_sign_json_dont_flatten_if_multiple_signatures():
+    key = ECKey().load_key(P256)
+    unprotected_headers = {"foo": "bar"}
+    _jwt = JWS(msg="hello world", alg="ES256").sign_json(headers=[(None, unprotected_headers),
+                                                                  (None, {"abc": "xyz"})],
+                                                         keys=[key], flatten=True)
+    assert "signatures" in json.loads(_jwt)
+
+
 def test_pick():
     keys = KEYS()
     keys.load_dict(JWK2)

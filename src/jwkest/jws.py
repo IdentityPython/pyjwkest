@@ -561,7 +561,7 @@ class JWS(JWx):
 
         raise BadSignature()
 
-    def sign_json(self, keys=None, headers=None):
+    def sign_json(self, keys=None, headers=None, flatten=False):
         """
         Produce JWS using the JWS JSON Serialization
 
@@ -569,9 +569,7 @@ class JWS(JWx):
         :param headers: list of tuples (protected headers, unprotected headers) for each signature
         :return:
         """
-        res = {"payload": b64e_enc_dec(self.msg, "utf-8", "ascii"), "signatures": []}
-
-        for protected, unprotected in headers:
+        def create_signature(protected, unprotected):
             protected_headers = protected or {}
             # always protect the signing alg header
             protected_headers.setdefault("alg", self.alg)
@@ -583,7 +581,19 @@ class JWS(JWx):
                 signature_entry["header"] = unprotected
             if encoded_header:
                 signature_entry["protected"] = encoded_header
-            res["signatures"].append(signature_entry)
+
+            return signature_entry
+
+        res = {"payload": b64e_enc_dec(self.msg, "utf-8", "ascii")}
+
+        if flatten and len(headers) == 1:  # Flattened JWS JSON Serialization Syntax
+            signature_entry = create_signature(*headers[0])
+            res.update(signature_entry)
+        else:
+            res["signatures"] = []
+            for protected, unprotected in headers:
+                signature_entry = create_signature(protected, unprotected)
+                res["signatures"].append(signature_entry)
 
         return json.dumps(res)
 
