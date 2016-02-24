@@ -586,6 +586,9 @@ class JWS(JWx):
 
         res = {"payload": b64e_enc_dec(self.msg, "utf-8", "ascii")}
 
+        if headers is None:
+            headers = [(dict(alg=self.alg), None)]
+
         if flatten and len(headers) == 1:  # Flattened JWS JSON Serialization Syntax
             signature_entry = create_signature(*headers[0])
             res.update(signature_entry)
