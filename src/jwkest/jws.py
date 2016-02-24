@@ -586,6 +586,9 @@ class JWS(JWx):
 
         res = {"payload": b64e_enc_dec(self.msg, "utf-8", "ascii")}
 
+        if headers is None:
+            headers = [(dict(alg=self.alg), None)]
+
         if flatten and len(headers) == 1:  # Flattened JWS JSON Serialization Syntax
             signature_entry = create_signature(*headers[0])
             res.update(signature_entry)
@@ -641,14 +644,31 @@ class JWS(JWx):
 
         return _claim
 
-    def is_jws(self, token):
+    def is_jws(self, jws):
         """
 
-        :param token:
+        :param jws:
         :return:
         """
+
         try:
-            jwt = JWSig().unpack(token)
+            # JWS JSON serialization
+            json_jws = json.loads(jws)
+            return self._is_json_serialized_jws(json_jws)
+        except ValueError:
+            return self._is_compact_jws(jws)
+
+    def _is_json_serialized_jws(self, json_jws):
+        json_ser_keys = {"payload", "signatures"}
+        flattened_json_ser_keys = {"payload", "signature"}
+        if not json_ser_keys.issubset(json_jws.keys()) and not flattened_json_ser_keys.issubset(
+                json_jws.keys()):
+            return False
+        return True
+
+    def _is_compact_jws(self, jws):
+        try:
+            jwt = JWSig().unpack(jws)
         except Exception:
             return False
 
