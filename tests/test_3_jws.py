@@ -524,8 +524,8 @@ def test_sign_json_flattened_syntax():
     unprotected_headers = {"abc": "xyz"}
     payload = "hello world"
     _jwt = JWS(msg=payload, alg="ES256").sign_json(
-        headers=[(protected_headers, unprotected_headers)],
-        keys=[key], flatten=True)
+            headers=[(protected_headers, unprotected_headers)],
+            keys=[key], flatten=True)
     json_jws = json.loads(_jwt)
     assert "signatures" not in json_jws
 
@@ -533,15 +533,18 @@ def test_sign_json_flattened_syntax():
     assert json_jws["header"] == unprotected_headers
     assert json.loads(b64d_enc_dec(json_jws["protected"])) == protected_headers
 
+
 def test_verify_json_flattened_syntax():
     key = ECKey().load_key(P256)
     protected_headers = {"foo": "bar"}
     unprotected_headers = {"abc": "xyz"}
     payload = "hello world"
-    _jwt = JWS(msg=payload, alg="ES256").sign_json(headers=[(protected_headers, unprotected_headers)],
-                                                         keys=[key], flatten=True)
+    _jwt = JWS(msg=payload, alg="ES256").sign_json(
+            headers=[(protected_headers, unprotected_headers)],
+            keys=[key], flatten=True)
 
     assert JWS().verify_json(_jwt, keys=[key])
+
 
 def test_sign_json_dont_flatten_if_multiple_signatures():
     key = ECKey().load_key(P256)
@@ -550,6 +553,24 @@ def test_sign_json_dont_flatten_if_multiple_signatures():
                                                                   (None, {"abc": "xyz"})],
                                                          keys=[key], flatten=True)
     assert "signatures" in json.loads(_jwt)
+
+
+def test_is_jws_recognize_compact_jws():
+    key = ECKey().load_key(P256)
+    jws = JWS(msg="hello world", alg="ES256").sign_compact([key])
+    assert JWS().is_jws(jws)
+
+
+def test_is_jws_recognize_json_serialized_jws():
+    key = ECKey().load_key(P256)
+    jws = JWS(msg="hello world", alg="ES256").sign_json([key])
+    assert JWS().is_jws(jws)
+
+
+def test_is_jws_recognize_flattened_json_serialized_jws():
+    key = ECKey().load_key(P256)
+    jws = JWS(msg="hello world", alg="ES256").sign_json([key], flatten=True)
+    assert JWS().is_jws(jws)
 
 
 def test_pick():
