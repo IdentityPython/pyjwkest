@@ -695,7 +695,7 @@ class JWE_EC(JWe):
 
         msg, valid = super(JWE_EC, self)._decrypt(self.headers["enc"], self.cek,
                                                   self.ctxt,
-                                                  token.b64_encode_header(),
+                                                  token.b64part[0],
                                                   self.iv, self.tag)
         self.msg = msg
         self.msg_valid = valid
