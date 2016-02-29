@@ -314,7 +314,7 @@ class Key(object):
     def keys(self):
         return list(self.to_dict().keys())
 
-    def fingerprint(self, hash_function, members=None):
+    def thumbprint(self, hash_function, members=None):
         if members is None:
             members = self.required
 
