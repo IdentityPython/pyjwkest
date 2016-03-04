@@ -653,7 +653,12 @@ class JWS(JWx):
 
         try:
             # JWS JSON serialization
-            json_jws = json.loads(jws)
+            try:
+                json_jws = json.loads(jws)
+            except TypeError:
+                jws = jws.decode('utf8')
+                json_jws = json.loads(jws)
+
             return self._is_json_serialized_jws(json_jws)
         except ValueError:
             return self._is_compact_jws(jws)
