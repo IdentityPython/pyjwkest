@@ -628,4 +628,4 @@ def test_pick_alg_dont_get_alg_from_single_key_if_already_specified():
 
 
 if __name__ == "__main__":
-    test_rs256_rm_signature()
+    test_is_jws_recognize_json_serialized_jws()
