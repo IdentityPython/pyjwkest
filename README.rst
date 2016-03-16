@@ -7,6 +7,21 @@ Implementation of JWT, JWS, JWE and JWK as defined in:
 - https://tools.ietf.org/html/draft-ietf-jose-json-web-encryption
 - https://tools.ietf.org/html/draft-ietf-jose-json-web-key-36
 
+.. image:: https://api.travis-ci.org/rohe/pyjwkest.png?branch=master
+    :target: https://travis-ci.org/rohe/pyjwkest
+
+.. image:: https://img.shields.io/pypi/pyversions/pyjwkest.svg
+    :target: https://pypi.python.org/pypi/pyjwkest
+
+.. image:: https://img.shields.io/pypi/v/pyjwkest.svg
+    :target: https://pypi.python.org/pypi/pyjwkest
+
+.. image:: https://img.shields.io/pypi/dm/pyjwkest.svg
+    :target: https://pypi.python.org/pypi/pyjwkest
+
+.. image:: https://landscape.io/github/rohe/pyjwkest/master/landscape.svg?style=flat
+    :target: https://landscape.io/github/rohe/pyjwkest/master
+
 Installation
 ============
 

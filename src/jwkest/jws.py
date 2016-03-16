@@ -23,7 +23,11 @@ from Crypto.Signature import PKCS1_PSS
 from Crypto.Util.number import bytes_to_long
 import sys
 
-from jwkest import b64d, as_unicode, WrongNumberOfParts, b64d_enc_dec, b64e_enc_dec
+from jwkest import b64d
+from jwkest import as_unicode
+from jwkest import WrongNumberOfParts
+from jwkest import b64d_enc_dec
+from jwkest import b64e_enc_dec
 from jwkest import b64e
 from jwkest import constant_time_compare
 from jwkest import safe_str_cmp
@@ -34,7 +38,8 @@ from jwkest.ecc import P256
 from jwkest.ecc import P384
 from jwkest.ecc import P521
 
-from jwkest.jwk import load_x509_cert, KEYS
+from jwkest.jwk import load_x509_cert
+from jwkest.jwk import KEYS
 from jwkest.jwk import HeaderError
 from jwkest.jwk import sha256_digest
 from jwkest.jwk import sha384_digest
