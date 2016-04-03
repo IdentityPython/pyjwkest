@@ -8,10 +8,10 @@ import six
 
 from binascii import a2b_base64
 
-from Crypto.PublicKey import RSA
-from Crypto.PublicKey.RSA import importKey
-from Crypto.PublicKey.RSA import RsaKey
-from Crypto.Util.asn1 import DerSequence
+from Cryptodome.PublicKey import RSA
+from Cryptodome.PublicKey.RSA import importKey
+from Cryptodome.PublicKey.RSA import RsaKey
+from Cryptodome.Util.asn1 import DerSequence
 
 from requests import request
 

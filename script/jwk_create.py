@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import json
-from Crypto.PublicKey import RSA
+from Cryptodome.PublicKey import RSA
 import argparse
 import os
 from jwkest.jwk import RSAKey

@@ -4,7 +4,7 @@ import os
 import sys
 import array
 
-from Crypto.PublicKey import RSA
+from Cryptodome.PublicKey import RSA
 
 from jwkest.aes_gcm import AES_GCM
 from jwkest.aes_key_wrap import aes_wrap_key

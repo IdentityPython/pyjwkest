@@ -1,14 +1,21 @@
 from __future__ import print_function
 import base64
-from collections import Counter
 import json
-from Crypto.PublicKey import RSA
-from Crypto.PublicKey.RSA import RsaKey
 import struct
 import six
+import pytest
+
+from collections import Counter
+
+from Cryptodome.PublicKey import RSA
+from Cryptodome.PublicKey.RSA import RsaKey
+import os.path
+
 from jwkest.ecc import P256
 from jwkest import long2intarr, b64e
-from jwkest.jwk import jwk_wrap, DeSerializationNotPossible, load_jwks
+from jwkest.jwk import DeSerializationNotPossible
+from jwkest.jwk import load_jwks
+from jwkest.jwk import jwk_wrap
 from jwkest.jwk import import_rsa_key_from_file
 from jwkest.jwk import rsa_eq
 from jwkest.jwk import keyrep
@@ -18,8 +25,6 @@ from jwkest.jwk import ECKey
 from jwkest.jwk import pem_cert2rsa
 from jwkest.jwk import RSAKey
 from jwkest.jwk import base64_to_long
-import os.path
-import pytest
 
 __author__ = 'rohe0002'
 BASEDIR = os.path.abspath(os.path.dirname(__file__))

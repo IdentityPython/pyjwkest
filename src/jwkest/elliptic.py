@@ -349,8 +349,8 @@ def y_from_x(x, p, q, n, sign):
 
 
 if __name__ == "__main__":
-    from Crypto.Random.random import randint
-    from Crypto.Util.number import getPrime
+    from Cryptodome.Random.random import randint
+    from Cryptodome.Util.number import getPrime
     import time
 
     t = time.time()

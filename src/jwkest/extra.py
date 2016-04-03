@@ -6,11 +6,11 @@ except ImportError:
 #from past.utils import old_div
 from math import ceil
 from struct import pack, unpack
-from Crypto.Cipher import AES
-from Crypto.Hash import SHA256
-from Crypto.Hash import SHA384
-from Crypto.Hash import SHA512
-from Crypto.Hash import HMAC
+from Cryptodome.Cipher import AES
+from Cryptodome.Hash import SHA256
+from Cryptodome.Hash import SHA384
+from Cryptodome.Hash import SHA512
+from Cryptodome.Hash import HMAC
 
 
 LENMET = {

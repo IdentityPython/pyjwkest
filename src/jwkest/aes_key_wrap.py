@@ -16,15 +16,16 @@ Performance should be reasonable, since the heavy lifting is all done in
 PyCrypto's AES.
 """
 from __future__ import division
-from Crypto.Cipher.AES import MODE_ECB
 
 try:
     from builtins import hex
     from builtins import range
 except ImportError:
     pass
+
 import struct
-from Crypto.Cipher import AES
+from Cryptodome.Cipher.AES import MODE_ECB
+from Cryptodome.Cipher import AES
 
 QUAD = struct.Struct('>Q')
 

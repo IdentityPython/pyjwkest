@@ -11,12 +11,12 @@ import logging
 import zlib
 import six
 
-from Crypto import Random
-from Crypto.Hash import SHA
-from Crypto.Util.number import bytes_to_long
-from Crypto.Util.number import long_to_bytes
-from Crypto.Cipher import PKCS1_v1_5
-from Crypto.Cipher import PKCS1_OAEP
+from Cryptodome import Random
+from Cryptodome.Hash import SHA
+from Cryptodome.Util.number import bytes_to_long
+from Cryptodome.Util.number import long_to_bytes
+from Cryptodome.Cipher import PKCS1_v1_5
+from Cryptodome.Cipher import PKCS1_OAEP
 
 from jwkest import b64d
 from jwkest import b64e

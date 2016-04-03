@@ -14,13 +14,13 @@ import json
 import logging
 
 import struct
-from Crypto.Hash import SHA256
-from Crypto.Hash import SHA384
-from Crypto.Hash import SHA512
-from Crypto.Hash import HMAC
-from Crypto.Signature import PKCS1_v1_5
-from Crypto.Signature import PKCS1_PSS
-from Crypto.Util.number import bytes_to_long
+from Cryptodome.Hash import SHA256
+from Cryptodome.Hash import SHA384
+from Cryptodome.Hash import SHA512
+from Cryptodome.Hash import HMAC
+from Cryptodome.Signature import PKCS1_v1_5
+from Cryptodome.Signature import PKCS1_PSS
+from Cryptodome.Util.number import bytes_to_long
 import sys
 
 from jwkest import b64d

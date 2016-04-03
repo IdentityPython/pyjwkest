@@ -81,9 +81,9 @@ from binascii import b2a_hex
 from random import randint
 
 try:
-    # Use PyCrypto (if available)
-    from Crypto.Hash import HMAC, SHA as SHA1
-
+    # Use PyCryptoDome (if available)
+    from Cryptodome.Hash import HMAC
+    from Cryptodome.Hash import SHA as SHA1
 except ImportError:
     # PyCrypto not available.  Use the Python standard library.
     import hmac as HMAC

@@ -1,5 +1,6 @@
 from __future__ import print_function
-from Crypto.PublicKey import RSA
+
+from Cryptodome.PublicKey import RSA
 from jwkest.ecc import P256
 from jwkest.ecc import P384
 from jwkest.ecc import P521

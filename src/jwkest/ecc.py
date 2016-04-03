@@ -6,8 +6,13 @@ from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import division
 
-from Crypto.Util.number import long_to_bytes, bytes_to_long
-from jwkest.elliptic import inv, mulp, sign_bit, y_from_x, muladdp
+from Cryptodome.Util.number import long_to_bytes
+from Cryptodome.Util.number import bytes_to_long
+from jwkest.elliptic import inv
+from jwkest.elliptic import mulp
+from jwkest.elliptic import sign_bit
+from jwkest.elliptic import muladdp
+from jwkest.elliptic import y_from_x
 from jwkest.curves import get_curve
 from random import getrandbits
 from math import ceil

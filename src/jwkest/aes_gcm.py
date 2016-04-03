@@ -23,6 +23,7 @@
 """
 from __future__ import print_function
 from __future__ import division
+
 try:
     from builtins import str
     from builtins import hex
@@ -30,11 +31,12 @@ try:
     from builtins import object
 except ImportError:
     pass
-#from past.utils import old_div
+# from past.utils import old_div
 
-from Crypto.Cipher import AES
-from Crypto.Util import Counter
-from Crypto.Util.number import long_to_bytes, bytes_to_long
+from Cryptodome.Cipher import AES
+from Cryptodome.Util import Counter
+from Cryptodome.Util.number import bytes_to_long
+from Cryptodome.Util.number import long_to_bytes
 
 
 # GF(2^128) defined by 1 + a + a^2 + a^7 + a^128
@@ -74,8 +76,8 @@ class AES_GCM(object):
         self.change_key(master_key)
 
     def change_key(self, master_key):
-        #RLB: Need to allow 192-, 256-bit keys
-        #if master_key >= (1 << 128):
+        # RLB: Need to allow 192-, 256-bit keys
+        # if master_key >= (1 << 128):
         #    raise InvalidInputException('Master key should be 128-bit')
 
         self._master_key = long_to_bytes(master_key, 16)
@@ -146,7 +148,7 @@ class AES_GCM(object):
 
             if 0 != len_plaintext % 16:
                 padded_plaintext = plaintext + \
-                    b'\x00' * (16 - len_plaintext % 16)
+                                   b'\x00' * (16 - len_plaintext % 16)
             else:
                 padded_plaintext = plaintext
             ciphertext = aes_ctr.encrypt(padded_plaintext)[:len_plaintext]
@@ -157,7 +159,7 @@ class AES_GCM(object):
         auth_tag = self.__ghash(auth_data, ciphertext)
         # print 'GHASH\t', hex(auth_tag)
         auth_tag ^= bytes_to_long(self._aes_ecb.encrypt(
-                                  long_to_bytes((init_value << 32) | 1, 16)))
+            long_to_bytes((init_value << 32) | 1, 16)))
 
         # assert len(ciphertext) == len(plaintext)
         assert auth_tag < (1 << 128)
@@ -171,8 +173,8 @@ class AES_GCM(object):
 
         if auth_tag != self.__ghash(
                 auth_data, ciphertext) ^ bytes_to_long(
-                self._aes_ecb.encrypt(
-                    long_to_bytes((init_value << 32) | 1, 16))):
+            self._aes_ecb.encrypt(
+                long_to_bytes((init_value << 32) | 1, 16))):
             raise InvalidTagException
 
         len_ciphertext = len(ciphertext)
@@ -186,7 +188,7 @@ class AES_GCM(object):
 
             if 0 != len_ciphertext % 16:
                 padded_ciphertext = ciphertext + \
-                    b'\x00' * (16 - len_ciphertext % 16)
+                                    b'\x00' * (16 - len_ciphertext % 16)
             else:
                 padded_ciphertext = ciphertext
             plaintext = aes_ctr.decrypt(padded_ciphertext)[:len_ciphertext]
