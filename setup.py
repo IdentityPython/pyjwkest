@@ -41,7 +41,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.4"],
-    install_requires=["pycryptodome", "requests", "six", "future"],
+    install_requires=["pycryptodomex", "requests", "six", "future"],
     tests_require=['pytest'],
     zip_safe=False,
     scripts=glob.glob('script/*.py'),
