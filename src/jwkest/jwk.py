@@ -670,7 +670,7 @@ def keyrep(kspec, enc="utf-8"):
 
 def jwk_wrap(key, use="", kid=""):
     """
-    Instantiated a Key instance with the given key
+    Instantiate a Key instance with the given key
 
     :param key: The keys to wrap
     :param use: What the key are expected to be use for
