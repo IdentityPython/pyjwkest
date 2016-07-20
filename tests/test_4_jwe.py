@@ -235,20 +235,18 @@ if __name__ == "__main__":
 
 # Test ECDH-ES
 curve = NISTEllipticCurve.by_name('P-256')
-epriv, epub = curve.key_pair()
+remotepriv, remotepub = curve.key_pair()
 localpriv, localpub = curve.key_pair()
 
-epk = ECKey(crv=curve.name(), d=epriv, x=epub[0], y=epub[1])
 localkey = ECKey(crv=curve.name(), d=localpriv, x=localpub[0], y=localpub[1])
-
+remotekey = ECKey(crv=curve.name(), d=remotepriv, x=remotepub[0], y=remotepub[1])
 
 def test_ecdh_encrypt_decrypt_direct_key():
-    global epk
 
     jwenc = JWE_EC(plain, alg="ECDH-ES", enc="A128GCM")
     cek, encrypted_key, iv, params, ret_epk = jwenc.enc_setup(plain, '',
-                                                              key=localkey,
-                                                              epk=epk)
+                                                              key=remotekey,
+                                                              epk=localkey)
 
     kwargs = {}
     kwargs['params'] = params
@@ -263,8 +261,8 @@ def test_ecdh_encrypt_decrypt_direct_key():
 
     ret_jwe = factory(jwt)
     jwdec = JWE_EC()
-    jwdec.dec_setup(ret_jwe.jwt, key=epk)
-    msg = jwdec.decrypt(ret_jwe.jwt, key=epk)
+    jwdec.dec_setup(ret_jwe.jwt, key=remotekey)
+    msg = jwdec.decrypt(ret_jwe.jwt, key=remotekey)
 
     assert msg == plain
 
@@ -274,8 +272,8 @@ def test_ecdh_encrypt_decrypt_keywrapped_key():
 
     jwenc = JWE_EC(plain, alg="ECDH-ES+A128KW", enc="A128GCM")
     cek, encrypted_key, iv, params, ret_epk = jwenc.enc_setup(plain, '',
-                                                              key=localkey,
-                                                              epk=epk)
+                                                              key=remotekey,
+                                                              epk=localkey)
 
     kwargs = {}
     kwargs['params'] = params
@@ -290,8 +288,8 @@ def test_ecdh_encrypt_decrypt_keywrapped_key():
 
     ret_jwe = factory(jwt)
     jwdec = JWE_EC()
-    jwdec.dec_setup(ret_jwe.jwt, key=epk)
-    msg = jwdec.decrypt(ret_jwe.jwt, key=epk)
+    jwdec.dec_setup(ret_jwe.jwt, key=remotekey)
+    msg = jwdec.decrypt(ret_jwe.jwt, key=remotekey)
 
     assert msg == plain
 
