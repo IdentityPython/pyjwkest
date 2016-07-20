@@ -582,8 +582,7 @@ class JWE_EC(JWe):
         # Generate an ephemeral key pair if none is given
         curve = NISTEllipticCurve.by_name(key.crv)
         if "epk" in kwargs:
-            epk = kwargs["epk"] if isinstance(kwargs["epk"], ECKey) else ECKey(
-                kwargs["epk"])
+            epk = kwargs["epk"] if isinstance(kwargs["epk"], ECKey) else ECKey(kwargs["epk"])
         else:
             raise Exception(
                 "Ephemeral Public Key (EPK) Required for ECDH-ES JWE "
@@ -592,7 +591,7 @@ class JWE_EC(JWe):
         params = {
             "apu": b64e(apu),
             "apv": b64e(apv),
-            "epk": key.serialize(False)
+            "epk": epk.serialize(False)
         }
 
         cek = iv = None
@@ -602,6 +601,7 @@ class JWE_EC(JWe):
             iv = kwargs['iv']
 
         cek, iv = self._generate_key_and_iv(self.enc, cek=cek, iv=iv)
+
         if self.alg == "ECDH-ES":
             try:
                 dk_len = KEYLEN[self.enc]
@@ -609,12 +609,12 @@ class JWE_EC(JWe):
                 raise Exception(
                     "Unknown key length for algorithm %s" % self.enc)
 
-            cek = ecdh_derive_key(curve, key.d, (epk.x, epk.y), apu, apv,
+            cek = ecdh_derive_key(curve, epk.d, (key.x, key.y), apu, apv,
                                   str(self.enc).encode(), dk_len)
         elif self.alg in ["ECDH-ES+A128KW", "ECDH-ES+A192KW", "ECDH-ES+A256KW"]:
             _pre, _post = self.alg.split("+")
             klen = int(_post[1:4])
-            kek = ecdh_derive_key(curve, key.d, (epk.x, epk.y), apu, apv,
+            kek = ecdh_derive_key(curve, epk.d, (key.x, key.y), apu, apv,
                                   str(_post).encode(), klen)
             encrypted_key = aes_wrap_key(kek, cek)
         else:
@@ -631,8 +631,7 @@ class JWE_EC(JWe):
 
         # Handle EPK / Curve
         if "epk" not in self.headers or "crv" not in self.headers["epk"]:
-            raise Exception(
-                "Ephemeral Public Key Missing in ECDH-ES Computation")
+            raise Exception("Ephemeral Public Key Missing in ECDH-ES Computation")
 
         epubkey = ECKey(**self.headers["epk"])
         apu = apv = ""
@@ -759,8 +758,7 @@ class JWE(JWx):
 
         if not keys:
             logger.error(
-                "Could not find any suitable encryption key for alg='{"
-                "}'".format(_alg))
+                "Could not find any suitable encryption key for alg='{}'".format(_alg))
             raise NoSuitableEncryptionKey(_alg)
 
         # Determine Encryption Class by Algorithm
