@@ -87,18 +87,18 @@ DIGEST_HASH = {
 # =============================================================================
 
 
-def import_rsa_key_from_file(filename):
-    return RSA.importKey(open(filename, 'r').read())
+def import_rsa_key_from_file(filename, passphrase=None):
+    return RSA.importKey(open(filename, 'r').read(), passphrase=passphrase)
 
 
-def import_rsa_key(key):
+def import_rsa_key(key, passphrase=None):
     """
     Extract an RSA key from a PEM-encoded certificate
 
     :param key: RSA key encoded in standard form
     :return: RSA key instance
     """
-    return importKey(key)
+    return importKey(key, passphrase=passphrase)
 
 
 def der2rsa(der):
