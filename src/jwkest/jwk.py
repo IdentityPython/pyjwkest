@@ -94,8 +94,8 @@ def import_rsa_key_from_file(filename, passphrase=None):
 def import_rsa_key(key, passphrase=None):
     """
     Extract an RSA key from a PEM-encoded certificate
-
     :param key: RSA key encoded in standard form
+    :param passphrase: Password to open the certificate (Optional)
     :return: RSA key instance
     """
     return importKey(key, passphrase=passphrase)
