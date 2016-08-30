@@ -161,7 +161,10 @@ class DSASigner(Signer):
 
     def verify(self, msg, sig, key):
         h = bytes_to_long(self.digest.new(msg).digest())
-        return self._sign.verify(h, sig, key)
+        if self._sign.verify(h, sig, key):
+            return True
+        else:
+            raise BadSignature()
 
 
 class PSSSigner(Signer):
