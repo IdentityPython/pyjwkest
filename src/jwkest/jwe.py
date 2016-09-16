@@ -489,15 +489,20 @@ class JWE_RSA(JWe):
             else:
                 raise ParameterError("Zip has unknown value: %s" % self["zip"])
 
+        kwarg_cek = cek or None
+
         _enc = self["enc"]
         cek, iv = self._generate_key_and_iv(_enc, cek, iv)
+        self["cek"] = cek
 
         logger.debug("cek: %s, iv: %s" % ([c for c in cek], [c for c in iv]))
 
         _encrypt = RSAEncrypter(self.with_digest).encrypt
 
         _alg = self["alg"]
-        if _alg == "RSA-OAEP":
+        if kwarg_cek:
+            jwe_enc_key = ''
+        elif _alg == "RSA-OAEP":
             jwe_enc_key = _encrypt(cek, key, 'pkcs1_oaep_padding')
         elif _alg == "RSA1_5":
             jwe_enc_key = _encrypt(cek, key)
@@ -511,7 +516,7 @@ class JWE_RSA(JWe):
         ctxt, tag, key = self.enc_setup(_enc, _msg, enc_header, cek, iv)
         return jwe.pack(parts=[jwe_enc_key, iv, ctxt, tag])
 
-    def decrypt(self, token, key):
+    def decrypt(self, token, key, cek=None):
         """ Decrypts a JWT
 
         :param token: The JWT
@@ -529,13 +534,16 @@ class JWE_RSA(JWe):
         _decrypt = RSAEncrypter(self.with_digest).decrypt
 
         _alg = jwe.headers["alg"]
-        if _alg == "RSA-OAEP":
+        if cek:
+            pass
+        elif _alg == "RSA-OAEP":
             cek = _decrypt(jek, key, 'pkcs1_oaep_padding')
         elif _alg == "RSA1_5":
             cek = _decrypt(jek, key)
         else:
             raise NotSupportedAlgorithm(_alg)
 
+        self["cek"] = cek
         enc = jwe.headers["enc"]
         try:
             assert enc in SUPPORTED["enc"]
@@ -687,7 +695,7 @@ class JWE_EC(JWe):
             return jwe.pack(parts=[kwargs['encrypted_key'], iv, ctxt, tag])
         return jwe.pack(parts=[iv, ctxt, tag])
 
-    def decrypt(self, token=None, key=None):
+    def decrypt(self, token=None, key=None, **kwargs):
 
         if not self.cek:
             raise Exception("Content Encryption Key is Not Yet Set")
@@ -747,7 +755,7 @@ class JWE(JWx):
         :return: Encrypted message
         """
 
-        encrypted_key = cek = iv = None
+        # encrypted_key = cek = iv = None
         _alg = self["alg"]
 
         # Find Usable Keys
@@ -801,6 +809,7 @@ class JWE(JWx):
 
             try:
                 token = encrypter.encrypt(_key, **kwargs)
+                self["cek"] = encrypter.cek if 'cek' in encrypter else None
             except TypeError as err:
                 raise err
             else:
@@ -811,7 +820,7 @@ class JWE(JWx):
         logger.error("Could not find any suitable encryption key")
         raise NoSuitableEncryptionKey()
 
-    def decrypt(self, token=None, keys=None, alg=None):
+    def decrypt(self, token=None, keys=None, alg=None, cek=None):
         if token:
             jwe = JWEnc().unpack(token)
             # header, ek, eiv, ctxt, tag = token.split(b".")
@@ -829,7 +838,7 @@ class JWE(JWx):
         else:
             keys = self._pick_keys(self._get_keys(), use="enc", alg=_alg)
 
-        if not keys:
+        if not keys and not cek:
             raise NoSuitableDecryptionKey(_alg)
 
         if _alg in ["RSA-OAEP", "RSA1_5"]:
@@ -847,10 +856,21 @@ class JWE(JWx):
         else:
             raise NotSupportedAlgorithm
 
+        if cek:
+            try:
+                msg = decrypter.decrypt(as_bytes(token), None, cek=cek)
+                self["cek"] = decrypter.cek if 'cek' in decrypter else None
+            except (KeyError, DecryptionFailed):
+                pass
+            else:
+                logger.debug("Decrypted message using exiting CEK")
+                return msg
+
         for key in keys:
             _key = key.encryption_key(alg=_alg, private=False)
             try:
                 msg = decrypter.decrypt(as_bytes(token), _key)
+                self["cek"] = decrypter.cek if 'cek' in decrypter else None
             except (KeyError, DecryptionFailed):
                 pass
             else:
