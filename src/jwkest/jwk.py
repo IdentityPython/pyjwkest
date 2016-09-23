@@ -190,7 +190,7 @@ def x509_rsa_load(txt):
     return [("rsa", import_rsa_key(txt))]
 
 
-def key_from_jwk_dict(jwk_dict: dict, private: bool=True) -> Key:
+def key_from_jwk_dict(jwk_dict, private=True):
     """Load JWK from dictionary"""
     if jwk_dict['kty'] == 'EC':
         if private:
