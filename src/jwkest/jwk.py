@@ -22,6 +22,7 @@ from jwkest import long_to_base64
 from jwkest import JWKESTException
 from jwkest import b64d
 from jwkest import b64e
+from jwkest import UnknownAlgorithm
 from jwkest.ecc import NISTEllipticCurve
 from jwkest.jwt import b2s_conv
 
@@ -187,6 +188,39 @@ def x509_rsa_load(txt):
     :return:
     """
     return [("rsa", import_rsa_key(txt))]
+
+
+def key_from_jwk_dict(jwk_dict, private=True):
+    """Load JWK from dictionary"""
+    if jwk_dict['kty'] == 'EC':
+        if private:
+            return ECKey(kid=jwk_dict['kid'],
+                         crv=jwk_dict['crv'],
+                         x=jwk_dict['x'],
+                         y=jwk_dict['y'],
+                         d=jwk_dict['d'])
+        else:
+            return ECKey(kid=jwk_dict['kid'],
+                         crv=jwk_dict['crv'],
+                         x=jwk_dict['x'],
+                         y=jwk_dict['y'])
+    elif jwk_dict['kty'] == 'RSA':
+        if private:
+            return RSAKey(kid=jwk_dict['kid'],
+                          n=jwk_dict['n'],
+                          e=jwk_dict['e'],
+                          d=jwk_dict['d'],
+                          p=jwk_dict['p'],
+                          q=jwk_dict['q'])
+        else:
+            return RSAKey(kid=jwk_dict['kid'],
+                          n=jwk_dict['n'],
+                          e=jwk_dict['e'])
+    elif jwk_dict['kty'] == 'oct':
+        return SYMKey(kid=jwk_dict['kid'],
+                      k=jwk_dict['k'])
+    else:
+        raise UnknownAlgorithm
 
 
 class Key(object):
