@@ -509,6 +509,8 @@ class ECKey(Key):
         if self.crv and not self.curve:
             self.verify()
             self.deserialize()
+        elif self.key and (not self.crv and not self.curve):
+            self.load_key(key)
 
     def deserialize(self):
         """
