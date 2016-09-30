@@ -22,6 +22,7 @@ from jwkest import long_to_base64
 from jwkest import JWKESTException
 from jwkest import b64d
 from jwkest import b64e
+from jwkest import UnknownAlgorithm
 from jwkest.ecc import NISTEllipticCurve
 from jwkest.jwt import b2s_conv
 
@@ -87,18 +88,18 @@ DIGEST_HASH = {
 # =============================================================================
 
 
-def import_rsa_key_from_file(filename):
-    return RSA.importKey(open(filename, 'r').read())
+def import_rsa_key_from_file(filename, passphrase=None):
+    return RSA.importKey(open(filename, 'r').read(), passphrase=passphrase)
 
 
-def import_rsa_key(key):
+def import_rsa_key(key, passphrase=None):
     """
     Extract an RSA key from a PEM-encoded certificate
-
     :param key: RSA key encoded in standard form
+    :param passphrase: Password to open the certificate (Optional)
     :return: RSA key instance
     """
-    return importKey(key)
+    return importKey(key, passphrase=passphrase)
 
 
 def der2rsa(der):
@@ -187,6 +188,39 @@ def x509_rsa_load(txt):
     :return:
     """
     return [("rsa", import_rsa_key(txt))]
+
+
+def key_from_jwk_dict(jwk_dict, private=True):
+    """Load JWK from dictionary"""
+    if jwk_dict['kty'] == 'EC':
+        if private:
+            return ECKey(kid=jwk_dict['kid'],
+                         crv=jwk_dict['crv'],
+                         x=jwk_dict['x'],
+                         y=jwk_dict['y'],
+                         d=jwk_dict['d'])
+        else:
+            return ECKey(kid=jwk_dict['kid'],
+                         crv=jwk_dict['crv'],
+                         x=jwk_dict['x'],
+                         y=jwk_dict['y'])
+    elif jwk_dict['kty'] == 'RSA':
+        if private:
+            return RSAKey(kid=jwk_dict['kid'],
+                          n=jwk_dict['n'],
+                          e=jwk_dict['e'],
+                          d=jwk_dict['d'],
+                          p=jwk_dict['p'],
+                          q=jwk_dict['q'])
+        else:
+            return RSAKey(kid=jwk_dict['kid'],
+                          n=jwk_dict['n'],
+                          e=jwk_dict['e'])
+    elif jwk_dict['kty'] == 'oct':
+        return SYMKey(kid=jwk_dict['kid'],
+                      k=jwk_dict['k'])
+    else:
+        raise UnknownAlgorithm
 
 
 class Key(object):

@@ -193,6 +193,37 @@ KEY = full_path("rsa.key")
 rsa = RSA.importKey(open(KEY, 'r').read())
 plain = b'Now is the time for all good men to come to the aid of their country.'
 
+def test_cek_reuse_encryption_rsaes_rsa15():
+
+    _rsa = JWE_RSA(plain, alg="RSA1_5", enc="A128CBC-HS256")
+    jwt = _rsa.encrypt(rsa)
+    dec = JWE_RSA()
+    msg = dec.decrypt(jwt, rsa)
+
+    assert msg == plain
+
+    _rsa2 = JWE_RSA(plain, alg="RSA1_5", enc="A128CBC-HS256")
+    jwt = _rsa2.encrypt(None, cek=dec["cek"])
+    dec2 = JWE_RSA()
+    msg = dec2.decrypt(jwt, None, cek=_rsa["cek"])
+
+    assert msg == plain
+
+def test_cek_reuse_encryption_rsaes_rsa_oaep():
+
+    _rsa = JWE_RSA(plain, alg="RSA-OAEP", enc="A256GCM")
+    jwt = _rsa.encrypt(rsa)
+    dec = JWE_RSA()
+    msg = dec.decrypt(jwt, rsa)
+
+    assert msg == plain
+
+    _rsa2 = JWE_RSA(plain, alg="RSA-OAEP", enc="A256GCM")
+    jwt = _rsa2.encrypt(None, cek=dec["cek"])
+    dec2 = JWE_RSA()
+    msg = dec2.decrypt(jwt, None, cek=_rsa["cek"])
+
+    assert msg == plain
 
 def test_rsa_encrypt_decrypt_rsa_cbc():
     _rsa = JWE_RSA(plain, alg="RSA1_5", enc="A128CBC-HS256")
