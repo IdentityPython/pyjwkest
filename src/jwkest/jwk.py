@@ -366,6 +366,9 @@ class Key(object):
 
         return DIGEST_HASH[hash_function](_json)
 
+    def add_kid(self):
+        self.kid = b64e(self.thumbprint('SHA-256')).decode('utf8')
+
 
 def deser(val):
     if isinstance(val, str):
