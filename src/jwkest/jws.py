@@ -101,6 +101,7 @@ def mp2bin(b):
 
 class Signer(object):
     """Abstract base class for signing algorithms."""
+
     def sign(self, msg, key):
         """Sign ``msg`` with ``key`` and return the signature."""
         raise NotImplementedError()
@@ -442,7 +443,6 @@ class JWx(object):
 
 
 class JWS(JWx):
-
     def alg_keys(self, keys, use, protected=None):
         _alg = self._pick_alg(keys)
 
@@ -495,7 +495,8 @@ class JWS(JWx):
             raise UnknownAlgorithm(_alg)
 
         _input = jwt.pack(parts=[self.msg])
-        sig = _signer.sign(_input.encode("utf-8"), key.get_key(alg=_alg, private=True))
+        sig = _signer.sign(_input.encode("utf-8"),
+                           key.get_key(alg=_alg, private=True))
         logger.debug("Signed message using key with kid=%s" % key.kid)
         return ".".join([_input, b64encode_item(sig).decode("utf-8")])
 
@@ -574,16 +575,19 @@ class JWS(JWx):
         Produce JWS using the JWS JSON Serialization
 
         :param keys: list of keys to use for signing the JWS
-        :param headers: list of tuples (protected headers, unprotected headers) for each signature
+        :param headers: list of tuples (protected headers, unprotected
+        headers) for each signature
         :return:
         """
+
         def create_signature(protected, unprotected):
             protected_headers = protected or {}
             # always protect the signing alg header
             protected_headers.setdefault("alg", self.alg)
             _jws = JWS(self.msg, **protected_headers)
-            encoded_header, payload, signature = _jws.sign_compact(protected=protected,
-                                                                   keys=keys).split(".")
+            encoded_header, payload, signature = _jws.sign_compact(
+                protected=protected,
+                keys=keys).split(".")
             signature_entry = {"signature": signature}
             if unprotected:
                 signature_entry["header"] = unprotected
@@ -597,7 +601,8 @@ class JWS(JWx):
         if headers is None:
             headers = [(dict(alg=self.alg), None)]
 
-        if flatten and len(headers) == 1:  # Flattened JWS JSON Serialization Syntax
+        if flatten and len(
+                headers) == 1:  # Flattened JWS JSON Serialization Syntax
             signature_entry = create_signature(*headers[0])
             res.update(signature_entry)
         else:
@@ -641,7 +646,8 @@ class JWS(JWx):
 
             unprotected_headers = _sign.get("header", {})
             all_headers = unprotected_headers.copy()
-            all_headers.update(json.loads(b64d_enc_dec(protected_headers) or {}))
+            all_headers.update(
+                json.loads(b64d_enc_dec(protected_headers) or {}))
             self.__init__(**all_headers)
 
             _tmp = self.verify_compact(token, keys, allow_none, sigalg)
@@ -674,7 +680,8 @@ class JWS(JWx):
     def _is_json_serialized_jws(self, json_jws):
         json_ser_keys = {"payload", "signatures"}
         flattened_json_ser_keys = {"payload", "signature"}
-        if not json_ser_keys.issubset(json_jws.keys()) and not flattened_json_ser_keys.issubset(
+        if not json_ser_keys.issubset(
+                json_jws.keys()) and not flattened_json_ser_keys.issubset(
                 json_jws.keys()):
             return False
         return True

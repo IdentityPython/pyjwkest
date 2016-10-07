@@ -1,5 +1,6 @@
 from __future__ import print_function
 import base64
+import copy
 import json
 import struct
 import six
@@ -387,6 +388,12 @@ def test_thumbprint_7638_example():
 def test_load_jwks():
     keysl = load_jwks(json.dumps(JWKS))
     assert len(keysl) == 3
+
+
+# def test_copy():
+#     keysl = load_jwks(json.dumps(JWKS))
+#     ckl = [copy.copy(k) for k in keysl]
+#     assert len(ckl) == 3
 
 
 if __name__ == "__main__":
