@@ -510,6 +510,18 @@ class JWS(JWx):
         :param sigalg: Expected sigalg
         :return:
         """
+        (msg, _) = self.verify_compact_verbose(jws, keys, allow_none, sigalg)
+
+    def verify_compact_verbose(self, jws, keys=None, allow_none=False, sigalg=None):
+        """
+        Verify a JWT signature and return tuple with validation results
+
+        :param jws:
+        :param keys:
+        :param allow_none: If signature algorithm 'none' is allowed
+        :param sigalg: Expected sigalg
+        :return:
+        """
         jwt = JWSig().unpack(jws)
         if len(jwt) != 3:
             raise WrongNumberOfParts(len(jwt))
@@ -524,7 +536,7 @@ class JWS(JWx):
             if _alg is None or _alg.lower() == "none":
                 if allow_none:
                     self.msg = jwt.payload()
-                    return self.msg
+                    return (self.msg, None)
                 else:
                     raise SignerAlgError("none not allowed")
 
@@ -566,7 +578,7 @@ class JWS(JWx):
                     logger.debug(
                         "Verified message using key with kid=%s" % key.kid)
                     self.msg = jwt.payload()
-                    return self.msg
+                    return (self.msg, {'key': key})
 
         raise BadSignature()
 
