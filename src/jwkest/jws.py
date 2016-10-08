@@ -578,6 +578,7 @@ class JWS(JWx):
                     logger.debug(
                         "Verified message using key with kid=%s" % key.kid)
                     self.msg = jwt.payload()
+                    self.key = key
                     return {'msg': self.msg, 'key': key}
 
         raise BadSignature()
