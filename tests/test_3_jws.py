@@ -303,6 +303,18 @@ def test_jws_1():
     assert _jws2.msg == msg
 
 
+def test_jws_2():
+    msg = {"iss": "joe", "exp": 1300819380, "http://example.com/is_root": True}
+    key = SYMKey(key=jwkest.intarr2bin(HMAC_KEY))
+    _jws = JWS(msg, cty="JWT", alg="HS256", jwk=key.serialize())
+    res = _jws.sign_compact()
+
+    _jws2 = JWS(alg="HS256")
+    _jws2.verify_compact_verbose(res, keys=[key])
+    assert _jws2.msg == msg
+    assert _jws2.key == key
+
+
 def test_signer_es256():
     payload = "Please take a moment to register today"
     _key = ECKey().load_key(P256)
@@ -313,6 +325,19 @@ def test_signer_es256():
     _rj = JWS()
     info = _rj.verify_compact(_jwt, keys)
     assert info == payload
+
+
+def test_signer_es256_verbose():
+    payload = "Please take a moment to register today"
+    _key = ECKey().load_key(P256)
+    keys = [_key]
+    _jws = JWS(payload, alg="ES256")
+    _jwt = _jws.sign_compact(keys)
+
+    _rj = JWS()
+    info = _rj.verify_compact_verbose(_jwt, keys)
+    assert info['msg'] == payload
+    assert info['key'] == _key
 
 
 def test_signer_es384():
