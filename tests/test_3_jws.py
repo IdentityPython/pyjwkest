@@ -47,13 +47,25 @@ HMAC_KEY = [3, 35, 53, 75, 43, 15, 165, 188, 131, 126, 6, 101, 119, 123, 166,
             119, 98, 61, 34, 61, 46, 33, 114, 5, 46, 79, 8, 192, 205, 154, 245,
             103, 208, 128, 163]
 
+JWKS0 = {"keys": [
+    {'e': 'AQAB', 'kty': 'RSA', 'alg': 'RSA256',
+     'n': 'qYJqXTXsDroPYyQBBmSolK3bJtrSerEm'
+          '-nrmbSpfn8Rz3y3oXLydvUqj8869PkcEzoJIY5Xf7xDN1Co_qyT9qge'
+          '-3C6DEwGVHXOwRoXRGQ_h50Vsh60MB5MIuDN188EeZnQ30dtCTBB9KDTSEA2DunplhwLCq4xphnMNUaeHdEk',
+     'kid': 'rsa1'},
+    {
+        "k":
+            b"YTEyZjBlMDgxMGI4YWU4Y2JjZDFiYTFlZTBjYzljNDU3YWM0ZWNiNzhmNmFlYTNkNTY0NzMzYjE",
+        "kty": "oct",
+    }]}
+
 JWKS = {"keys": [
     {
         "n":
             b"zkpUgEgXICI54blf6iWiD2RbMDCOO1jV0VSff1MFFnujM4othfMsad7H1kRo50YM5S_X9TdvrpdOfpz5aBaKFhT6Ziv0nhtcekq1eRl8mjBlvGKCE5XGk-0LFSDwvqgkJoFYInq7bu0a4JEzKs5AyJY75YlGh879k1Uu2Sv3ZZOunfV1O1Orta-NvS-aG_jN5cstVbCGWE20H0vFVrJKNx0Zf-u-aA-syM4uX7wdWgQ-owoEMHge0GmGgzso2lwOYf_4znanLwEuO3p5aabEaFoKNR4K6GjQcjBcYmDEE4CtfRU9AEmhcD1kleiTB9TjPWkgDmT9MXsGxBHf3AKT5w",
         "e": b"AQAB",
         "kty": "RSA",
-        "kid": "5-VBFv40P8D4I-7SFz7hMugTbPs",
+        "kid": "rsa1",
         "use": "sig"
     },
     {
@@ -64,7 +76,7 @@ JWKS = {"keys": [
     },
     {
         "kty": "EC",
-        "kid": "7snis",
+        "kid": "ec1",
         "use": "sig",
         "x": "q0WbWhflRbxyQZKFuQvh2nZvg98ak-twRoO5uo2L7Po",
         "y": "GOd2jL_6wa0cfnyA0SmEhok9fkYEnAHFKLLM79BZ8_E",
@@ -135,6 +147,7 @@ JWK2 = {
 
 SIGKEYS = KEYS()
 SIGKEYS.load_dict(JWKS)
+
 
 
 def test_1():
@@ -599,11 +612,19 @@ def test_is_jws_recognize_flattened_json_serialized_jws():
     assert JWS().is_jws(jws)
 
 
-def test_pick():
+def test_pick_use():
     keys = KEYS()
     keys.load_dict(JWK2)
     _jws = JWS("foobar", alg="RS256", kid="MnC_VZcATfM5pOYiJHMba9goEKY")
-    _keys = _jws._pick_keys(keys, use="sig")
+    _keys = _jws.pick_keys(keys, use="sig")
+    assert len(_keys) == 1
+
+
+def test_pick_no_use():
+    keys = KEYS()
+    keys.load_dict(JWKS0)
+    _jws = JWS("foobar", alg="RS256", kid="rsa1")
+    _keys = _jws.pick_keys(keys, use="sig")
     assert len(_keys) == 1
 
 

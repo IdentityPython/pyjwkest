@@ -360,7 +360,7 @@ class JWx(object):
     def alg2keytype(self, alg):
         return alg2keytype(alg)
 
-    def _pick_keys(self, keys, use="", alg=""):
+    def pick_keys(self, keys, use="", alg=""):
         """
         The assumption is that upper layer has made certain you only get
         keys you can use.
@@ -447,9 +447,9 @@ class JWS(JWx):
         _alg = self._pick_alg(keys)
 
         if keys:
-            keys = self._pick_keys(keys, use=use, alg=_alg)
+            keys = self.pick_keys(keys, use=use, alg=_alg)
         else:
-            keys = self._pick_keys(self._get_keys(), use=use, alg=_alg)
+            keys = self.pick_keys(self._get_keys(), use=use, alg=_alg)
 
         xargs = protected or {}
         xargs["alg"] = _alg
@@ -551,9 +551,9 @@ class JWS(JWx):
         self["alg"] = _alg
 
         if keys:
-            _keys = self._pick_keys(keys)
+            _keys = self.pick_keys(keys)
         else:
-            _keys = self._pick_keys(self._get_keys())
+            _keys = self.pick_keys(self._get_keys())
 
         if not _keys:
             if "kid" in self:

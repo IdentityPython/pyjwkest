@@ -760,9 +760,9 @@ class JWE(JWx):
 
         # Find Usable Keys
         if keys:
-            keys = self._pick_keys(keys, use="enc")
+            keys = self.pick_keys(keys, use="enc")
         else:
-            keys = self._pick_keys(self._get_keys(), use="enc")
+            keys = self.pick_keys(self._get_keys(), use="enc")
 
         if not keys:
             logger.error(
@@ -834,9 +834,9 @@ class JWE(JWx):
 
         # Find appropriate keys
         if keys:
-            keys = self._pick_keys(keys, use="enc", alg=_alg)
+            keys = self.pick_keys(keys, use="enc", alg=_alg)
         else:
-            keys = self._pick_keys(self._get_keys(), use="enc", alg=_alg)
+            keys = self.pick_keys(self._get_keys(), use="enc", alg=_alg)
 
         if not keys and not cek:
             raise NoSuitableDecryptionKey(_alg)

@@ -1,10 +1,14 @@
 import json
+import logging
+
 import six
 from jwkest import b64d, as_unicode
 from jwkest import b64e
 from jwkest import BadSyntax
 
 __author__ = 'roland'
+
+logger = logging.getLogger(__name__)
 
 
 def split_token(token):
@@ -77,6 +81,8 @@ class JWT(object):
                 headers = self.headers
             else:
                 headers = {'alg': 'none'}
+
+        logging.debug('JWT header: {}'.format(headers))
 
         if not parts:
             return ".".join([a.decode() for a in self.b64part])
