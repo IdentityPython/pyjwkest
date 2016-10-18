@@ -1,5 +1,9 @@
 from __future__ import print_function
 
+import json
+import os.path
+from hashlib import md5
+
 from Cryptodome.PublicKey import RSA
 from jwkest.ecc import P256
 from jwkest.ecc import P384
@@ -17,10 +21,6 @@ from jwkest.jws import SIGNER_ALGS, factory
 from jwkest.jws import JWSig
 from jwkest.jws import JWS
 
-import json
-import io
-import os.path
-from hashlib import md5
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
 

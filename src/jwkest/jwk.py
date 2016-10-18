@@ -658,6 +658,9 @@ class SYMKey(Key):
         else:
             raise JWKException("No support for symmetric keys > 512 bits")
 
+        logger.debug('Symmetric encryption key: {}'.format(
+            as_unicode(b64e(_enc_key))))
+
         return _enc_key
 
 # -----------------------------------------------------------------------------
