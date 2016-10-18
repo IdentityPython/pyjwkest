@@ -644,15 +644,15 @@ class SYMKey(Key):
             self.deserialize()
 
         tsize = ALG2KEYLEN[alg]
-        _keylen = len(self.key)
+        #_keylen = len(self.key)
 
-        if _keylen <= 32:
+        if tsize <= 16:
             # SHA256
             _enc_key = sha256_digest(self.key)[:tsize]
-        elif _keylen <= 48:
+        elif tsize <= 48:
             # SHA384
             _enc_key = sha384_digest(self.key)[:tsize]
-        elif _keylen <= 64:
+        elif tsize <= 64:
             # SHA512
             _enc_key = sha512_digest(self.key)[:tsize]
         else:

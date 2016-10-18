@@ -13,8 +13,8 @@ from Cryptodome.PublicKey.RSA import RsaKey
 import os.path
 
 from jwkest.ecc import P256
-from jwkest import long2intarr, b64e
-from jwkest.jwk import DeSerializationNotPossible
+from jwkest import long2intarr, b64e, as_unicode
+from jwkest.jwk import DeSerializationNotPossible, SYMKey
 from jwkest.jwk import load_jwks
 from jwkest.jwk import jwk_wrap
 from jwkest.jwk import import_rsa_key_from_file
@@ -394,6 +394,23 @@ def test_load_jwks():
 #     keysl = load_jwks(json.dumps(JWKS))
 #     ckl = [copy.copy(k) for k in keysl]
 #     assert len(ckl) == 3
+
+
+def test_encryption_key():
+    sk = SYMKey(key='df34db91c16613deba460752522d28f6ebc8a73d0d9185836270c26b')
+    _enc = sk.encryption_key(alg='A128KW')
+    _v = as_unicode(b64e(_enc))
+    assert _v == 'xCo9VhtommCTGMWi-RyWBw'
+
+    sk = SYMKey(key='df34db91c16613deba460752522d28f6ebc8a73d0d9185836270c26b')
+    _enc = sk.encryption_key(alg='A192KW')
+    _v = as_unicode(b64e(_enc))
+    assert _v == 'NBBATS-5BakQ8FfKuPHpLLSGm8XNA_au'
+
+    sk = SYMKey(key='df34db91c16613deba460752522d28f6ebc8a73d0d9185836270c26b')
+    _enc = sk.encryption_key(alg='A256KW')
+    _v = as_unicode(b64e(_enc))
+    assert _v == 'NBBATS-5BakQ8FfKuPHpLLSGm8XNA_auVaes5LCVYBo'
 
 
 if __name__ == "__main__":

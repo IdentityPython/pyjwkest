@@ -620,12 +620,12 @@ def test_pick_use():
     assert len(_keys) == 1
 
 
-def test_pick_no_use():
+def test_pick_wrong_alg():
     keys = KEYS()
     keys.load_dict(JWKS0)
-    _jws = JWS("foobar", alg="RS256", kid="rsa1")
+    _jws = JWS("foobar", alg="RS256", kid="rsa1")  # should be RSA256
     _keys = _jws.pick_keys(keys, use="sig")
-    assert len(_keys) == 1
+    assert len(_keys) == 0
 
 
 def test_dj_usage():
