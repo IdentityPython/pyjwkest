@@ -143,7 +143,7 @@ if __name__ == "__main__":
         print(encrypt(message, keys, args.encalg, args.encenc))
     else:
         if args.decrypt:
-            _msg = decrypt(message, keys)
+            _msg, _res = decrypt(message, keys)
         else:
             _msg = message
 
