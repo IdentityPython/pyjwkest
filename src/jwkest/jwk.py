@@ -640,6 +640,14 @@ class SYMKey(Key):
         return res
 
     def encryption_key(self, alg, **kwargs):
+        """
+        Return an encryption key as per
+        http://openid.net/specs/openid-connect-core-1_0.html#Encryption
+
+        :param alg: encryption algorithm
+        :param kwargs:
+        :return: encryption key as byte string
+        """
         if not self.key:
             self.deserialize()
 

@@ -14,7 +14,7 @@ import os.path
 
 from jwkest.ecc import P256
 from jwkest import long2intarr, b64e, as_unicode
-from jwkest.jwk import DeSerializationNotPossible, SYMKey
+from jwkest.jwk import DeSerializationNotPossible, SYMKey, sha256_digest
 from jwkest.jwk import load_jwks
 from jwkest.jwk import jwk_wrap
 from jwkest.jwk import import_rsa_key_from_file
@@ -412,6 +412,14 @@ def test_encryption_key():
     _v = as_unicode(b64e(_enc))
     assert _v == 'NBBATS-5BakQ8FfKuPHpLLSGm8XNA_auVaes5LCVYBo'
 
+    ek = sha256_digest(
+    'YzE0MjgzNmRlODI5Yzg2MGYyZTRjNGE0NTZlMzBkZDRiNzJkNDA5MzUzNjM0ODkzM2E2MDk3ZWY')[:16]
+    assert as_unicode(b64e(ek)) == 'yf_UUkAFZ8Pn_prxPPgu9w'
+
+    sk = SYMKey(key='YzE0MjgzNmRlODI5Yzg2MGYyZTRjNGE0NTZlMzBkZDRiNzJkNDA5MzUzNjM0ODkzM2E2MDk3ZWY')
+    _enc = sk.encryption_key(alg='A128KW')
+    _v = as_unicode(b64e(_enc))
+    assert _v == as_unicode(b64e(ek))
 
 if __name__ == "__main__":
     test_private_key_from_jwk()
