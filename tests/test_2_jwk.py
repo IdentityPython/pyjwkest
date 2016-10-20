@@ -405,12 +405,12 @@ def test_encryption_key():
     sk = SYMKey(key='df34db91c16613deba460752522d28f6ebc8a73d0d9185836270c26b')
     _enc = sk.encryption_key(alg='A192KW')
     _v = as_unicode(b64e(_enc))
-    assert _v == 'NBBATS-5BakQ8FfKuPHpLLSGm8XNA_au'
+    assert _v == 'xCo9VhtommCTGMWi-RyWB14GQqHAGC86'
 
     sk = SYMKey(key='df34db91c16613deba460752522d28f6ebc8a73d0d9185836270c26b')
     _enc = sk.encryption_key(alg='A256KW')
     _v = as_unicode(b64e(_enc))
-    assert _v == 'NBBATS-5BakQ8FfKuPHpLLSGm8XNA_auVaes5LCVYBo'
+    assert _v == 'xCo9VhtommCTGMWi-RyWB14GQqHAGC86vweU_Pi62X8'
 
     ek = sha256_digest(
     'YzE0MjgzNmRlODI5Yzg2MGYyZTRjNGE0NTZlMzBkZDRiNzJkNDA5MzUzNjM0ODkzM2E2MDk3ZWY')[:16]
