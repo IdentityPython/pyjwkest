@@ -654,7 +654,7 @@ class SYMKey(Key):
         tsize = ALG2KEYLEN[alg]
         #_keylen = len(self.key)
 
-        if tsize <= 16:
+        if tsize <= 32:
             # SHA256
             _enc_key = sha256_digest(self.key)[:tsize]
         elif tsize <= 48:
