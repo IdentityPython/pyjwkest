@@ -438,6 +438,7 @@ class JWE_SYM(JWe):
         return jwe.pack(parts=[jek, iv, ctxt, tag])
 
     def decrypt(self, token, key=None, cek=None):
+        logger.debug('SYM decrypt')
         if not key and not cek:
             raise MissingKey("On of key or cek must be specified")
 

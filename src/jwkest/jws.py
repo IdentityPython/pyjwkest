@@ -52,6 +52,8 @@ from jwkest.jwt import b64encode_item
 logger = logging.getLogger(__name__)
 
 
+KDESC = ['use', 'kid', 'kty']
+
 class JWSException(JWKESTException):
     pass
 
@@ -396,7 +398,9 @@ class JWx(object):
 
         pkey = []
         for _key in _keys:
-            logger.debug("KEY: {0}".format(_key))
+            logger.debug(
+                "Picked: kid:{}, use:{}, kty:{}".format(
+                    _key.kid, _key.use, _key.kty))
             if _kid:
                 try:
                     assert _kid == _key.kid
