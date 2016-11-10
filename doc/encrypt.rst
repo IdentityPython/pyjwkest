@@ -24,7 +24,7 @@ A received JWE can be decrypted as::
     decrypted_content = jwe.decrypt(encrypted_content, keys=decryption_keys)
 
 :mod:`jwe` Package
----------------------
+------------------
 
 .. automodule:: jwkest.jwe
     :members:

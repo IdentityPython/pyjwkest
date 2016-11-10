@@ -24,7 +24,7 @@ The signature of a received JWS can be verified as::
     plain_text = jws.verify_compact(signed_content, keys=signing_keys)
 
 :mod:`jws` Package
----------------------
+------------------
 
 .. automodule:: jwkest.jws
     :members:

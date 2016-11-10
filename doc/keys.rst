@@ -106,7 +106,7 @@ A list of keys can be **exported** as::
 
 
 :mod:`jwk` Package
----------------------
+------------------
 
 .. automodule:: jwkest.jwk
     :members:
