@@ -31,7 +31,7 @@ setup(
     version=version,
     description="Python implementation of JWT, JWE, JWS and JWK",
     author="Roland Hedberg",
-    author_email="roland.hedberg@adm.umu.se",
+    author_email="roland@catalogix.se",
     license="Apache 2.0",
     packages=["jwkest"],
     package_dir={"": "src"},
