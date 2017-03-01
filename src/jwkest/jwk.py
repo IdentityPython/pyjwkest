@@ -336,7 +336,7 @@ class Key(object):
     def __eq__(self, other):
         try:
             assert isinstance(other, Key)
-            assert list(self.__dict__.keys()) == list(other.__dict__.keys())
+            assert set(self.__dict__.keys()) == set(other.__dict__.keys())
 
             for key in self.public_members:
                 assert getattr(other, key) == getattr(self, key)
