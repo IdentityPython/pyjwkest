@@ -85,6 +85,7 @@ DIGEST_HASH = {
     'SHA-512': sha512_digest
 }
 
+
 # =============================================================================
 
 
@@ -233,7 +234,7 @@ class Key(object):
     required = ['kty']
 
     def __init__(self, kty="", alg="", use="", kid="", key=None, x5c=None,
-                 x5t="", x5u="", **kwargs):
+            x5t="", x5u="", **kwargs):
         self.key = key
         self.extra_args = kwargs
 
@@ -391,8 +392,8 @@ class RSAKey(Key):
     required = ['kty', 'n', 'e']
 
     def __init__(self, kty="RSA", alg="", use="", kid="", key=None,
-                 x5c=None, x5t="", x5u="", n="", e="", d="", p="", q="",
-                 dp="", dq="", di="", qi="", **kwargs):
+            x5c=None, x5t="", x5u="", n="", e="", d="", p="", q="",
+            dp="", dq="", di="", qi="", **kwargs):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u, **kwargs)
         self.n = n
         self.e = e
@@ -443,8 +444,11 @@ class RSAKey(Key):
             der_cert = base64.b64decode(self.x5c[0].encode("ascii"))
 
             if self.x5t:  # verify the cert
-                if not b64d(self.x5t.encode("ascii")) == hashlib.sha1(der_cert).digest():
-                    raise DeSerializationNotPossible("The thumbprint ('x5t') does not match the certificate.")
+                if not b64d(self.x5t.encode("ascii")) == hashlib.sha1(
+                        der_cert).digest():
+                    raise DeSerializationNotPossible(
+                        "The thumbprint ('x5t') does not match the "
+                        "certificate.")
 
             self.key = der2rsa(der_cert)
             self._split()
@@ -533,7 +537,7 @@ class ECKey(Key):
     required = ['crv', 'key', 'x', 'y']
 
     def __init__(self, kty="EC", alg="", use="", kid="", key=None,
-                 crv="", x="", y="", d="", curve=None, **kwargs):
+            crv="", x="", y="", d="", curve=None, **kwargs):
         Key.__init__(self, kty, alg, use, kid, key, **kwargs)
         self.crv = crv
         self.x = x
@@ -623,8 +627,9 @@ class SYMKey(Key):
     required = ['k', 'kty']
 
     def __init__(self, kty="oct", alg="", use="", kid="", key=None,
-                 x5c=None, x5t="", x5u="", k="", mtrl="", **kwargs):
-        Key.__init__(self, kty, alg, use, kid, as_bytes(key), x5c, x5t, x5u, **kwargs)
+            x5c=None, x5t="", x5u="", k="", mtrl="", **kwargs):
+        Key.__init__(self, kty, alg, use, kid, as_bytes(key), x5c, x5t, x5u,
+                     **kwargs)
         self.k = k
         if not self.key and self.k:
             if isinstance(self.k, str):
@@ -652,7 +657,7 @@ class SYMKey(Key):
             self.deserialize()
 
         tsize = ALG2KEYLEN[alg]
-        #_keylen = len(self.key)
+        # _keylen = len(self.key)
 
         if tsize <= 32:
             # SHA256
@@ -670,6 +675,7 @@ class SYMKey(Key):
             as_unicode(b64e(_enc_key))))
 
         return _enc_key
+
 
 # -----------------------------------------------------------------------------
 
@@ -734,7 +740,7 @@ def jwk_wrap(key, use="", kid=""):
     elif isinstance(key, NISTEllipticCurve):
         kspec = ECKey(use=use, kid=kid).load_key(key)
     else:
-        raise Exception("Unknown key type:key="+str(type(key)))
+        raise Exception("Unknown key type:key=" + str(type(key)))
 
     kspec.serialize()
     return kspec
@@ -871,3 +877,19 @@ def load_jwks_from_url(url, verify=True):
 
 def load_jwks(spec):
     return KEYS().load_jwks(spec).keys()
+
+
+def make_public_copy(key):
+    if not isinstance(key, Key):
+        raise ValueError("Wrong type of class instance")
+
+    c = key.__class__()
+    for attr in key.public_members:
+        try:
+            v = getattr(key, attr)
+        except AttributeError:
+            pass
+        else:
+            setattr(c, attr, v)
+
+    return c
