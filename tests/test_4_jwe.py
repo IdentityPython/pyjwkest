@@ -239,6 +239,13 @@ def test_rsa_encrypt_decrypt_rsa_oaep_gcm():
     msg = JWE_RSA().decrypt(jwt, rsa)
 
     assert msg == plain
+    
+    
+def test_rsa_encrypt_decrypt_rsa_oaep_256_gcm():
+    jwt = JWE_RSA(plain[:1], alg="RSA-OAEP-256", enc="A256GCM").encrypt(rsa)
+    msg = JWE_RSA().decrypt(jwt, rsa)
+
+    assert msg == plain[:1]
 
 
 def test_encrypt_decrypt_rsa_cbc():

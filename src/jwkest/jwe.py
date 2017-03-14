@@ -12,7 +12,7 @@ import zlib
 import six
 
 from Cryptodome import Random
-from Cryptodome.Hash import SHA
+from Cryptodome.Hash import SHA, SHA256
 from Cryptodome.Util.number import bytes_to_long
 from Cryptodome.Util.number import long_to_bytes
 from Cryptodome.Cipher import PKCS1_v1_5
@@ -121,6 +121,8 @@ class RSAEncrypter(Encrypter):
                 msg += h.digest()
         elif padding == "pkcs1_oaep_padding":
             cipher = PKCS1_OAEP.new(key)
+        elif padding == "pkcs1_oaep_256_padding":
+            cipher = PKCS1_OAEP.new(key, SHA256)
         else:
             raise Exception("Unsupported padding")
         return cipher.encrypt(msg)
@@ -147,6 +149,9 @@ class RSAEncrypter(Encrypter):
                     raise DecryptionFailed()
         elif padding == "pkcs1_oaep_padding":
             cipher = PKCS1_OAEP.new(key)
+            text = cipher.decrypt(ciphertext)
+        elif padding == "pkcs1_oaep_256_padding":
+            cipher = PKCS1_OAEP.new(key, SHA256)
             text = cipher.decrypt(ciphertext)
         else:
             raise Exception("Unsupported padding")
@@ -227,7 +232,7 @@ ENC2ALG = {"A128CBC": "aes_128_cbc", "A192CBC": "aes_192_cbc",
            "A256CBC": "aes_256_cbc"}
 
 SUPPORTED = {
-    "alg": ["RSA1_5", "RSA-OAEP", "A128KW", "A192KW", "A256KW",
+    "alg": ["RSA1_5", "RSA-OAEP", "RSA-OAEP-256", "A128KW", "A192KW", "A256KW",
             "ECDH-ES", "ECDH-ES+A128KW", "ECDH-ES+A192KW", "ECDH-ES+A256KW"],
     "enc": ["A128CBC-HS256", "A192CBC-HS384", "A256CBC-HS512",
             "A128GCM", "A192GCM", "A256GCM"],
@@ -505,6 +510,8 @@ class JWE_RSA(JWe):
             jwe_enc_key = ''
         elif _alg == "RSA-OAEP":
             jwe_enc_key = _encrypt(cek, key, 'pkcs1_oaep_padding')
+        elif _alg == "RSA-OAEP-256":
+            jwe_enc_key = _encrypt(cek, key, 'pkcs1_oaep_256_padding')
         elif _alg == "RSA1_5":
             jwe_enc_key = _encrypt(cek, key)
         else:
@@ -539,6 +546,8 @@ class JWE_RSA(JWe):
             pass
         elif _alg == "RSA-OAEP":
             cek = _decrypt(jek, key, 'pkcs1_oaep_padding')
+        elif _alg == "RSA-OAEP-256":
+            cek = _decrypt(jek, key, 'pkcs1_oaep_256_padding')
         elif _alg == "RSA1_5":
             cek = _decrypt(jek, key)
         else:
@@ -771,7 +780,7 @@ class JWE(JWx):
             raise NoSuitableEncryptionKey(_alg)
 
         # Determine Encryption Class by Algorithm
-        if _alg in ["RSA-OAEP", "RSA1_5"]:
+        if _alg in ["RSA-OAEP", "RSA-OAEP-256", "RSA1_5"]:
             encrypter = JWE_RSA(self.msg, **self._dict)
         elif _alg.startswith("A") and _alg.endswith("KW"):
             encrypter = JWE_SYM(self.msg, **self._dict)
@@ -842,7 +851,7 @@ class JWE(JWx):
         if not keys and not cek:
             raise NoSuitableDecryptionKey(_alg)
 
-        if _alg in ["RSA-OAEP", "RSA1_5"]:
+        if _alg in ["RSA-OAEP", "RSA-OAEP-256", "RSA1_5"]:
             decrypter = JWE_RSA(**self._dict)
         elif _alg.startswith("A") and _alg.endswith("KW"):
             decrypter = JWE_SYM(self.msg, **self._dict)
