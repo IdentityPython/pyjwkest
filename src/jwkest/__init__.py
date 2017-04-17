@@ -180,7 +180,7 @@ def b64d(b):
     if cb == b:
         b = add_padding(b)
 
-    return base64.urlsafe_b64decode(b)
+    return base64.urlsafe_b64decode(b.encode('utf-8'))
 
 
 def b64e_enc_dec(str, encode="utf-8", decode="ascii"):
