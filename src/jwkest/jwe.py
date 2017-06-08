@@ -447,7 +447,10 @@ class JWE_SYM(JWe):
         if not key and not cek:
             raise MissingKey("On of key or cek must be specified")
 
-        jwe = JWEnc().unpack(token)
+        if isinstance(token, JWEnc):
+            jwe = token
+        else:
+            jwe = JWEnc().unpack(token)
 
         if len(jwe) != 5:
             raise WrongNumberOfParts(len(jwe))
@@ -705,12 +708,17 @@ class JWE_EC(JWe):
 
     def decrypt(self, token=None, key=None, **kwargs):
 
+        if isinstance(token, JWEnc):
+            jwe = token
+        else:
+            jwe = JWEnc().unpack(token)
+
         if not self.cek:
             raise Exception("Content Encryption Key is Not Yet Set")
 
         msg, valid = super(JWE_EC, self)._decrypt(self.headers["enc"], self.cek,
                                                   self.ctxt,
-                                                  token.b64part[0],
+                                                  jwe.b64part[0],
                                                   self.iv, self.tag)
         self.msg = msg
         self.msg_valid = valid
