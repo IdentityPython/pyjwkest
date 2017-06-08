@@ -1,4 +1,7 @@
 from __future__ import division
+
+from jwkest.jws import JWSException
+
 try:
     from builtins import bytes
 except ImportError:
@@ -18,6 +21,11 @@ LENMET = {
     48: (24, SHA384),
     64: (32, SHA512)
 }
+
+
+class VerificationFailure(JWSException):
+    pass
+
 
 
 # PKCS#5 padding, since it's not in PyCrypto
@@ -124,9 +132,9 @@ def aes_cbc_hmac_decrypt(key, iv, aad, ct, tag):
     if candidate == tag:
         cipher = AES.new(ke, AES.MODE_CBC, iv)
         pt = pkcs5trim(cipher.decrypt(ct))
-        return pt, True
+        return pt
     else:
-        return None, False
+        raise VerificationFailure('AES-CBC HMAC')
     
 
 def concat_sha256(secret, dk_len, other_info):
