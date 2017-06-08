@@ -387,9 +387,9 @@ class JWe(JWx):
             try:
                 text = gcm.decrypt(bytes_to_long(iv), ctxt, bytes_to_long(tag),
                                    auth_data)
-                return text, True
+                return text
             except DecryptionFailed:
-                return None, False
+                raise
         elif enc in ["A128CBC-HS256", "A192CBC-HS384", "A256CBC-HS512"]:
             return aes_cbc_hmac_decrypt(key, iv, auth_data, ctxt, tag)
         else:
@@ -563,12 +563,10 @@ class JWE_RSA(JWe):
         except AssertionError:
             raise NotSupportedAlgorithm(enc)
 
-        msg, flag = self._decrypt(enc, cek, jwe.ciphertext(),
-                                  jwe.b64_protected_header(),
-                                  jwe.initialization_vector(),
-                                  jwe.authentication_tag())
-        if flag is False:
-            raise DecryptionFailed()
+        msg = self._decrypt(enc, cek, jwe.ciphertext(),
+                            jwe.b64_protected_header(),
+                            jwe.initialization_vector(),
+                            jwe.authentication_tag())
 
         if "zip" in jwe.headers and jwe.headers["zip"] == "DEF":
             msg = zlib.decompress(msg)
@@ -603,7 +601,8 @@ class JWE_EC(JWe):
         # Generate an ephemeral key pair if none is given
         curve = NISTEllipticCurve.by_name(key.crv)
         if "epk" in kwargs:
-            epk = kwargs["epk"] if isinstance(kwargs["epk"], ECKey) else ECKey(kwargs["epk"])
+            epk = kwargs["epk"] if isinstance(kwargs["epk"], ECKey) else ECKey(
+                kwargs["epk"])
         else:
             epk = ECKey().load_key(key=NISTEllipticCurve.by_name(key.crv))
 
@@ -650,7 +649,8 @@ class JWE_EC(JWe):
 
         # Handle EPK / Curve
         if "epk" not in self.headers or "crv" not in self.headers["epk"]:
-            raise Exception("Ephemeral Public Key Missing in ECDH-ES Computation")
+            raise Exception(
+                "Ephemeral Public Key Missing in ECDH-ES Computation")
 
         epubkey = ECKey(**self.headers["epk"])
         apu = apv = ""
@@ -716,12 +716,12 @@ class JWE_EC(JWe):
         if not self.cek:
             raise Exception("Content Encryption Key is Not Yet Set")
 
-        msg, valid = super(JWE_EC, self)._decrypt(self.headers["enc"], self.cek,
-                                                  self.ctxt,
-                                                  jwe.b64part[0],
-                                                  self.iv, self.tag)
+        msg = super(JWE_EC, self)._decrypt(self.headers["enc"], self.cek,
+                                           self.ctxt,
+                                           jwe.b64part[0],
+                                           self.iv, self.tag)
         self.msg = msg
-        self.msg_valid = valid
+        self.msg_valid = True
         return msg
 
 
@@ -782,7 +782,9 @@ class JWE(JWx):
 
         if not keys:
             logger.error(
-                "Could not find any suitable encryption key for alg='{}'".format(_alg))
+                "Could not find any suitable encryption key for alg='{"
+                "}'".format(
+                    _alg))
             raise NoSuitableEncryptionKey(_alg)
 
         # Determine Encryption Class by Algorithm

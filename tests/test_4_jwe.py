@@ -193,8 +193,8 @@ KEY = full_path("rsa.key")
 rsa = RSA.importKey(open(KEY, 'r').read())
 plain = b'Now is the time for all good men to come to the aid of their country.'
 
-def test_cek_reuse_encryption_rsaes_rsa15():
 
+def test_cek_reuse_encryption_rsaes_rsa15():
     _rsa = JWE_RSA(plain, alg="RSA1_5", enc="A128CBC-HS256")
     jwt = _rsa.encrypt(rsa)
     dec = JWE_RSA()
@@ -209,8 +209,8 @@ def test_cek_reuse_encryption_rsaes_rsa15():
 
     assert msg == plain
 
-def test_cek_reuse_encryption_rsaes_rsa_oaep():
 
+def test_cek_reuse_encryption_rsaes_rsa_oaep():
     _rsa = JWE_RSA(plain, alg="RSA-OAEP", enc="A256GCM")
     jwt = _rsa.encrypt(rsa)
     dec = JWE_RSA()
@@ -224,6 +224,7 @@ def test_cek_reuse_encryption_rsaes_rsa_oaep():
     msg = dec2.decrypt(jwt, None, cek=_rsa["cek"])
 
     assert msg == plain
+
 
 def test_rsa_encrypt_decrypt_rsa_cbc():
     _rsa = JWE_RSA(plain, alg="RSA1_5", enc="A128CBC-HS256")
@@ -239,8 +240,8 @@ def test_rsa_encrypt_decrypt_rsa_oaep_gcm():
     msg = JWE_RSA().decrypt(jwt, rsa)
 
     assert msg == plain
-    
-    
+
+
 def test_rsa_encrypt_decrypt_rsa_oaep_256_gcm():
     jwt = JWE_RSA(plain[:1], alg="RSA-OAEP-256", enc="A256GCM").encrypt(rsa)
     msg = JWE_RSA().decrypt(jwt, rsa)
@@ -277,10 +278,11 @@ remotepriv, remotepub = curve.key_pair()
 localpriv, localpub = curve.key_pair()
 
 localkey = ECKey(crv=curve.name(), d=localpriv, x=localpub[0], y=localpub[1])
-remotekey = ECKey(crv=curve.name(), d=remotepriv, x=remotepub[0], y=remotepub[1])
+remotekey = ECKey(crv=curve.name(), d=remotepriv, x=remotepub[0],
+                  y=remotepub[1])
+
 
 def test_ecdh_encrypt_decrypt_direct_key():
-
     jwenc = JWE_EC(plain, alg="ECDH-ES", enc="A128GCM")
     cek, encrypted_key, iv, params, ret_epk = jwenc.enc_setup(plain, '',
                                                               key=remotekey,
@@ -333,13 +335,14 @@ def test_ecdh_encrypt_decrypt_keywrapped_key():
 
 
 def test_sym_encrypt_decrypt():
-    encryption_key = SYMKey(use="enc", key='DukeofHazardpass', kid="some-key-id")
+    encryption_key = SYMKey(use="enc", key='DukeofHazardpass',
+                            kid="some-key-id")
     jwe = JWE_SYM("some content", alg="A128KW", enc="A128CBC-HS256")
     _jwe = jwe.encrypt(key=encryption_key, kid="some-key-id")
     jwdec = JWE_SYM()
 
     resp = jwdec.decrypt(_jwe, encryption_key)
-    assert resp[0] == b'some content'
+    assert resp == b'some content'
 
 
 def test_ecdh_no_setup_dynamic_epk():
