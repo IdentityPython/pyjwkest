@@ -366,7 +366,7 @@ if __name__ == "__main__":
     q2 = mulp(p, q, n, p1, r2)
     s1 = mulp(p, q, n, q1, r2)
     s2 = mulp(p, q, n, q2, r1)
-    s1 == s2
+    # s1 == s2
     tt = time.time() - t
 
     def test(tcount, bits=256):

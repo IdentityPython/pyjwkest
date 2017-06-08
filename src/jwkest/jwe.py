@@ -602,9 +602,7 @@ class JWE_EC(JWe):
         if "epk" in kwargs:
             epk = kwargs["epk"] if isinstance(kwargs["epk"], ECKey) else ECKey(kwargs["epk"])
         else:
-            raise Exception(
-                "Ephemeral Public Key (EPK) Required for ECDH-ES JWE "
-                "Encryption Setup")
+            epk = ECKey().load_key(key=NISTEllipticCurve.by_name(key.crv))
 
         params = {
             "apu": b64e(apu),
@@ -836,7 +834,7 @@ class JWE(JWx):
             # header, ek, eiv, ctxt, tag = token.split(b".")
             # self.parse_header(header)
         elif self.jwt:
-            token = jwe = self.jwt
+            jwe = self.jwt
 
         _alg = jwe.headers["alg"]
         if alg and alg != _alg:
@@ -862,13 +860,13 @@ class JWE(JWx):
                 raise NoSuitableECDHKey(_alg)
 
             decrypter = JWE_EC(**self._dict)
-            cek = decrypter.dec_setup(token, key=keys[0])
+            cek = decrypter.dec_setup(jwe, key=keys[0])
         else:
             raise NotSupportedAlgorithm
 
         if cek:
             try:
-                msg = decrypter.decrypt(as_bytes(token), None, cek=cek)
+                msg = decrypter.decrypt(jwe, None, cek=cek)
                 self["cek"] = decrypter.cek if 'cek' in decrypter else None
             except (KeyError, DecryptionFailed):
                 pass
@@ -879,7 +877,7 @@ class JWE(JWx):
         for key in keys:
             _key = key.encryption_key(alg=_alg, private=False)
             try:
-                msg = decrypter.decrypt(as_bytes(token), _key)
+                msg = decrypter.decrypt(jwe, _key)
                 self["cek"] = decrypter.cek if 'cek' in decrypter else None
             except (KeyError, DecryptionFailed):
                 pass

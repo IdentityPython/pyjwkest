@@ -340,3 +340,12 @@ def test_sym_encrypt_decrypt():
 
     resp = jwdec.decrypt(_jwe, encryption_key)
     assert resp[0] == b'some content'
+
+
+def test_ecdh_no_setup_dynamic_epk():
+    jwenc = JWE(plain, alg="ECDH-ES", enc="A128GCM")
+    jwt = jwenc.encrypt([remotekey])
+    assert jwt
+    ret_jwe = factory(jwt)
+    res = ret_jwe.decrypt(jwt, [remotekey])
+    assert res
