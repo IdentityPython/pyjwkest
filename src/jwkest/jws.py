@@ -696,7 +696,7 @@ class JWS(JWx):
 
     def _is_json_serialized_jws(self, json_jws):
         json_ser_keys = set(["payload", "signatures"])
-        flattened_json_ser_keys = set[("payload", "signature")]
+        flattened_json_ser_keys = set(["payload", "signature"])
         if not json_ser_keys.issubset(
                 json_jws.keys()) and not flattened_json_ser_keys.issubset(
                 json_jws.keys()):
