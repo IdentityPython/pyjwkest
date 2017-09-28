@@ -55,5 +55,12 @@ def test_b64_encode_decode():
     assert b64d(b64e(data)) == data
 
 
+def test_base64_long_base64():
+    x64 = 'omXjOQmHl77TtpwMXL9WPcd-Xcg1bh8CoLGOyX1Ug_CLtZJx_SvSo0bj5bEiVb8eCa5mXuc6sDg9_RRpCvKHHxZG6f9qh5r3ZNY-yr5hKQqeMafWa4b6UqouLSSwKsNe5FWD327BoyaEsMyCRheQg4wX86G_8zqynuvbT6KzQbQtp4iqQvMWGswovmflsk7zoZUESAFu6L5xlJUEFXMlDLPH13SsPKwvL4MgHa-Cx938B0FReUFtq7qEQHIPhGSTOeTS-v8Acp6VqkmcLB4kCIsk_Icr46VTEPv3WWDHcbSzp-RPR0lTa8WTdOd_E98U70jfAZJAKMDWr4sQkvfk7w'
+    _l = base64_to_long(x64)
+    r64 = long_to_base64(_l)
+    assert x64 == r64
+
+
 if __name__ == "__main__":
     test_long_base64_long()
