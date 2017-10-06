@@ -18,6 +18,10 @@ from random import getrandbits
 from math import ceil
 
 
+class ECCException(Exception):
+    pass
+
+
 # Make the EC interface more OO
 class NISTEllipticCurve(object):
     def __init__(self, bits):
@@ -34,7 +38,7 @@ class NISTEllipticCurve(object):
         if name == "P-521" or name == b'P-521':
             return NISTEllipticCurve(521)
         else:
-            raise Exception("Unknown curve {0}".format(name))
+            raise ECCException("Unknown curve {0}".format(name))
 
     # Get the name of this curve
     # XXX This only works because we only support prime curves right now

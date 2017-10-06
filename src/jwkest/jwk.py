@@ -242,22 +242,22 @@ class Key(object):
         if isinstance(kty, six.string_types):
             self.kty = kty
         else:
-            self.kty = kty.decode("utf8")
+            self.kty = as_unicode(kty)
 
         if isinstance(alg, six.string_types):
             self.alg = alg
         else:
-            self.alg = alg.decode("utf8")
+            self.alg = as_unicode(alg)
 
         if isinstance(use, six.string_types):
             self.use = use
         else:
-            self.use = use.decode("utf8")
+            self.use = as_unicode(use)
 
         if isinstance(kid, six.string_types):
             self.kid = kid
         else:
-            self.kid = kid.decode("utf8")
+            self.kid = as_unicode(kid)
 
         self.x5c = x5c or []
         self.x5t = x5t
@@ -412,6 +412,8 @@ class RSAKey(Key):
             self.deserialize()
         elif self.key and not (self.n and self.e):
             self._split()
+        elif not self.key and not(self.n and self.e):
+            raise DeSerializationNotPossible('Missing required parameter')
 
     def deserialize(self):
         if self.n and self.e:
@@ -550,8 +552,12 @@ class ECKey(Key):
         if self.crv and not self.curve:
             self.verify()
             self.deserialize()
-        elif self.key and (not self.crv and not self.curve):
-            self.load_key(key)
+        elif self.key:
+            if not self.crv and not self.curve:
+                self.load_key(key)
+        else:
+            if not (self.x and self.y and self.crv):
+                raise DeSerializationNotPossible('Missing required parameter')
 
     def deserialize(self):
         """
