@@ -134,7 +134,7 @@ def der_cert2rsa(der):
     return der2rsa(base64.b64decode(pem))
 
 
-def load_x509_cert(url, spec2key):
+def load_x509_cert(url, spec2key, *args, **kwargs):
     """
     Get and transform a X509 cert into a key
 
@@ -143,7 +143,7 @@ def load_x509_cert(url, spec2key):
     :return: List of 2-tuples (keytype, key)
     """
     try:
-        r = request("GET", url, allow_redirects=True)
+        r = request("GET", url, allow_redirects=True, **kwargs)
         if r.status_code == 200:
             cert = str(r.text)
             try:
@@ -798,7 +798,7 @@ class KEYS(object):
 
         return json.dumps({"keys": res})
 
-    def load_from_url(self, url, verify=True):
+    def load_from_url(self, url, *args, **kwargs):
         """
         Get and transform a JWKS into keys
 
@@ -807,7 +807,9 @@ class KEYS(object):
         :return: list of keys
         """
 
-        r = request("GET", url, allow_redirects=True, verify=verify)
+        if 'verify' not in kwargs:
+            kwargs['verify'] = True
+        r = request("GET", url, allow_redirects=True, **kwargs)
         if r.status_code == 200:
             return self.load_jwks(r.text)
         else:
