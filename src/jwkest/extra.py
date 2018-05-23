@@ -111,7 +111,7 @@ def aes_cbc_hmac_decrypt(key, iv, aad, ct, tag):
     :param key  : Key; length MUST be 32, 48, or 64 octets
     :param iv : Initialization vector; length MUST be 16 octets
     :param aad: Additional authenticated data
-    :param ct : Plaintext
+    :param ct : Cipher text
     :param tag: Authentication tag
     :return: (plaintext, result) tuple, with plaintext as bytes
       and result as boolean
