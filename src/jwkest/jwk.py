@@ -16,9 +16,10 @@ from Cryptodome.Util.asn1 import DerSequence
 
 from requests import request
 
-from jwkest import base64url_to_long, as_unicode, hex2int
 from jwkest import as_bytes
+from jwkest import as_unicode
 from jwkest import base64_to_long
+from jwkest import base64url_to_long
 from jwkest import long_to_base64
 from jwkest import JWKESTException
 from jwkest import b64d
