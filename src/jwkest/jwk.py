@@ -1,4 +1,5 @@
 import base64
+import binascii
 import hashlib
 import re
 import logging
@@ -15,7 +16,7 @@ from Cryptodome.Util.asn1 import DerSequence
 
 from requests import request
 
-from jwkest import base64url_to_long, as_unicode
+from jwkest import base64url_to_long, as_unicode, hex2int
 from jwkest import as_bytes
 from jwkest import base64_to_long
 from jwkest import long_to_base64
@@ -263,6 +264,7 @@ class Key(object):
         self.x5t = x5t
         self.x5u = x5u
         self.inactive_since = 0
+        self._hash = None
 
     def to_dict(self):
         """
@@ -367,8 +369,24 @@ class Key(object):
 
         return DIGEST_HASH[hash_function](_json)
 
+    def get_hash(self, hash_function=None):
+        if not hash_function:
+            hash_function = 'SHA-256'
+        self._hash = int(binascii.hexlify(self.thumbprint(hash_function)), 16)
+        return self._hash
+
     def add_kid(self):
-        self.kid = b64e(self.thumbprint('SHA-256')).decode('utf8')
+        _tp = self.thumbprint('SHA-256')
+        self.kid = b64e(_tp).decode('utf8')
+        self._hash = int(binascii.hexlify(_tp), 16)
+
+    def __hash__(self):
+        if not self._hash:
+            if self.kid:
+                self.get_hash()
+            else:
+                self.add_kid()
+        return self._hash
 
 
 def deser(val):
