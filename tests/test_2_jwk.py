@@ -1,31 +1,30 @@
 from __future__ import print_function
+
 import base64
-import copy
 import json
 import struct
-import six
-import pytest
-
 from collections import Counter
 
+import os.path
+import pytest
+import six
 from Cryptodome.PublicKey import RSA
 from Cryptodome.PublicKey.RSA import RsaKey
-import os.path
 
+from jwkest import as_unicode, b64e, long2intarr
 from jwkest.ecc import P256
-from jwkest import long2intarr, b64e, as_unicode
 from jwkest.jwk import DeSerializationNotPossible, SYMKey, sha256_digest
-from jwkest.jwk import load_jwks
-from jwkest.jwk import jwk_wrap
-from jwkest.jwk import import_rsa_key_from_file
-from jwkest.jwk import rsa_eq
-from jwkest.jwk import keyrep
-from jwkest.jwk import KEYS
-from jwkest.jwk import base64url_to_long
 from jwkest.jwk import ECKey
-from jwkest.jwk import pem_cert2rsa
+from jwkest.jwk import KEYS
 from jwkest.jwk import RSAKey
 from jwkest.jwk import base64_to_long
+from jwkest.jwk import base64url_to_long
+from jwkest.jwk import import_rsa_key_from_file
+from jwkest.jwk import jwk_wrap
+from jwkest.jwk import keyrep
+from jwkest.jwk import load_jwks
+from jwkest.jwk import pem_cert2rsa
+from jwkest.jwk import rsa_eq
 
 __author__ = 'rohe0002'
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
@@ -41,10 +40,14 @@ KEY = full_path("server.key")
 N = 'wf-wiusGhA-gleZYQAOPQlNUIucPiqXdPVyieDqQbXXOPBe3nuggtVzeq7pVFH1dZz4dY2Q2LA5DaegvP8kRvoSB_87ds3dy3Rfym_GUSc5B0l1TgEobcyaep8jguRoHto6GWHfCfKqoUYZq4N8vh4LLMQwLR6zi6Jtu82nB5k8'
 E = 'AQAB'
 
-JWK = {"keys": [
-    {'kty': 'RSA', 'use': 'foo', 'e': E, 'kid': "abc",
-     'n': N}
-]}
+JWK = {
+    "keys": [
+        {
+            'kty': 'RSA', 'use': 'foo', 'e': E, 'kid': "abc",
+            'n': N
+        }
+    ]
+}
 
 
 def _eq(l1, l2):
@@ -254,28 +257,30 @@ def test_cmp_neq_ec():
     assert _key1 != _key2
 
 
-JWKS = {"keys": [
-    {
-        "n": u"zkpUgEgXICI54blf6iWiD2RbMDCOO1jV0VSff1MFFnujM4othfMsad7H1kRo50YM5S_X9TdvrpdOfpz5aBaKFhT6Ziv0nhtcekq1eRl8mjBlvGKCE5XGk-0LFSDwvqgkJoFYInq7bu0a4JEzKs5AyJY75YlGh879k1Uu2Sv3ZZOunfV1O1Orta-NvS-aG_jN5cstVbCGWE20H0vFVrJKNx0Zf-u-aA-syM4uX7wdWgQ-owoEMHge0GmGgzso2lwOYf_4znanLwEuO3p5aabEaFoKNR4K6GjQcjBcYmDEE4CtfRU9AEmhcD1kleiTB9TjPWkgDmT9MXsGxBHf3AKT5w",
-        "e": u"AQAB",
-        "kty": "RSA",
-        "kid": "5-VBFv40P8D4I-7SFz7hMugTbPs",
-        "use": "enc"
-    },
-    {
-        "k": u"YTEyZjBlMDgxMGI4YWU4Y2JjZDFiYTFlZTBjYzljNDU3YWM0ZWNiNzhmNmFlYTNkNTY0NzMzYjE",
-        "kty": "oct",
-        "use": "enc"
-    },
-    {
-        "kty": "EC",
-        "kid": "7snis",
-        "use": "sig",
-        "x": u'q0WbWhflRbxyQZKFuQvh2nZvg98ak-twRoO5uo2L7Po',
-        "y": u'GOd2jL_6wa0cfnyA0SmEhok9fkYEnAHFKLLM79BZ8_E',
-        "crv": "P-256"
-    }
-]}
+JWKS = {
+    "keys": [
+        {
+            "n": u"zkpUgEgXICI54blf6iWiD2RbMDCOO1jV0VSff1MFFnujM4othfMsad7H1kRo50YM5S_X9TdvrpdOfpz5aBaKFhT6Ziv0nhtcekq1eRl8mjBlvGKCE5XGk-0LFSDwvqgkJoFYInq7bu0a4JEzKs5AyJY75YlGh879k1Uu2Sv3ZZOunfV1O1Orta-NvS-aG_jN5cstVbCGWE20H0vFVrJKNx0Zf-u-aA-syM4uX7wdWgQ-owoEMHge0GmGgzso2lwOYf_4znanLwEuO3p5aabEaFoKNR4K6GjQcjBcYmDEE4CtfRU9AEmhcD1kleiTB9TjPWkgDmT9MXsGxBHf3AKT5w",
+            "e": u"AQAB",
+            "kty": "RSA",
+            "kid": "5-VBFv40P8D4I-7SFz7hMugTbPs",
+            "use": "enc"
+        },
+        {
+            "k": u"YTEyZjBlMDgxMGI4YWU4Y2JjZDFiYTFlZTBjYzljNDU3YWM0ZWNiNzhmNmFlYTNkNTY0NzMzYjE",
+            "kty": "oct",
+            "use": "enc"
+        },
+        {
+            "kty": "EC",
+            "kid": "7snis",
+            "use": "sig",
+            "x": u'q0WbWhflRbxyQZKFuQvh2nZvg98ak-twRoO5uo2L7Po',
+            "y": u'GOd2jL_6wa0cfnyA0SmEhok9fkYEnAHFKLLM79BZ8_E',
+            "crv": "P-256"
+        }
+    ]
+}
 
 
 def test_keys():
@@ -413,13 +418,69 @@ def test_encryption_key():
     assert _v == 'xCo9VhtommCTGMWi-RyWB14GQqHAGC86vweU_Pi62X8'
 
     ek = sha256_digest(
-    'YzE0MjgzNmRlODI5Yzg2MGYyZTRjNGE0NTZlMzBkZDRiNzJkNDA5MzUzNjM0ODkzM2E2MDk3ZWY')[:16]
+        'YzE0MjgzNmRlODI5Yzg2MGYyZTRjNGE0NTZlMzBkZDRiNzJkNDA5MzUzNjM0ODkzM2E2MDk3ZWY')[
+         :16]
     assert as_unicode(b64e(ek)) == 'yf_UUkAFZ8Pn_prxPPgu9w'
 
-    sk = SYMKey(key='YzE0MjgzNmRlODI5Yzg2MGYyZTRjNGE0NTZlMzBkZDRiNzJkNDA5MzUzNjM0ODkzM2E2MDk3ZWY')
+    sk = SYMKey(
+        key='YzE0MjgzNmRlODI5Yzg2MGYyZTRjNGE0NTZlMzBkZDRiNzJkNDA5MzUzNjM0ODkzM2E2MDk3ZWY')
     _enc = sk.encryption_key(alg='A128KW')
     _v = as_unicode(b64e(_enc))
     assert _v == as_unicode(b64e(ek))
 
-if __name__ == "__main__":
-    test_private_key_from_jwk()
+
+def test_equal():
+    rsa1 = RSAKey(
+        alg="RS256",
+        e="AQAB",
+        kty="RSA",
+        n="wkpyitec6TgFC5G41RF6jBOZghGVyaHL79CzSjjS9VCkWjpGo2hajOsiJ1RnSoat9XDmQAqiqn18rWx4xa4ErdWVqug88pLxMVmnV9tF10uJNgIi_RSsIQz40J9aKrxOotN6Mnq454BpanAxbrbC5hLlp-PIGgmWzUDNwCSfnWBjd0yGwdYKVB6d-SGNfLvdMUhFiYIX0POUnJDNl_j3kLYQ0peYRbunyQzST5nLPOItePCuZ12G5e0Eo1meSF1Md3IkuY8paqKk-vsWrT22X7CUV3HZow06ogRcFMMzvooE7yDqS53I_onsUrqgQ2aUnoo8OaD0eLlEWdaTyeNAIw",
+        use="sig"
+    )
+
+    rsa2 = RSAKey(
+        n=
+        "pKXuY5tuT9ibmEcq4B6VRx3MafdSsajrOndAk5FjJFedlA6qSpdqDUr9wWUkNeO8h_efdLfg43CHXk3mH6Fp1t2gbHzBQ4-SzT3_X5tsdG2PPqvngem7f5NHO6Kefhq11Zk5q4-FyTL9FUQQW6ZANbrU7GifSAs82Ck20ciIvFdv7cPCphk_THMVv14aW5w0eKEXumgx4Bc7HrQFXQUHSze3dVAKg8hKHDIQOGUU0fkolEFmOC4Gb-G57RpBJryZxXqgdUdEG66xl1f37tqpYgaLViFDWDiI8S7BMVHEbGHN4-f_MD9f6gMduaxrL6a6SfyIW1So2VqtvlAyanesTw",
+        kid="gtH4v3Yr2QqLreBSz0ByQQ8vkf8eFo1KIit3s-3Bbww",
+        use="enc",
+        e="AQAB",
+        kty="RSA"
+    )
+
+    rsa3 = RSAKey(
+        n=
+        "pKXuY5tuT9ibmEcq4B6VRx3MafdSsajrOndAk5FjJFedlA6qSpdqDUr9wWUkNeO8h_efdLfg43CHXk3mH6Fp1t2gbHzBQ4-SzT3_X5tsdG2PPqvngem7f5NHO6Kefhq11Zk5q4-FyTL9FUQQW6ZANbrU7GifSAs82Ck20ciIvFdv7cPCphk_THMVv14aW5w0eKEXumgx4Bc7HrQFXQUHSze3dVAKg8hKHDIQOGUU0fkolEFmOC4Gb-G57RpBJryZxXqgdUdEG66xl1f37tqpYgaLViFDWDiI8S7BMVHEbGHN4-f_MD9f6gMduaxrL6a6SfyIW1So2VqtvlAyanesTw",
+        use="enc",
+        e="AQAB",
+        kty="RSA"
+    )
+
+    assert rsa1 == rsa1
+    assert rsa1 != rsa2
+    assert rsa2 != rsa3
+
+
+def test_set():
+    keys = set()
+    rsa1 = RSAKey(
+        alg="RS256",
+        e="AQAB",
+        kty="RSA",
+        n="wkpyitec6TgFC5G41RF6jBOZghGVyaHL79CzSjjS9VCkWjpGo2hajOsiJ1RnSoat9XDmQAqiqn18rWx4xa4ErdWVqug88pLxMVmnV9tF10uJNgIi_RSsIQz40J9aKrxOotN6Mnq454BpanAxbrbC5hLlp-PIGgmWzUDNwCSfnWBjd0yGwdYKVB6d-SGNfLvdMUhFiYIX0POUnJDNl_j3kLYQ0peYRbunyQzST5nLPOItePCuZ12G5e0Eo1meSF1Md3IkuY8paqKk-vsWrT22X7CUV3HZow06ogRcFMMzvooE7yDqS53I_onsUrqgQ2aUnoo8OaD0eLlEWdaTyeNAIw",
+        use="sig"
+    )
+
+    keys.add(rsa1)
+
+    rsa2 = RSAKey(
+        n="pKXuY5tuT9ibmEcq4B6VRx3MafdSsajrOndAk5FjJFedlA6qSpdqDUr9wWUkNeO8h_efdLfg43CHXk3mH6Fp1t2gbHzBQ4-SzT3_X5tsdG2PPqvngem7f5NHO6Kefhq11Zk5q4-FyTL9FUQQW6ZANbrU7GifSAs82Ck20ciIvFdv7cPCphk_THMVv14aW5w0eKEXumgx4Bc7HrQFXQUHSze3dVAKg8hKHDIQOGUU0fkolEFmOC4Gb-G57RpBJryZxXqgdUdEG66xl1f37tqpYgaLViFDWDiI8S7BMVHEbGHN4-f_MD9f6gMduaxrL6a6SfyIW1So2VqtvlAyanesTw",
+        kid="gtH4v3Yr2QqLreBSz0ByQQ8vkf8eFo1KIit3s-3Bbww",
+        use="enc",
+        e="AQAB",
+        kty="RSA"
+    )
+
+    keys.add(rsa2)
+    keys.add(rsa1)
+
+    assert len(keys) == 2
