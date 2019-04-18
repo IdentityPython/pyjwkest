@@ -1,4 +1,4 @@
-#! /usr/bin/env
+#! /usr/bin/env python
 import json
 import random
 import string
