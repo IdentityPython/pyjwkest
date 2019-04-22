@@ -431,8 +431,6 @@ class RSAKey(Key):
             self.deserialize()
         elif self.key and not (self.n and self.e):
             self._split()
-        elif not self.key and not(self.n and self.e):
-            raise DeSerializationNotPossible('Missing required parameter')
 
     def deserialize(self):
         if self.n and self.e:
@@ -501,6 +499,9 @@ class RSAKey(Key):
         return res
 
     def _split(self):
+        if not self.key:
+            raise SerializationNotPossible()
+
         self.n = self.key.n
         self.e = self.key.e
         try:
@@ -574,15 +575,15 @@ class ECKey(Key):
         elif self.key:
             if not self.crv and not self.curve:
                 self.load_key(key)
-        else:
-            if not (self.x and self.y and self.crv):
-                raise DeSerializationNotPossible('Missing required parameter')
 
     def deserialize(self):
         """
         Starting with information gathered from the on-the-wire representation
         of an elliptic curve key initiate an Elliptic Curve.
         """
+        if not (self.x and self.y and self.crv):
+            DeSerializationNotPossible()
+
         try:
             if not isinstance(self.x, six.integer_types):
                 self.x = deser(self.x)
@@ -603,9 +604,15 @@ class ECKey(Key):
 
     def get_key(self, private=False, **kwargs):
         if private:
-            return self.d
+            if self.d:
+                return self.d
+            else:
+                raise ValueError()
         else:
-            return self.x, self.y
+            if self.x and self.y:
+                return self.x, self.y
+            else:
+                raise ValueError()
 
     def serialize(self, private=False):
         if not self.crv and not self.curve:
