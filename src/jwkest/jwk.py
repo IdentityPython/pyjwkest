@@ -1,4 +1,5 @@
 import base64
+import binascii
 import hashlib
 import re
 import logging
@@ -15,9 +16,10 @@ from Cryptodome.Util.asn1 import DerSequence
 
 from requests import request
 
-from jwkest import base64url_to_long, as_unicode
 from jwkest import as_bytes
+from jwkest import as_unicode
 from jwkest import base64_to_long
+from jwkest import base64url_to_long
 from jwkest import long_to_base64
 from jwkest import JWKESTException
 from jwkest import b64d
@@ -263,6 +265,7 @@ class Key(object):
         self.x5t = x5t
         self.x5u = x5u
         self.inactive_since = 0
+        self._hash = None
 
     def to_dict(self):
         """
@@ -367,8 +370,24 @@ class Key(object):
 
         return DIGEST_HASH[hash_function](_json)
 
+    def get_hash(self, hash_function=None):
+        if not hash_function:
+            hash_function = 'SHA-256'
+        self._hash = int(binascii.hexlify(self.thumbprint(hash_function)), 16)
+        return self._hash
+
     def add_kid(self):
-        self.kid = b64e(self.thumbprint('SHA-256')).decode('utf8')
+        _tp = self.thumbprint('SHA-256')
+        self.kid = b64e(_tp).decode('utf8')
+        self._hash = int(binascii.hexlify(_tp), 16)
+
+    def __hash__(self):
+        if not self._hash:
+            if self.kid:
+                self.get_hash()
+            else:
+                self.add_kid()
+        return self._hash
 
 
 def deser(val):
@@ -412,8 +431,6 @@ class RSAKey(Key):
             self.deserialize()
         elif self.key and not (self.n and self.e):
             self._split()
-        elif not self.key and not(self.n and self.e):
-            raise DeSerializationNotPossible('Missing required parameter')
 
     def deserialize(self):
         if self.n and self.e:
@@ -482,6 +499,9 @@ class RSAKey(Key):
         return res
 
     def _split(self):
+        if not self.key:
+            raise SerializationNotPossible()
+
         self.n = self.key.n
         self.e = self.key.e
         try:
@@ -555,15 +575,15 @@ class ECKey(Key):
         elif self.key:
             if not self.crv and not self.curve:
                 self.load_key(key)
-        else:
-            if not (self.x and self.y and self.crv):
-                raise DeSerializationNotPossible('Missing required parameter')
 
     def deserialize(self):
         """
         Starting with information gathered from the on-the-wire representation
         of an elliptic curve key initiate an Elliptic Curve.
         """
+        if not (self.x and self.y and self.crv):
+            DeSerializationNotPossible()
+
         try:
             if not isinstance(self.x, six.integer_types):
                 self.x = deser(self.x)
@@ -584,9 +604,15 @@ class ECKey(Key):
 
     def get_key(self, private=False, **kwargs):
         if private:
-            return self.d
+            if self.d:
+                return self.d
+            else:
+                raise ValueError()
         else:
-            return self.x, self.y
+            if self.x and self.y:
+                return self.x, self.y
+            else:
+                raise ValueError()
 
     def serialize(self, private=False):
         if not self.crv and not self.curve:
@@ -643,7 +669,10 @@ class SYMKey(Key):
             self.key = b64d(bytes(self.k))
 
     def deserialize(self):
-        self.key = b64d(bytes(self.k))
+        if self.k:
+            self.key = b64d(bytes(self.k))
+        else:
+            raise DeSerializationNotPossible()
 
     def serialize(self, private=True):
         res = self.common()
