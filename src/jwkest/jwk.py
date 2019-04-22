@@ -92,7 +92,11 @@ DIGEST_HASH = {
 
 
 def import_rsa_key_from_file(filename, passphrase=None):
-    return RSA.importKey(open(filename, 'r').read(), passphrase=passphrase)
+    content = None
+    with open(filename, 'r') as f:
+        content = f.read()
+
+    return RSA.importKey(content, passphrase=passphrase)
 
 
 def import_rsa_key(key, passphrase=None):
@@ -119,7 +123,10 @@ def der2rsa(der):
 
 def pem_cert2rsa(pem_file):
     # Convert from PEM to DER
-    pem = open(pem_file).read()
+    pem = None
+    with open(pem_file) as f:
+        pem = f.read()
+
     _rsa = RSA.importKey(pem)
     lines = pem.replace(" ", '').split()
     return der2rsa(a2b_base64(''.join(lines[1:-1])))
@@ -163,7 +170,9 @@ def load_x509_cert(url, spec2key):
 
 def rsa_load(filename):
     """Read a PEM-encoded RSA key pair from a file."""
-    pem = open(filename, 'r').read()
+    pem = None
+    with open(filename, 'r') as f:
+        pem = f.read()
     return import_rsa_key(pem)
 
 
