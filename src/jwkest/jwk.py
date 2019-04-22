@@ -669,7 +669,10 @@ class SYMKey(Key):
             self.key = b64d(bytes(self.k))
 
     def deserialize(self):
-        self.key = b64d(bytes(self.k))
+        if self.k:
+            self.key = b64d(bytes(self.k))
+        else:
+            raise DeSerializationNotPossible()
 
     def serialize(self, private=True):
         res = self.common()
