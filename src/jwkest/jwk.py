@@ -628,14 +628,15 @@ class ECKey(Key):
             raise SerializationNotPossible()
 
         res = self.common()
+        blen = self.curve.bytes
         res.update({
             "crv": self.curve.name(),
-            "x": long_to_base64(self.x),
-            "y": long_to_base64(self.y)
+            "x": long_to_base64(self.x, blen),
+            "y": long_to_base64(self.y, blen)
         })
 
         if private and self.d:
-            res["d"] = long_to_base64(self.d)
+            res["d"] = long_to_base64(self.d, blen)
 
         return res
 
