@@ -30,9 +30,11 @@ setup(
     name="pyjwkest",
     version=version,
     description="Python implementation of JWT, JWE, JWS and JWK",
+    long_description=io.open('README.rst', encoding='utf-8').read() if exists("README.rst") else "",
     author="Roland Hedberg",
     author_email="roland@catalogix.se",
     license="Apache 2.0",
+    url='https://github.com/IdentityPython/pyjwkest',
     packages=["jwkest"],
     package_dir={"": "src"},
     classifiers=[
