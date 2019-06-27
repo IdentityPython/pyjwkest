@@ -17,6 +17,8 @@
 
 import glob
 import re
+import io
+from os.path import exists
 
 from setuptools import setup
 
