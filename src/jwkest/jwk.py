@@ -1,30 +1,29 @@
 import base64
 import binascii
 import hashlib
-import re
-import logging
 import json
+import logging
+import re
 import sys
-import six
-
 from binascii import a2b_base64
 
+import six
 from Cryptodome.PublicKey import RSA
-from Cryptodome.PublicKey.RSA import importKey
 from Cryptodome.PublicKey.RSA import RsaKey
+from Cryptodome.PublicKey.RSA import importKey
 from Cryptodome.Util.asn1 import DerSequence
-
+from jwkest.ecc import ECCException
 from requests import request
 
+from jwkest import JWKESTException
+from jwkest import UnknownAlgorithm
 from jwkest import as_bytes
 from jwkest import as_unicode
+from jwkest import b64d
+from jwkest import b64e
 from jwkest import base64_to_long
 from jwkest import base64url_to_long
 from jwkest import long_to_base64
-from jwkest import JWKESTException
-from jwkest import b64d
-from jwkest import b64e
-from jwkest import UnknownAlgorithm
 from jwkest.ecc import NISTEllipticCurve
 from jwkest.jwt import b2s_conv
 
@@ -245,7 +244,7 @@ class Key(object):
     required = ['kty']
 
     def __init__(self, kty="", alg="", use="", kid="", key=None, x5c=None,
-            x5t="", x5u="", **kwargs):
+                 x5t="", x5u="", **kwargs):
         self.key = key
         self.extra_args = kwargs
 
@@ -420,8 +419,8 @@ class RSAKey(Key):
     required = ['kty', 'n', 'e']
 
     def __init__(self, kty="RSA", alg="", use="", kid="", key=None,
-            x5c=None, x5t="", x5u="", n="", e="", d="", p="", q="",
-            dp="", dq="", di="", qi="", **kwargs):
+                 x5c=None, x5t="", x5u="", n="", e="", d="", p="", q="",
+                 dp="", dq="", di="", qi="", **kwargs):
         Key.__init__(self, kty, alg, use, kid, key, x5c, x5t, x5u, **kwargs)
         self.n = n
         self.e = e
@@ -568,7 +567,7 @@ class ECKey(Key):
     required = ['crv', 'key', 'x', 'y']
 
     def __init__(self, kty="EC", alg="", use="", kid="", key=None,
-            crv="", x="", y="", d="", curve=None, **kwargs):
+                 crv="", x="", y="", d="", curve=None, **kwargs):
         Key.__init__(self, kty, alg, use, kid, key, **kwargs)
         self.crv = crv
         self.x = x
@@ -669,7 +668,7 @@ class SYMKey(Key):
     required = ['k', 'kty']
 
     def __init__(self, kty="oct", alg="", use="", kid="", key=None,
-            x5c=None, x5t="", x5u="", k="", mtrl="", **kwargs):
+                 x5c=None, x5t="", x5u="", k="", mtrl="", **kwargs):
         Key.__init__(self, kty, alg, use, kid, as_bytes(key), x5c, x5t, x5u,
                      **kwargs)
         self.k = k
@@ -797,7 +796,12 @@ class KEYS(object):
 
     def load_dict(self, dikt):
         for kspec in dikt["keys"]:
-            self._keys.append(keyrep(kspec))
+            try:
+                _key = keyrep(kspec)
+            except ECCException as err:
+                logger.warning(err)
+            else:
+                self._keys.append(_key)
 
     def load_jwks(self, jwks):
         """
