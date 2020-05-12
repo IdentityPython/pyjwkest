@@ -1,3 +1,8 @@
+NOTE!! This library is **NOT** actively maintained anymore.
+
+If someone wants to take over the responsibility of maintaining it,
+contact me (https://github.com/rohe).
+
 pyjwkest
 ========
 
