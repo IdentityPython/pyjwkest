@@ -82,7 +82,7 @@ class JWT(object):
             else:
                 headers = {'alg': 'none'}
 
-        logging.debug('JWT header: {}'.format(headers))
+        logger.debug('JWT header: {}'.format(headers))
 
         if not parts:
             return ".".join([a.decode() for a in self.b64part])
