@@ -176,8 +176,16 @@ def ecdh_derive_key(curve, key, epk, apu, apv, alg, dk_len):
     Z = curve.dh_z(key, epk)
     # Derive the key
     # AlgorithmID || PartyUInfo || PartyVInfo || SuppPubInfo
-    otherInfo = bytes(alg) + \
-        pack("!I", len(apu)) + apu + \
-        pack("!I", len(apv)) + apv + \
-        pack("!I", dk_len)
+    # otherInfo = bytes(alg) + \
+    #     pack("!I", len(apu)) + apu + \
+    #     pack("!I", len(apv)) + apv + \
+    #     pack("!I", dk_len)
+    otherInfo = bytearray()
+    otherInfo.extend(pack("!I", len(alg)))
+    otherInfo.extend(bytes(alg))
+    otherInfo.extend(pack("!I", len(apu)))
+    otherInfo.extend(str.encode(apu, 'utf8'))
+    otherInfo.extend(pack("!I", len(apv)))
+    otherInfo.extend(str.encode(apv, 'utf8'))
+    otherInfo.extend(pack("!I", dk_len))
     return concat_sha256(Z, dk_len, otherInfo)
