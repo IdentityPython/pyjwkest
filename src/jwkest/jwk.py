@@ -602,7 +602,12 @@ class ECKey(Key):
         except ValueError as err:
             raise DeSerializationNotPossible("%s" % err)
 
-        self.curve = NISTEllipticCurve.by_name(self.crv)
+        try:
+            self.curve = NISTEllipticCurve.by_name(self.crv)
+        except ECCException as err:
+            logger.warning(err)
+            raise DeSerializationNotPossible(err)
+
         if self.d:
             try:
                 if isinstance(self.d, six.string_types):
