@@ -25,7 +25,7 @@ __author__ = 'rohe0002'
 
 
 def intarr2bytes(arr):
-    return array.array('B', arr).tostring()
+    return array.array('B', arr).tobytes()
 
 
 def bytes2intarr(bts):
