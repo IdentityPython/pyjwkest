@@ -303,18 +303,14 @@ class JWEnc(JWT):
         if "typ" in self.headers and self.headers["typ"].lower() == "jwe":
             return True
 
-        try:
-            assert "alg" in self.headers and "enc" in self.headers
-        except AssertionError:
-            return False
-        else:
-            for typ in ["alg", "enc"]:
-                try:
-                    assert self.headers[typ] in SUPPORTED[typ]
-                except AssertionError:
-                    logger.debug("Not supported %s algorithm: %s" % (
-                        typ, self.headers[typ]))
-                    return False
+        for typ in ["enc", "alg"]:
+            if typ not in self.headers:
+                return False
+            if self.headers[typ] not in SUPPORTED[typ]:
+                logger.debug("Not supported %s algorithm: %s" % (
+                    typ, self.headers[typ]))
+                return False
+
         return True
 
     def __len__(self):
